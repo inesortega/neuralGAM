@@ -12,12 +12,16 @@
 #' @param num_units number of hidden units (for shallow neural networks) or
 #' list of hidden units per layer
 #' @param learning_rate learning rate for the Adam optimizer (Kingma, 2014).
-#' Defaults to 0.001
+#' Defaults to \code{0.001}
 #' @param kernel_initializer kernel initializer for the Dense layers.
 #' Defaults to Xavier Initializer
+#' @param ... BLBABLABLA
 #' @return compiled Neural Network
-#' @export
+
 #'
+#' @import keras
+#' @import tensorflow
+
 #' @examples
 #'
 #' # Build a Shallow NN with 32 hidden units:
@@ -31,17 +35,13 @@
 #' @references
 #' Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980.
 
-build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer="glorot_normal"){
-
-
-  library(tensorflow)
-  library(keras)
+build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer="glorot_normal", ...){
 
   if (missing(num_units)){
     stop("Argument \"num_units\" is missing, with no default")
   }
 
-  if (class(num_units) != "numeric" | isnot.list(num_units)) {
+  if (class(num_units) != "numeric" & !(is.list(num_units))) {
     stop("Argument num_units must be an integer or a list of integers")
   }
 
@@ -50,14 +50,14 @@ build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer=
 
   if (is.list(num_units)) {
     for (units in num_units){
-      model %>% layer_dense(units = units, kernel_initializer = kernel_initializer, activation = 'relu')
+      model %>% layer_dense(units = units, kernel_initializer = kernel_initializer, activation = 'relu', ...)
     }
   } else {
-    model %>% layer_dense(units = num_units, kernel_initializer = kernel_initializer, activation = 'relu')
+    model %>% layer_dense(units = num_units, kernel_initializer = kernel_initializer, activation = 'relu', ...)
   }
 
   model %>% layer_dense(units = 1)
-  adam <- optimizer_adam(learning_rate = learning_rate)
+  adam <- optimizer_adam(learning_rate = learning_rate, ...)
 
   model %>% compile(
     loss = 'mean_squared_error',

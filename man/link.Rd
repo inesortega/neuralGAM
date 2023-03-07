@@ -8,7 +8,7 @@ link(family, muhat)
 }
 \arguments{
 \item{family}{A description of the link function used in the model:
-(\code{"gaussian"}) or (\code{"binomial"})}
+\code{"gaussian"} or \code{"binomial"}}
 
 \item{muhat}{fitted values}
 }

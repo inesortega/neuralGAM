@@ -5,15 +5,15 @@
 #' @param w weights
 #' @param muhat fitted values
 #' @param family A description of the link function used in the model:
-#' (\code{"gaussian"}) or (\code{"binomial"})
+#' \code{"gaussian"} or \code{"binomial"}
 #'
 #' @return computed weights for the Local Scoring algorithm
 #' according to the \code{"family"} distribution
 #' @export
 #'
 #' @examples
-#' eta <- inv_link("gaussian", muhat)
-#' eta <- inv_link("binomial", muhat)
+#' eta <- inv_link(w, muhat, "gaussian")
+#' eta <- inv_link(w, muhat, "binomial")
 weight <- function(w, muhat, family){
   # Calculates the weights for the Local Scoring Algorithm
   if(family == "gaussian"){ # Identity

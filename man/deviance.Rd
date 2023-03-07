@@ -4,24 +4,24 @@
 \alias{deviance}
 \title{Deviance of the model}
 \usage{
-deviance(fit, y, family)
+deviance(muhat, y, family)
 }
 \arguments{
-\item{fit}{current estimation of the response variable}
+\item{muhat}{current estimation of the response variable}
 
 \item{y}{response variable}
 
-\item{family}{A description of the link function used in the model: (\code{"gaussian"}) or (\code{"binomial"})}
+\item{family}{A description of the link function used in the model:
+\code{"gaussian"} or \code{"binomial"}}
 }
 \value{
 the deviance of the model
 }
 \description{
 Computes the deviance of the model according to the distribution
-family specified in the \code{"family"} parameter (\code{"gaussian"})
-or (\code{"binomial"})
+family specified in the \code{"family"} parameter.
 }
 \examples{
-dev <- deviance(muhat, y_train, "gaussian")
-dev <- deviance(muhat, y_train, "binomial")
+dev <- deviance(muhat, y, "gaussian")
+dev <- deviance(muhat, y, "binomial")
 }

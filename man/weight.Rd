@@ -12,7 +12,7 @@ weight(w, muhat, family)
 \item{muhat}{fitted values}
 
 \item{family}{A description of the link function used in the model:
-(\code{"gaussian"}) or (\code{"binomial"})}
+\code{"gaussian"} or \code{"binomial"}}
 }
 \value{
 computed weights for the Local Scoring algorithm
@@ -22,6 +22,6 @@ according to the \code{"family"} distribution
 Computes the weights for the Local Scoring Algorithm.
 }
 \examples{
-eta <- inv_link("gaussian", muhat)
-eta <- inv_link("binomial", muhat)
+eta <- inv_link(w, muhat, "gaussian")
+eta <- inv_link(w, muhat, "binomial")
 }

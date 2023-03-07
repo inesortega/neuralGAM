@@ -7,27 +7,30 @@
 #' dependent variable and the weights is determined by the distribution of the
 #' response \code{"y"} (\code{"gaussian"} or #' \code{"binomial"}).
 #'
-#' @param num_units number of hidden units (for shallow neural networks) or
-#' list of hidden units per layer (i.e. \code{"list(32,32,32)"} generates a DNN
-#' with three layers and 32 neurons per layer).
-#' @param learning_rate learning rate for the neural network optimizer
 #' @param x A data frame containing all the covariates.
 #' @param y A vector with the response values.
-#' @param family A character string which describes the distribution of the link
-#' function used in the model: (\code{"gaussian"}) or (\code{"binomial"}).
+#' @param num_units number of hidden units (for shallow neural networks) or
+#' list of hidden units per layer (i.e. \code{"list(32,32,32)"} generates a DNN
+#' with three layers and \code{32} neurons per layer).
+#' @param learning_rate learning rate for the neural network optimizer
+#' @param family A description of the link function used in the model:
+#' \code{"gaussian"} or \code{"binomial"}
 #' Defaults to \code{"gaussian"}
 #' @param w_train optional sample weights.
 #' @param bf_threshold convergence criterion of the backfitting algorithm.
-#' Defaults to 0.00001
+#' Defaults to \code{0.00001}
 #' @param ls_threshold convergence criterion of the local scoring algorithm.
-#' Defaults to 0.1
+#' Defaults to \code{0.1}
 #' @param max_iter_backfitting an integer with the maximum number of iterations
-#' of the backfitting algorithm. Defaults to 10.
+#' of the backfitting algorithm. Defaults to \code{10}.
 #' @param max_iter_ls an integer with the maximum number of iterations of the
-#' local scoring Algorithm. Defaults to 10.
+#' local scoring Algorithm. Defaults to \code{10}.
 #' @return y_hat, partial effects and learned eta
 #' @export
 #'
+#' @import tensorflow
+#' @import keras
+
 #' @examples
 #'
 #' library(NeuralGAM)
@@ -37,11 +40,11 @@
 #' fs_train = train[c('f(X0)','f(X1)','f(X2)')]
 #' y_train = train['y']
 #'
-#' fit_NeuralGAM(num_units = 1024, learning_rate = 0.001, x=X_train,
+#' ngam <- fit_NeuralGAM(num_units = 1024, learning_rate = 0.001, x=X_train,
 #'               y = y_train, family = "gaussian", bf_threshold=0.00001,
 #'               ls_threshold = 0.1, max_iter_backfitting = 10,
 #'               max_iter_ls=10)
-fit_NeuralGAM <- function(num_units, learning_rate, x, y, family = "gaussian",
+fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
                           w_train = NULL, bf_threshold=0.00001,
                           ls_threshold = 0.1, max_iter_backfitting = 10,
                           max_iter_ls=10){
@@ -148,6 +151,8 @@ fit_NeuralGAM <- function(num_units, learning_rate, x, y, family = "gaussian",
   }
 
   yhat <- link(family, eta)
-  return(list(y = yhat, partial = g, eta=eta))
+  res <- list(y = yhat, partial = g, eta=eta)
+  class(res) <- "NeuralGAM"
+  return(res)
 
 }

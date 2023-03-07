@@ -4,7 +4,7 @@
 #' the distribution family specified in the \code{"family"} parameter.
 #'
 #' @param family A description of the link function used in the model:
-#' (\code{"gaussian"}) or (\code{"binomial"})
+#' \code{"gaussian"} or \code{"binomial"}
 #' @param muhat fitted values
 #'
 #' @return derivative of the link function for the fitted values

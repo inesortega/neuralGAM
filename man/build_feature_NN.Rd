@@ -7,7 +7,8 @@
 build_feature_NN(
   num_units,
   learning_rate = 0.001,
-  kernel_initializer = "glorot_normal"
+  kernel_initializer = "glorot_normal",
+  ...
 )
 }
 \arguments{
@@ -15,10 +16,12 @@ build_feature_NN(
 list of hidden units per layer}
 
 \item{learning_rate}{learning rate for the Adam optimizer (Kingma, 2014).
-Defaults to 0.001}
+Defaults to \code{0.001}}
 
 \item{kernel_initializer}{kernel initializer for the Dense layers.
 Defaults to Xavier Initializer}
+
+\item{...}{BLBABLABLA}
 }
 \value{
 compiled Neural Network

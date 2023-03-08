@@ -9,9 +9,8 @@
 variables (columns).
 The first three columns of the data frame contains the covariates \eqn{X_1, X_2, X_3}
 The next three columns of the data frame contains the corresponding \eqn{f(X)} for
-each covariate.
-The last column of the data frame contains the response variable.
-contains the response variable
+each covariate
+The last column of the data frame contains the response variable \eqn{y}
 }
 \usage{
 data(train)
@@ -35,14 +34,14 @@ X_j^2 \hspace{1.4cm} \text{ if } j=1 \\
 \eqn{\alpha = 2}, and covariates \eqn{X_1, X_2, X_3} drawn from an uniform
 distribution \eqn{U\left[-2.5, 2.5\right]} and response variable
 \eqn{Y = \eta + \varepsilon} where \eqn{\varepsilon} is an homoscedastic error term
-distributed in accordance to a \eqn{N(0,\sigma(x)}
+distributed in accordance to a \eqn{N(0,\sigma(x))}
 }
 \examples{
 library(NeuralGAM)
 data(train)
 head(train)
 
-X_train = train[c('X0','X1','X2')]
-fs_train = train[c('f(X0)','f(X1)','f(X2)')]
-y_train = train['y']
+X_train <- train[c('X0','X1','X2')]
+fs_train <- train[c('f(X0)','f(X1)','f(X2)')]
+y_train <- train$y
 }

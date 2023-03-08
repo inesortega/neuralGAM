@@ -17,11 +17,7 @@
 #' Defaults to Xavier Initializer
 #' @param ... BLBABLABLA
 #' @return compiled Neural Network
-
-#'
-#' @import keras
-#' @import tensorflow
-
+#' @export
 #' @examples
 #'
 #' # Build a Shallow NN with 32 hidden units:
@@ -37,7 +33,7 @@
 
 build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer="glorot_normal", ...){
 
-  if (missing(num_units)){
+ if (missing(num_units)){
     stop("Argument \"num_units\" is missing, with no default")
   }
 
@@ -45,19 +41,22 @@ build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer=
     stop("Argument num_units must be an integer or a list of integers")
   }
 
-  model <- keras_model_sequential()
-  model %>% layer_dense(units = 1, input_shape = c(1))
+  library(tensorflow)
+  library(keras)
+
+  model <- keras::keras_model_sequential()
+  model %>% keras::layer_dense(units = 1, input_shape = c(1))
 
   if (is.list(num_units)) {
     for (units in num_units){
-      model %>% layer_dense(units = units, kernel_initializer = kernel_initializer, activation = 'relu', ...)
+      model %>% keras::layer_dense(units = units, kernel_initializer = kernel_initializer, activation = 'relu', ...)
     }
   } else {
-    model %>% layer_dense(units = num_units, kernel_initializer = kernel_initializer, activation = 'relu', ...)
+    model %>% keras::layer_dense(units = num_units, kernel_initializer = kernel_initializer, activation = 'relu', ...)
   }
 
-  model %>% layer_dense(units = 1)
-  adam <- optimizer_adam(learning_rate = learning_rate, ...)
+  model %>% keras::layer_dense(units = 1)
+  adam <- keras::optimizer_adam(learning_rate = learning_rate, ...)
 
   model %>% compile(
     loss = 'mean_squared_error',
@@ -65,3 +64,4 @@ build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer=
   )
   return(model)
 }
+

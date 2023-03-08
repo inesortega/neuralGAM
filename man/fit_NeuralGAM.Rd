@@ -20,7 +20,7 @@ fit_NeuralGAM(
 \arguments{
 \item{x}{A data frame containing all the covariates.}
 
-\item{y}{A vector with the response values.}
+\item{y}{A numeric vector with the response values.}
 
 \item{num_units}{number of hidden units (for shallow neural networks) or
 list of hidden units per layer (i.e. \code{"list(32,32,32)"} generates a DNN
@@ -62,12 +62,12 @@ response \code{"y"} (\code{"gaussian"} or #' \code{"binomial"}).
 library(NeuralGAM)
 data(train)
 head(train)
-X_train = train[c('X0','X1','X2')]
-fs_train = train[c('f(X0)','f(X1)','f(X2)')]
-y_train = train['y']
+X_train <- train[c('X0','X1','X2')]
+y_train <- train['y']
 
 ngam <- fit_NeuralGAM(num_units = 1024, learning_rate = 0.001, x=X_train,
               y = y_train, family = "gaussian", bf_threshold=0.00001,
               ls_threshold = 0.1, max_iter_backfitting = 10,
               max_iter_ls=10)
+
 }

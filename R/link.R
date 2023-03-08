@@ -20,8 +20,8 @@ link <- function(family, muhat){
     out <- muhat
   }
   if(family == "binomial"){
-    muhat[muhat > 10] <- 10
-    muhat[muhat < -10] <- -10
+    #muhat[muhat > 10] <- 10
+    #muhat[muhat < -10] <- -10
     out <- exp(muhat) / (1 + exp(muhat))
   }
   return(out)

@@ -28,8 +28,8 @@ inv_link <- function(family, muhat){
   }
   if(family == "binomial"){
     d <- 1 - muhat
-    d[d <= 0.001] <- 0.001
-    d[d >= 0.999] <- 0.999
+    #d[d <= 0.001] <- 0.001
+    #d[d >= 0.999] <- 0.999
     out <- log(muhat/d)
   }
 

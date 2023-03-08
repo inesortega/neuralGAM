@@ -11,7 +11,7 @@ Description: NeuralGAM, a neural network based on Generalized Additive Models, w
             decision-making should be based on accountable and interpretable algorithms. 
 License: GPL
 Encoding: UTF-8
-Imports: 
+Imports:
   tensorflow,
   keras
 RoxygenNote: 7.2.3

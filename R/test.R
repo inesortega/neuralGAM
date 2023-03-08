@@ -34,9 +34,9 @@
 #' data(test)
 #' head(test)
 #'
-#' X_train = test[c('X0','X1','X2')]
-#' fs_train = test[c('f(X0)','f(X1)','f(X2)')]
-#' y_train = test['y']
+#' X_train <- test[c('X0','X1','X2')]
+#' fs_train <- test[c('f(X0)','f(X1)','f(X2)')]
+#' y_train <- test['y']
 
 
 NULL

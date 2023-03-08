@@ -22,6 +22,6 @@ according to the \code{"family"} distribution
 Computes the weights for the Local Scoring Algorithm.
 }
 \examples{
-eta <- inv_link(w, muhat, "gaussian")
-eta <- inv_link(w, muhat, "binomial")
+eta <- weight(w, muhat, "gaussian")
+eta <- weight(w, muhat, "binomial")
 }

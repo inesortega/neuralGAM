@@ -8,7 +8,7 @@
 #' response \code{"y"} (\code{"gaussian"} or #' \code{"binomial"}).
 #'
 #' @param x A data frame containing all the covariates.
-#' @param y A vector with the response values.
+#' @param y A numeric vector with the response values.
 #' @param num_units number of hidden units (for shallow neural networks) or
 #' list of hidden units per layer (i.e. \code{"list(32,32,32)"} generates a DNN
 #' with three layers and \code{32} neurons per layer).
@@ -28,22 +28,19 @@
 #' @return y_hat, partial effects and learned eta
 #' @export
 #'
-#' @import tensorflow
-#' @import keras
-
 #' @examples
 #'
 #' library(NeuralGAM)
 #' data(train)
 #' head(train)
-#' X_train = train[c('X0','X1','X2')]
-#' fs_train = train[c('f(X0)','f(X1)','f(X2)')]
-#' y_train = train['y']
+#' X_train <- train[c('X0','X1','X2')]
+#' y_train <- train['y']
 #'
 #' ngam <- fit_NeuralGAM(num_units = 1024, learning_rate = 0.001, x=X_train,
 #'               y = y_train, family = "gaussian", bf_threshold=0.00001,
 #'               ls_threshold = 0.1, max_iter_backfitting = 10,
 #'               max_iter_ls=10)
+#'
 fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
                           w_train = NULL, bf_threshold=0.00001,
                           ls_threshold = 0.1, max_iter_backfitting = 10,
@@ -54,6 +51,10 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
   f <- x*0
   g <- x*0
 
+  if(class(y) == "data.frame"){
+    y <- as.numeric(y)
+  }
+
   nvars <- dim(f)[2]
 
   if (nvars == 0) stop("No terms available")
@@ -63,9 +64,13 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
   if(is.null(w_train)) w_train <- rep(1, length(y))
   if(family == "gaussian") max_iter_ls <- 1
 
+  print("Initializing Neural Networks...")
+
   model <- list()
   for (k in 1:nvars){
     model[[k]] <- build_feature_NN(num_units, learning_rate)
+    print(paste("Model ", k ," Summary "))
+    model[[k]] %>% summary()
   }
 
 
@@ -126,11 +131,10 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
       eta <- eta0 + rowSums(g)
 
 
-      #compute the differences in the predictor at each iter
-      err <- sum((eta-eta_prev)**2)/sum(eta_prev**2)
+      #compute the differences in the predictor at each iteration
+      err <- sum((eta - eta_prev)**2)/sum(eta_prev**2)
       eta_prev <- eta
-      print(paste("ITERATION_BACK", it_back, "- Current ERR = ", err, "Threshold = ", bf_threshold))
-      print(paste("ERR > bf_threshold ?", (err > bf_threshold)))
+      print(paste("BACKFITTING Iteration", it_back, "- Current Err = ", err, "BF Threshold = ", bf_threshold, "Converged = ", err < bf_threshold))
       it_back <- it_back + 1
 
     }
@@ -156,3 +160,4 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
   return(res)
 
 }
+

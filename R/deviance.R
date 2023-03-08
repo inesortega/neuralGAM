@@ -36,8 +36,8 @@ deviance <- function(muhat, y, family){
   }
 
   if(family == "binomial"){
-    #muhat[muhat < 0.0001] <- 0.0001
-    #muhat[muhat > 0.9999] <- 0.9999
+    muhat[muhat < 0.0001] <- 0.0001
+    muhat[muhat > 0.9999] <- 0.9999
 
     entrop = rep(0, length(y))
     ii = (1 - y) * y > 0

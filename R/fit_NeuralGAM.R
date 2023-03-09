@@ -160,3 +160,14 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
 
 }
 
+
+.onLoad <- function(libname, pkgname) {
+  # set conda environment for tensorflow and keras
+  if (.isConda()) {
+    tryCatch(
+      expr = reticulate::use_condaenv("env", required = TRUE),
+      error = function(e) NULL
+    )
+  }
+  Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
+}

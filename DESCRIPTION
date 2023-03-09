@@ -13,13 +13,6 @@ License: GPL
 Encoding: UTF-8
 Imports:
   tensorflow,
-  keras,
-  ggplot2
-Config/reticulate:
-  list(
-    packages = list(
-      list(package = "keras", pip = TRUE),
-      list(package = "tensorflow", pip = TRUE)
-    )
-  )
+  keras
+SystemRequirements: Python (>= 2.7.0), TensorFlow (https://www.tensorflow.org/)
 RoxygenNote: 7.2.3

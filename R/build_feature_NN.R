@@ -41,10 +41,13 @@ build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer=
     stop("Argument num_units must be an integer or a list of integers")
   }
 
+  print("Loading required libraries...")
+
   library(tensorflow)
   library(keras)
 
   model <- keras::keras_model_sequential()
+
   model %>% keras::layer_dense(units = 1, input_shape = c(1))
 
   if (is.list(num_units)) {
@@ -57,6 +60,7 @@ build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer=
 
   model %>% keras::layer_dense(units = 1)
   adam <- keras::optimizer_adam(learning_rate = learning_rate, ...)
+
 
   model %>% compile(
     loss = 'mean_squared_error',

@@ -15,4 +15,11 @@ Imports:
   tensorflow,
   keras,
   ggplot2
+Config/reticulate:
+  list(
+    packages = list(
+      list(package = "keras", pip = TRUE),
+      list(package = "tensorflow", pip = TRUE)
+    )
+  )
 RoxygenNote: 7.2.3

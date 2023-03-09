@@ -24,3 +24,6 @@ distribution family specified in the \code{"family"} parameter.
 eta <- inv_link("gaussian", muhat)
 eta <- inv_link("binomial", muhat)
 }
+\author{
+Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+}

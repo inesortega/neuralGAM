@@ -23,3 +23,6 @@ the distribution family specified in the \code{"family"} parameter.
 der <- diriv("gaussian", muhat)
 der <- diriv("binomial", muhat)
 }
+\author{
+Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+}

@@ -25,3 +25,6 @@ Computes the weights for the Local Scoring Algorithm.
 eta <- weight(w, muhat, "gaussian")
 eta <- weight(w, muhat, "binomial")
 }
+\author{
+Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+}

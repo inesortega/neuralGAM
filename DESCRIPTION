@@ -13,5 +13,6 @@ License: GPL
 Encoding: UTF-8
 Imports:
   tensorflow,
-  keras
+  keras,
+  ggplot2
 RoxygenNote: 7.2.3

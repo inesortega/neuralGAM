@@ -71,3 +71,6 @@ ngam <- fit_NeuralGAM(num_units = 1024, learning_rate = 0.001, x=X_train,
               max_iter_ls=10)
 
 }
+\author{
+Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+}

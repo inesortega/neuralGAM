@@ -21,7 +21,7 @@ Defaults to \code{0.001}}
 \item{kernel_initializer}{kernel initializer for the Dense layers.
 Defaults to Xavier Initializer}
 
-\item{...}{BLBABLABLA}
+\item{\ldots}{Other options.}
 }
 \value{
 compiled Neural Network
@@ -48,4 +48,7 @@ learning_rate=0.001, kernel_initializer="glorot_normal")
 }
 \references{
 Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980.
+}
+\author{
+Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
 }

@@ -2,7 +2,7 @@
 #'
 #' @description Computes the deviance of the model according to the distribution
 #' family specified in the \code{"family"} parameter.
-#'
+#' @author Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
 #' @param muhat current estimation of the response variable
 #' @param y response variable
 #' @param family A description of the link function used in the model:

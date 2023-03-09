@@ -6,7 +6,7 @@
 #' using neural networks as function approximators. The adjustment of the
 #' dependent variable and the weights is determined by the distribution of the
 #' response \code{"y"} (\code{"gaussian"} or #' \code{"binomial"}).
-#'
+#' @author Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
 #' @param x A data frame containing all the covariates.
 #' @param y A numeric vector with the response values.
 #' @param num_units number of hidden units (for shallow neural networks) or
@@ -51,7 +51,7 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
   f <- x*0
   g <- x*0
 
-  if(class(y) == "data.frame"){
+  if(is.data.frame(y)){
     y <- as.numeric(y)
   }
 
@@ -61,7 +61,7 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
 
   it <- 1
 
-  if(is.null(w_train)) w_train <- rep(1, length(y))
+  if(is.null(w_train)) w <- rep(1, length(y))
   if(family == "gaussian") max_iter_ls <- 1
 
   print("Initializing Neural Networks...")
@@ -90,11 +90,11 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
 
     if(family == "gaussian"){
       Z <- y
-      W <- w_train
+      W <- w
     }else{
       der <- diriv(family, muhat)
       Z <- eta + (y - muhat) * der
-      W <- weight(w_train, muhat, family)
+      W <- weight(w, muhat, family)
     }
 
     # Start backfitting  algorithm
@@ -111,10 +111,9 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
         if(family == "gaussian"){
           hat[[k]] <- model[[k]] %>% fit(x[, k], residuals, epochs = 1)
         }else{
-          adam <- optimizer_adam(learning_rate = learning_rate)
           model[[k]] %>% compile(
             loss = 'mean_squared_error',
-            optimizer = adam,
+            optimizer = optimizer_adam(learning_rate = learning_rate),
             loss_weights = list(W)
           )
           hat[[k]] <- model[[k]] %>% fit(x[, k], residuals, epochs = 1, sample_weight = list(W))
@@ -153,7 +152,7 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
     it <- it + 1
 
   }
-
+  x <- x
   yhat <- link(family, eta)
   res <- list(y = yhat, partial = g, eta=eta)
   class(res) <- "NeuralGAM"

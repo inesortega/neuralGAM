@@ -1,7 +1,7 @@
 #' Weights
 #'
 #' @description Computes the weights for the Local Scoring Algorithm.
-#'
+#' @author Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
 #' @param w weights
 #' @param muhat fitted values
 #' @param family A description of the link function used in the model:

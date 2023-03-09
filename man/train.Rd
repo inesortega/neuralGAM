@@ -45,3 +45,6 @@ X_train <- train[c('X0','X1','X2')]
 fs_train <- train[c('f(X0)','f(X1)','f(X2)')]
 y_train <- train$y
 }
+\author{
+Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+}

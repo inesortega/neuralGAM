@@ -2,7 +2,7 @@
 #'
 #' @description Computes the derivative of the link function according to
 #' the distribution family specified in the \code{"family"} parameter.
-#'
+#' @author Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
 #' @param family A description of the link function used in the model:
 #' \code{"gaussian"} or \code{"binomial"}
 #' @param muhat fitted values

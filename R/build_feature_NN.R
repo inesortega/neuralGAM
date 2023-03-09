@@ -8,14 +8,14 @@
 #' can be built by specifying the size of each hidden layer in the
 #'  \code{"num_units"} parameter. For example, \code{"list(32,32,32)"} generates
 #'  a DNN with three layers and 32 neurons per layer.
-
+#' @author Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
 #' @param num_units number of hidden units (for shallow neural networks) or
 #' list of hidden units per layer
 #' @param learning_rate learning rate for the Adam optimizer (Kingma, 2014).
 #' Defaults to \code{0.001}
 #' @param kernel_initializer kernel initializer for the Dense layers.
 #' Defaults to Xavier Initializer
-#' @param ... BLBABLABLA
+#' @param \ldots Other options.
 #' @return compiled Neural Network
 #' @export
 #' @examples

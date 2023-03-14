@@ -32,7 +32,7 @@ installNeuralGAMDeps <- function() {
     print(status)
     stop("Error in Miniconda Installation.", call. = FALSE)
   }
-  message("Installing keras and tensorflow...")
+  message("Installing keras...")
   status3 <- tryCatch(
     keras::install_keras(
       version = "default",
@@ -46,9 +46,28 @@ installNeuralGAMDeps <- function() {
   )
   if (isTRUE(status3)) {
     stop(
-      "Error during installation.",call. = FALSE)
+      "Error during keras installation.",call. = FALSE)
   }
 
+  message("Installing tensorflow")
+  if (Sys.info()["sysname"] == "Darwin") {
+    # code to execute if running on macOS
+    status4 <- tryCatch(
+      tensorflow::install_tensorflow(
+        version = "2.10",
+        method = "conda",
+        conda = conda,
+        envname = "NeuralGAM-env"
+      ),
+      error = function(e) {
+        return(TRUE)
+      }
+    )
+    if (isTRUE(status4)) {
+      stop(
+        "Error during tensorflow installation.",call. = FALSE)
+    }
+  }
   message("Installation complete!")
   message(c("Restart R and load NeuralGAM again..."))
 }

@@ -9,7 +9,7 @@
 #' \code{"gaussian"} or \code{"binomial"}
 #' @param \ldots Other options.
 #'
-#' @return model predictions
+#' @return list with predicted values (\code{"y"}) and linear predictor (\code{eta})
 #' @export
 #'
 #' @examples

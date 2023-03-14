@@ -25,7 +25,7 @@
 #' of the backfitting algorithm. Defaults to \code{10}.
 #' @param max_iter_ls an integer with the maximum number of iterations of the
 #' local scoring Algorithm. Defaults to \code{10}.
-#' @return y_hat, partial effects and learned eta
+#' @return NeuralGAM object. See  \code{summary(ngam)} for details
 #' @export
 #'
 #' @examples
@@ -152,8 +152,7 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
     it <- it + 1
 
   }
-  yhat <- link(family, eta)
-  res <- list(y = yhat, partial = g, eta=eta, x=x, model=model, eta0=eta0)
+  res <- list(muhat = muhat, partial = g, eta=eta, x=x, model=model, eta0=eta0)
   class(res) <- "NeuralGAM"
   return(res)
 

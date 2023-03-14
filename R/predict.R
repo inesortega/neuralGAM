@@ -24,6 +24,6 @@ predict.NeuralGAM <- function(ngam, x, family = "gaussian", ...) {
   eta <- rowSums(f) + ngam$eta0
   y <- link(family, eta)
 
-  res <- list(y, eta)
+  res <- list(y = y, eta = eta)
   return(res)
 }

@@ -26,6 +26,9 @@
 plot.NeuralGAM <- function(x = object, y = NULL,
                            ylab = NULL, ...) {
 
+  library(ggplot2)
+  library(gridExtra)
+
   object <- x
 
   x <- object$x

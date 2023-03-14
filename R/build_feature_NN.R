@@ -17,6 +17,9 @@
 #' Defaults to Xavier Initializer
 #' @param \ldots Other options.
 #' @return compiled Neural Network
+#' @importFrom keras keras_model_sequential
+#' @importFrom keras layer_dense
+#' @importFrom keras optimizer_adam
 #' @export
 #' @examples
 #'
@@ -41,9 +44,6 @@ build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer=
     stop("Argument num_units must be an integer or a list of integers")
   }
 
-  print("Loading required libraries...")
-
-  library(tensorflow)
   library(keras)
 
   model <- keras::keras_model_sequential()

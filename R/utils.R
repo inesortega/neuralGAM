@@ -1,18 +1,7 @@
-
-
-#' installPythonDeps
+#' installNeuralGAMDeps
+#' @description Installs a custom conda environment with tensorflow and keras
 #'
-#' @param conda
-#' @param miniconda.path
-#'
-#' @return
-#' @export
-#'
-#' @examples
-installPythonDeps <- function(
-    conda = "auto",
-    miniconda.path = NULL
-) {
+installNeuralGAMDeps <- function() {
   if ((!.isConda())) {
     message("=== No miniconda detected, installing it using reticulate R package")
     if (is.null(miniconda.path)) {
@@ -32,7 +21,7 @@ installPythonDeps <- function(
   message("Creating environment")
   status <- tryCatch(
     reticulate::conda_create(
-      envname = "env",
+      envname = "NeuralGAM-env",
       packages = "python==3.9.6"
     ),
     error = function(e) {
@@ -43,31 +32,13 @@ installPythonDeps <- function(
     print(status)
     stop("Error in Miniconda Installation.", call. = FALSE)
   }
-
-  message("Installing tensorflow in environment")
-  status2 <- tryCatch(
-    tensorflow::install_tensorflow(
-      version = "2.9.1",
-      method = "conda",
-      conda = conda,
-      envname = "env"
-    ),
-    error = function(e) {
-      return(TRUE)
-    }
-  )
-  if (isTRUE(status2)) {
-    stop(
-      "Error during Tensorflow installation.",call. = FALSE)
-  }
-
-  message("Installing keras in environment")
+  message("Installing keras and tensorflow...")
   status3 <- tryCatch(
     keras::install_keras(
-      version = "2.9.0",
+      version = "default",
       method = "conda",
       conda = conda,
-      envname = "env"
+      envname = "NeuralGAM-env"
     ),
     error = function(e) {
       return(TRUE)
@@ -75,7 +46,7 @@ installPythonDeps <- function(
   )
   if (isTRUE(status3)) {
     stop(
-      "Error during Tensorflow installation.",call. = FALSE)
+      "Error during installation.",call. = FALSE)
   }
 
   message("Installation complete!")

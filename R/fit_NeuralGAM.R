@@ -64,7 +64,7 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
   if(is.null(w_train)) w <- rep(1, length(y))
   if(family == "gaussian") max_iter_ls <- 1
 
-  print("Initializing Neural Networks...")
+  print("Initializing NeuralGAM...")
 
   model <- list()
   for (k in 1:nvars){
@@ -163,11 +163,28 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
 
 .onLoad <- function(libname, pkgname) {
   # set conda environment for tensorflow and keras
-  if (.isConda()) {
-    tryCatch(
-      expr = reticulate::use_condaenv("env", required = TRUE),
-      error = function(e) NULL
-    )
+  envs <- reticulate::conda_list()
+  if (is.element("NeuralGAM-env", envs$name)){
+    if (.isConda()) {
+      print("Using NeuralGAM-env environment...")
+      i <- which(envs$name == "NeuralGAM-env")
+      tryCatch(
+        expr = reticulate::use_condaenv("NeuralGAM-env", required = TRUE),
+        error = function(e) NULL
+      )
+    }
+    Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
+    Sys.setenv(RETICULATE_PYTHON = envs$python[i])
   }
-  Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
+  else{
+    print("Environment NeuralGAM-env not found... setting up tensorflow and keras")
+    installNeuralGAMDeps()
+    envs <- reticulate::conda_list()
+    i <- which(envs$name == "NeuralGAM-env")
+    Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
+    Sys.setenv(RETICULATE_PYTHON = envs$python[i])
+
+  }
+
+
 }

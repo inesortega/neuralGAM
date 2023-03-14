@@ -44,6 +44,9 @@ build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer=
     stop("Argument num_units must be an integer or a list of integers")
   }
 
+  library(keras)
+  library(tensorflow)
+
   model <- keras::keras_model_sequential()
 
   model %>% keras::layer_dense(units = 1, input_shape = c(1))

@@ -126,7 +126,7 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
       }
 
       # update current estimations
-      g <- f
+      g <- data.frame(f)
       eta <- eta0 + rowSums(g)
 
 
@@ -153,7 +153,7 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
 
   }
   yhat <- link(family, eta)
-  res <- list(y = yhat, partial = g, eta=eta, x=x)
+  res <- list(y = yhat, partial = g, eta=eta, x=x, model=model, eta0=eta0)
   class(res) <- "NeuralGAM"
   return(res)
 

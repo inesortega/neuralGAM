@@ -13,6 +13,7 @@ License: GPL
 Encoding: UTF-8
 Imports:
   tensorflow,
-  keras
+  keras,
+  ggplot2
 SystemRequirements: Python (>= 2.7.0), TensorFlow (https://www.tensorflow.org/)
 RoxygenNote: 7.2.3

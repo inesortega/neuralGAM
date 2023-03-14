@@ -8,8 +8,7 @@
 #' @param muhat fitted values
 #'
 #' @return derivative of the link function for the fitted values
-#' @export
-#'
+
 #' @examples
 #' der <- diriv("gaussian", muhat)
 #' der <- diriv("binomial", muhat)

@@ -152,9 +152,8 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
     it <- it + 1
 
   }
-  x <- x
   yhat <- link(family, eta)
-  res <- list(y = yhat, partial = g, eta=eta)
+  res <- list(y = yhat, partial = g, eta=eta, x=x)
   class(res) <- "NeuralGAM"
   return(res)
 
@@ -166,7 +165,7 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
   envs <- reticulate::conda_list()
   if (is.element("NeuralGAM-env", envs$name)){
     if (.isConda()) {
-      print("Using NeuralGAM-env environment...")
+      print("Loading environment...")
       i <- which(envs$name == "NeuralGAM-env")
       tryCatch(
         expr = reticulate::use_condaenv("NeuralGAM-env", required = TRUE),

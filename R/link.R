@@ -9,7 +9,6 @@
 #'
 #' @return the link function specified by the \code{"family"} distribution
 #' for the given fitted values
-#' @export
 #'
 #' @examples
 #' eta <- link("gaussian", muhat)

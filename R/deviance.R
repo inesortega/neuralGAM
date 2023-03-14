@@ -8,7 +8,7 @@
 #' @param family A description of the link function used in the model:
 #' \code{"gaussian"} or \code{"binomial"}
 #' @return the deviance of the model
-#' @export
+
 #' @usage deviance(muhat, y, family)
 #' @examples
 #' dev <- deviance(muhat, y, "gaussian")

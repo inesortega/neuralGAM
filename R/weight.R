@@ -9,7 +9,6 @@
 #'
 #' @return computed weights for the Local Scoring algorithm
 #' according to the \code{"family"} distribution
-#' @export
 #'
 #' @examples
 #' eta <- weight(w, muhat, "gaussian")

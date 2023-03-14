@@ -9,7 +9,6 @@
 #'
 #' @return the inverse link function specified by the \code{"family"}
 #' distribution for the given fitted values
-#' @export
 #'
 #' @examples
 #' eta <- inv_link("gaussian", muhat)

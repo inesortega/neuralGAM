@@ -20,7 +20,7 @@
 #' @importFrom keras keras_model_sequential
 #' @importFrom keras layer_dense
 #' @importFrom keras optimizer_adam
-#' @export
+
 #' @examples
 #'
 #' # Build a Shallow NN with 32 hidden units:
@@ -43,8 +43,6 @@ build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer=
   if (class(num_units) != "numeric" & !(is.list(num_units))) {
     stop("Argument num_units must be an integer or a list of integers")
   }
-
-  library(keras)
 
   model <- keras::keras_model_sequential()
 

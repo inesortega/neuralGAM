@@ -18,8 +18,8 @@ data(train)
 X_train <- train[c('X0','X1','X2')]
 y_train <- train$y
 
-ngam <- fit_NeuralGAM(num_units = 1024, learning_rate = 0.001, x=X_train,
-              y = y_train, family = "gaussian", bf_threshold=0.00001,
+ngam <- fit_NeuralGAM(num_units = 1024, learning_rate = 0.0053, x=X_train,
+              y = y_train, family = "gaussian", bf_threshold=0.0001,
               ls_threshold = 0.1, max_iter_backfitting = 10,
               max_iter_ls=10)
 

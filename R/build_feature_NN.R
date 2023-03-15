@@ -60,6 +60,7 @@ build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer=
   }
 
   model %>% keras::layer_dense(units = 1)
+
   adam <- keras::optimizer_adam(learning_rate = learning_rate, ...)
 
 

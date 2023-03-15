@@ -32,6 +32,28 @@ installNeuralGAMDeps <- function() {
     print(status)
     stop("Error in Miniconda Installation.", call. = FALSE)
   }
+
+  if(.isMacARM()){
+    # Workaround to install specific versions of tensorflow-macos and tensorflow-metal
+    # https://developer.apple.com/forums/thread/721619
+    message("Installing tensorflow for MAC ARM")
+    status2 <- tryCatch(
+      reticulate::py_install(c("tensorflow-macos==2.9", "tensorflow-metal==0.5.0"),
+                             method="conda",
+                             conda = conda,
+                             envname = "NeuralGAM-env"),
+      error = function(e) {
+        return(TRUE)
+      }
+    )
+    if (isTRUE(status2)) {
+      stop(
+        "Error during tensorflow installation.",call. = FALSE)
+    }
+
+
+  }
+
   message("Installing keras...")
   status3 <- tryCatch(
     keras::install_keras(
@@ -49,25 +71,6 @@ installNeuralGAMDeps <- function() {
       "Error during keras installation.",call. = FALSE)
   }
 
-  message("Installing tensorflow")
-  if (Sys.info()["sysname"] == "Darwin") {
-    # code to execute if running on macOS
-    status4 <- tryCatch(
-      tensorflow::install_tensorflow(
-        version = "2.10",
-        method = "conda",
-        conda = conda,
-        envname = "NeuralGAM-env"
-      ),
-      error = function(e) {
-        return(TRUE)
-      }
-    )
-    if (isTRUE(status4)) {
-      stop(
-        "Error during tensorflow installation.",call. = FALSE)
-    }
-  }
   message("Installation complete!")
   message(c("Restart R and load NeuralGAM again..."))
 }
@@ -87,5 +90,10 @@ installNeuralGAMDeps <- function() {
     tfAvailable <- utils::compareVersion("2.2", tfVersion) <= 0
   }
   return(tfAvailable)
+}
+
+.isMacARM <- function() {
+  sys_info <- Sys.info()
+  return (sys_info[["sysname"]] == "Darwin" && sys_info[["machine"]] == "arm64")
 }
 

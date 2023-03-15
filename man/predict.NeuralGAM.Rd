@@ -18,9 +18,14 @@ predictions are required.}
 \item{\ldots}{Other options.}
 }
 \value{
-model predictions
+list with predicted values (\code{"y"}) and linear predictor (\code{eta})
 }
 \description{
 Takes a fitted \code{NeuralGAM} object produced by
 \code{fit_NeuralGAM()} and produces predictions given a new set of values.
+}
+\examples{
+pred <- predict(ngam, X_test, "gaussian")
+y <- pred$y
+eta <- pred$eta
 }

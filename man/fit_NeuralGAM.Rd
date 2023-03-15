@@ -47,7 +47,7 @@ of the backfitting algorithm. Defaults to \code{10}.}
 local scoring Algorithm. Defaults to \code{10}.}
 }
 \value{
-y_hat, partial effects and learned eta
+NeuralGAM object. See  \code{summary(ngam)} for details
 }
 \description{
 Main function to fit a NeuralGAM model. The function builds one

@@ -12,7 +12,10 @@
 #' @return list with predicted values (\code{"y"}) and linear predictor (\code{eta})
 #' @export
 #'
-#' @examples
+#' @examples pred <- predict(ngam, X_test, "gaussian")
+#' y <- pred$y
+#' eta <- pred$eta
+
 predict.NeuralGAM <- function(ngam, x, family = "gaussian", ...) {
 
   f <- x*0

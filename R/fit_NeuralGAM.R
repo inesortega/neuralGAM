@@ -168,7 +168,7 @@ fit_NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 
   # set conda environment for tensorflow and keras
   envs <- reticulate::conda_list()
   if (is.element("NeuralGAM-env", envs$name)){
-    if (.isConda() && .isTensorFlow()) {
+    if (.isConda()) {
       print("Loading environment...")
       i <- which(envs$name == "NeuralGAM-env")
       tryCatch(

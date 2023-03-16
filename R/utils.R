@@ -88,10 +88,6 @@ installNeuralGAMDeps <- function() {
     reticulate::conda_binary("auto"), error = function(e) NULL
   )
   !is.null(conda)
-  tryCatch(
-    udpate <- reticulate::conda_update("auto"), error = function(e) NULL
-  )
-  !is.null(update)
 }
 
 

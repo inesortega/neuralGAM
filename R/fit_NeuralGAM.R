@@ -39,24 +39,25 @@
 #' library(NeuralGAM)
 #' data(train)
 #' head(train)
-#' X_train <- train[c('X0','X1','X2')]
+#' X_train <- train[c("X0", "X1", "X2")]
 #' y_train <- train$y
 #'
-#' ngam <- fit_NeuralGAM(x=X_train, y = y_train, num_units = 1024,family = "gaussian",
-#'                       learning_rate = 0.001, bf_threshold=0.001,
-#'                       max_iter_backfitting = 10,max_iter_ls=10)
+#' ngam <- fit_NeuralGAM(
+#'   x = X_train, y = y_train, num_units = 1024, family = "gaussian",
+#'   learning_rate = 0.001, bf_threshold = 0.001,
+#'   max_iter_backfitting = 10, max_iter_ls = 10
+#' )
 #'
 fit_NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.001,
                           kernel_initializer = "glorot_normal", w_train = NULL,
-                          bf_threshold=0.001, ls_threshold = 0.1,
-                          max_iter_backfitting = 10,max_iter_ls=10, ...){
-
-  #Initialization
+                          bf_threshold = 0.001, ls_threshold = 0.1,
+                          max_iter_backfitting = 10, max_iter_ls = 10, ...) {
+  # Initialization
   converged <- FALSE
-  f <- x*0
-  g <- x*0
+  f <- x * 0
+  g <- x * 0
 
-  if(is.data.frame(y)){
+  if (is.data.frame(y)) {
     y <- as.numeric(y)
   }
 
@@ -66,15 +67,15 @@ fit_NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 
 
   it <- 1
 
-  if(is.null(w_train)) w <- rep(1, length(y))
-  if(family == "gaussian") max_iter_ls <- 1
+  if (is.null(w_train)) w <- rep(1, length(y))
+  if (family == "gaussian") max_iter_ls <- 1
 
   print("Initializing NeuralGAM...")
 
   model <- list()
-  for (k in 1:nvars){
+  for (k in 1:nvars) {
     model[[k]] <- build_feature_NN(num_units, learning_rate, ...)
-    print(paste("Model ", k ," Summary "))
+    print(paste("Model ", k, " Summary "))
     model[[k]] %>% summary()
   }
 
@@ -82,7 +83,7 @@ fit_NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 
   muhat <- mean(y)
   eta0 <- inv_link(family, muhat)
 
-  eta <- eta0 #initial estimation as the mean of y
+  eta <- eta0 # initial estimation as the mean of y
   eta_prev <- eta0
 
   dev_new <- deviance(muhat, y, family)
@@ -93,10 +94,10 @@ fit_NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 
   while (!converged & (it <= max_iter_ls)) {
     print(paste("ITER LOCAL SCORING", it))
 
-    if(family == "gaussian"){
+    if (family == "gaussian") {
       Z <- y
       W <- w
-    }else{
+    } else {
       der <- diriv(family, muhat)
       Z <- eta + (y - muhat) * der
       W <- weight(w, muhat, family)
@@ -104,20 +105,19 @@ fit_NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 
 
     # Start backfitting  algorithm
     it_back <- 1
-    err <- bf_threshold + 0.1 #Force backfitting iteration
+    err <- bf_threshold + 0.1 # Force backfitting iteration
 
     while ((err > bf_threshold) & (it_back <= max_iter_backfitting)) {
-      for (k in 1:nvars){
-
+      for (k in 1:nvars) {
         eta <- eta - f[, k]
         residuals <- Z - eta
 
         # Fit network k with x[k] towards residuals
-        if(family == "gaussian"){
+        if (family == "gaussian") {
           hat[[k]] <- model[[k]] %>% fit(x[, k], residuals, epochs = 1)
-        }else{
+        } else {
           model[[k]] %>% compile(
-            loss = 'mean_squared_error',
+            loss = "mean_squared_error",
             optimizer = optimizer_adam(learning_rate = learning_rate),
             loss_weights = list(W)
           )
@@ -135,39 +135,36 @@ fit_NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 
       eta <- eta0 + rowSums(g)
 
 
-      #compute the differences in the predictor at each iteration
-      err <- sum((eta - eta_prev)**2)/sum(eta_prev**2)
+      # compute the differences in the predictor at each iteration
+      err <- sum((eta - eta_prev)**2) / sum(eta_prev**2)
       eta_prev <- eta
       print(paste("BACKFITTING Iteration", it_back, "- Current Err = ", err, "BF Threshold = ", bf_threshold, "Converged = ", err < bf_threshold))
       it_back <- it_back + 1
-
     }
 
     muhat <- link(family, eta)
     dev_old <- dev_new
     dev_new <- deviance(muhat, y, family)
 
-    dev_delta <- abs((dev_old-dev_new)/dev_old)
+    dev_delta <- abs((dev_old - dev_new) / dev_old)
 
     print(paste("ITERATION_LOCAL_SCORING", it, dev_delta))
-    if ((dev_delta < ls_threshold)&(it > 0)){
+    if ((dev_delta < ls_threshold) & (it > 0)) {
       print("Z and f(x) converged...")
       converged <- TRUE
     }
     it <- it + 1
-
   }
-  res <- list(muhat = muhat, partial = g, eta=eta, x=x, model=model, eta0=eta0)
+  res <- list(muhat = muhat, partial = g, eta = eta, x = x, model = model, eta0 = eta0)
   class(res) <- "NeuralGAM"
   return(res)
-
 }
 
 
 .onLoad <- function(libname, pkgname) {
   # set conda environment for tensorflow and keras
   envs <- reticulate::conda_list()
-  if (is.element("NeuralGAM-env", envs$name)){
+  if (is.element("NeuralGAM-env", envs$name)) {
     if (.isConda()) {
       print("Loading environment...")
       i <- which(envs$name == "NeuralGAM-env")
@@ -178,16 +175,12 @@ fit_NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 
     }
     Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
     Sys.setenv(RETICULATE_PYTHON = envs$python[i])
-  }
-  else{
+  } else {
     print("Set-up environment NeuralGAM-env not found...")
     installNeuralGAMDeps()
     envs <- reticulate::conda_list()
     i <- which(envs$name == "NeuralGAM-env")
     Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
     Sys.setenv(RETICULATE_PYTHON = envs$python[i])
-
   }
-
-
 }

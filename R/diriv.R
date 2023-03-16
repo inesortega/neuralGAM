@@ -12,18 +12,18 @@
 #' @examples
 #' der <- diriv("gaussian", muhat)
 #' der <- diriv("binomial", muhat)
-diriv <- function(family, muhat){
+diriv <- function(family, muhat) {
   # Calculates the derivative of link function
 
-  if(family == "gaussian"){ # Identity
+  if (family == "gaussian") { # Identity
     out <- 1
   }
-  if(family == "binomial"){ # Derivative Logit
+  if (family == "binomial") { # Derivative Logit
     prob <- muhat
     prob[prob >= 0.999] <- 0.999
     prob[prob <= 0.001] <- 0.001
     prob <- prob * (1.0 - prob)
-    out <- 1.0/prob
+    out <- 1.0 / prob
   }
   return(out)
 }

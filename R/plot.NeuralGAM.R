@@ -14,7 +14,6 @@
 #' @export
 plot.NeuralGAM <- function(x = object, y = NULL,
                            ylab = NULL, ...) {
-
   library(ggplot2)
   library(gridExtra)
 
@@ -25,17 +24,14 @@ plot.NeuralGAM <- function(x = object, y = NULL,
 
   plots_list <- list()
 
-  for(i in 1:ncol(x)){
-
-    p <-ggplot2::ggplot() +
-      ggplot2::geom_line(aes(x = x[, i], y = y[,i]), lwd = 0.8) +
+  for (i in 1:ncol(x)) {
+    p <- ggplot2::ggplot() +
+      ggplot2::geom_line(aes(x = x[, i], y = y[, i]), lwd = 0.8) +
       ggplot2::labs(x = bquote(X[i]), y = bquote(f(X[i]))) +
       ggplot2::theme_light()
 
     plots_list[[i]] <- ggplot_gtable(ggplot_build(p))
   }
 
-  return(gridExtra::grid.arrange(grobs = plots_list, ncol=ncol(x)))
-
+  return(gridExtra::grid.arrange(grobs = plots_list, ncol = ncol(x)))
 }
-

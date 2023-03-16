@@ -1,4 +1,4 @@
-#'Build and compile a single Neural Network
+#' Build and compile a single Neural Network
 #'
 #'
 #' @description Builds and compiles a neural network using the keras library.
@@ -19,19 +19,22 @@
 #' @examples
 #'
 #' # Build a Shallow NN with 32 hidden units:
-#' model <- build_feature_NN(num_units=32, learning_rate=0.001,
-#' kernel_initializer="glorot_normal")
+#' model <- build_feature_NN(
+#'   num_units = 32, learning_rate = 0.001,
+#'   kernel_initializer = "glorot_normal"
+#' )
 #'
 #' # Build a Deep NN with three hidden layers with 32 hidden units on each layer
-#' model <- build_feature_NN(num_units=list(32,32,32),
-#' learning_rate=0.001, kernel_initializer="glorot_normal")
+#' model <- build_feature_NN(
+#'   num_units = list(32, 32, 32),
+#'   learning_rate = 0.001, kernel_initializer = "glorot_normal"
+#' )
 #'
 #' @references
 #' Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980.
 
-build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer="glorot_normal", ...){
-
- if (missing(num_units)){
+build_feature_NN <- function(num_units, learning_rate = 0.001, kernel_initializer = "glorot_normal", ...) {
+  if (missing(num_units)) {
     stop("Argument \"num_units\" is missing, with no default")
   }
 
@@ -47,11 +50,11 @@ build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer=
   model %>% keras::layer_dense(units = 1, input_shape = c(1))
 
   if (is.list(num_units)) {
-    for (units in num_units){
-      model %>% keras::layer_dense(units = units, kernel_initializer = kernel_initializer, activation = 'relu', ...)
+    for (units in num_units) {
+      model %>% keras::layer_dense(units = units, kernel_initializer = kernel_initializer, activation = "relu", ...)
     }
   } else {
-    model %>% keras::layer_dense(units = num_units, kernel_initializer = kernel_initializer, activation = 'relu', ...)
+    model %>% keras::layer_dense(units = num_units, kernel_initializer = kernel_initializer, activation = "relu", ...)
   }
 
   model %>% keras::layer_dense(units = 1)
@@ -60,9 +63,8 @@ build_feature_NN <- function(num_units, learning_rate=0.001, kernel_initializer=
 
 
   model %>% compile(
-    loss = 'mean_squared_error',
+    loss = "mean_squared_error",
     optimizer = adam
   )
   return(model)
 }
-

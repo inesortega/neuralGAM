@@ -15,12 +15,10 @@
 #' @examples pred <- predict(ngam, X_test, "gaussian")
 #' y <- pred$y
 #' eta <- pred$eta
-
 predict.NeuralGAM <- function(ngam, x, family = "gaussian", ...) {
+  f <- x * 0
 
-  f <- x*0
-
-  for(i in 1:ncol(x)){
+  for (i in 1:ncol(x)) {
     f[, i] <- ngam$model[[i]] %>% predict(x[, i])
   }
 

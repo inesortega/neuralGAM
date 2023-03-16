@@ -20,11 +20,10 @@ installNeuralGAMDeps <- function() {
   conda <- reticulate::conda_binary("auto")
   message("Creating environment")
 
-  if (.isMacARM()){
-    channels = "apple"
+  if (.isMacARM()) {
+    channels <- "apple"
     print("Adding APPLE channel to conda...")
-  }
-  else{
+  } else {
     channel <- NULL
   }
   status <- tryCatch(
@@ -42,23 +41,29 @@ installNeuralGAMDeps <- function() {
     stop("Error in Miniconda Installation.", call. = FALSE)
   }
 
-  if(.isMacARM()){
+  if (.isMacARM()) {
     # Workaround to install specific versions of tensorflow-macos and tensorflow-metal
     # https://developer.apple.com/forums/thread/721619
     message("Installing tensorflow for MAC ARM")
     status2 <- tryCatch(
-      reticulate::py_install(c("tensorflow-deps==2.8.0", "tensorflow-macos==2.8.0",
-                               "tensorflow-metal==0.4.0", "tensorflow==2.8.0"),
-                             method="conda",
-                             conda = conda,
-                             envname = "NeuralGAM-env"),
+      reticulate::py_install(
+        c(
+          "tensorflow-deps==2.8.0", "tensorflow-macos==2.8.0",
+          "tensorflow-metal==0.4.0", "tensorflow==2.8.0"
+        ),
+        method = "conda",
+        conda = conda,
+        envname = "NeuralGAM-env"
+      ),
       error = function(e) {
         return(TRUE)
       }
     )
     if (isTRUE(status2)) {
       stop(
-        "Error during tensorflow installation.",call. = FALSE)
+        "Error during tensorflow installation.",
+        call. = FALSE
+      )
     }
   }
 
@@ -76,7 +81,9 @@ installNeuralGAMDeps <- function() {
   )
   if (isTRUE(status3)) {
     stop(
-      "Error during keras installation.",call. = FALSE)
+      "Error during keras installation.",
+      call. = FALSE
+    )
   }
 
   message("Installation complete!")
@@ -85,7 +92,8 @@ installNeuralGAMDeps <- function() {
 
 .isConda <- function() {
   conda <- tryCatch(
-    reticulate::conda_binary("auto"), error = function(e) NULL
+    reticulate::conda_binary("auto"),
+    error = function(e) NULL
   )
   !is.null(conda)
 }
@@ -102,6 +110,5 @@ installNeuralGAMDeps <- function() {
 
 .isMacARM <- function() {
   sys_info <- Sys.info()
-  return (sys_info[["sysname"]] == "Darwin" && sys_info[["machine"]] == "arm64")
+  return(sys_info[["sysname"]] == "Darwin" && sys_info[["machine"]] == "arm64")
 }
-

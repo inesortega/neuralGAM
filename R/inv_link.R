@@ -13,23 +13,22 @@
 #' @examples
 #' eta <- inv_link("gaussian", muhat)
 #' eta <- inv_link("binomial", muhat)
-inv_link <- function(family, muhat){
-
-  if (missing(family)){
+inv_link <- function(family, muhat) {
+  if (missing(family)) {
     stop("Argument \"family\" is missing, with no default")
   }
-  if (missing(muhat)){
+  if (missing(muhat)) {
     stop("Argument \"muhat\" is missing, with no default")
   }
 
-  if(family == "gaussian"){
-    out <-  muhat
+  if (family == "gaussian") {
+    out <- muhat
   }
-  if(family == "binomial"){
+  if (family == "binomial") {
     d <- 1 - muhat
     d[d <= 0.001] <- 0.001
     d[d >= 0.999] <- 0.999
-    out <- log(muhat/d)
+    out <- log(muhat / d)
   }
 
   return(out)

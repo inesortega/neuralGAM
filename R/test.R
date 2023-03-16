@@ -13,31 +13,29 @@
 #' 2X_j \hspace{1.3cm} \text{ if } j=2 \\
 #' \sin{X_j} \hspace{1cm} \text{ if } j=3,
 #' \end{cases}
-#'}
+#' }
 #' \eqn{\alpha = 2}, and covariates \eqn{X_1, X_2, X_3} drawn from an uniform
 #' distribution \eqn{U\left[-2.5, 2.5\right]} and response variable
 #' \eqn{Y = \eta + \varepsilon} where \eqn{\varepsilon} is an homoscedastic error term
 #' distributed in accordance to a \eqn{N(0,\sigma(x)}
 #'
-#'@name test
-#'@docType data
-#'@usage data(test)
-#'@author Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
-#'@format \code{test} is a data frame with 7
-#'variables (columns).
+#' @name test
+#' @docType data
+#' @usage data(test)
+#' @author Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+#' @format \code{test} is a data frame with 7
+#' variables (columns).
 #' The first three columns of the data frame contains the covariates X0, X1, X2.
 #' The next three columns of the data frame contains the corresponding f(X) for
 #' each covariate
 #' The last column of the data frame contains the response variable.
 #' contains the response variable
-#'@examples
+#' @examples
 #' library(NeuralGAM)
 #' data(test)
 #' head(test)
 #'
-#' X_train <- test[c('X0','X1','X2')]
-#' fs_train <- test[c('f(X0)','f(X1)','f(X2)')]
-#' y_train <- test['y']
-
-
+#' X_train <- test[c("X0", "X1", "X2")]
+#' fs_train <- test[c("f(X0)", "f(X1)", "f(X2)")]
+#' y_train <- test["y"]
 NULL

@@ -14,6 +14,7 @@ Encoding: UTF-8
 Imports:
   tensorflow,
   keras,
-  ggplot2
+  ggplot2,
+  gridExtra
 SystemRequirements: Python (>= 2.7.0), TensorFlow (https://www.tensorflow.org/)
 RoxygenNote: 7.2.3

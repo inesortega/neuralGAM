@@ -12,13 +12,13 @@
 #'
 #' @examples
 #' eta <- link("gaussian", muhat)
-link <- function(family, muhat){
+link <- function(family, muhat) {
   # Applies the link function
 
-  if(family == "gaussian"){
+  if (family == "gaussian") {
     out <- muhat
   }
-  if(family == "binomial"){
+  if (family == "binomial") {
     muhat[muhat > 10] <- 10
     muhat[muhat < -10] <- -10
     out <- exp(muhat) / (1 + exp(muhat))

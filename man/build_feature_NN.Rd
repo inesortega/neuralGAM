@@ -12,16 +12,36 @@ build_feature_NN(
 )
 }
 \arguments{
-\item{num_units}{number of hidden units (for shallow neural networks) or
-list of hidden units per layer}
+\item{num_units}{defines the architecture of each neural network:
+* `numeric` value: for shallow neural networks, number of hidden units.
+* `list()` of `numeric` values: number of hidden units on each layer
+(i.e. \code{list(32,32,32)} generates a DNN
+with three layers and \code{32} neurons per layer).}
 
-\item{learning_rate}{learning rate for the Adam optimizer (Kingma, 2014).
-Defaults to \code{0.001}}
+\item{learning_rate}{learning rate for the neural network optimizer.}
 
 \item{kernel_initializer}{kernel initializer for the Dense layers.
-Defaults to Xavier Initializer}
+Defaults to Xavier Initializer (\code{glorot_normal}).}
 
-\item{\ldots}{Other options.}
+\item{...}{
+  Arguments passed on to \code{\link[=fit_NeuralGAM]{fit_NeuralGAM}}
+  \describe{
+    \item{\code{x}}{A data frame containing all the covariates.}
+    \item{\code{y}}{A numeric vector with the response values.}
+    \item{\code{family}}{A description of the link function used in the model
+(defaults to \code{gaussian})
+ * `gaussian` for linear regression.
+ * `binomial` for logistic regression.}
+    \item{\code{w_train}}{optional sample weights.}
+    \item{\code{bf_threshold}}{convergence criterion of the backfitting algorithm.
+Defaults to \code{0.001}}
+    \item{\code{ls_threshold}}{convergence criterion of the local scoring algorithm.
+Defaults to \code{0.1}}
+    \item{\code{max_iter_backfitting}}{an integer with the maximum number of iterations
+of the backfitting algorithm. Defaults to \code{10}.}
+    \item{\code{max_iter_ls}}{an integer with the maximum number of iterations of the
+local scoring Algorithm. Defaults to \code{10}.}
+  }}
 }
 \value{
 compiled Neural Network

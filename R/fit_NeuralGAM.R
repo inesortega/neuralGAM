@@ -5,26 +5,32 @@
 #' backfitting and local scoring algorithms to fit a weighted additive model
 #' using neural networks as function approximators. The adjustment of the
 #' dependent variable and the weights is determined by the distribution of the
-#' response \code{"y"} (\code{"gaussian"} or #' \code{"binomial"}).
+#' response \code{y} (\code{gaussian} or \code{binomial}).
 #' @author Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
 #' @param x A data frame containing all the covariates.
 #' @param y A numeric vector with the response values.
-#' @param num_units number of hidden units (for shallow neural networks) or
-#' list of hidden units per layer (i.e. \code{"list(32,32,32)"} generates a DNN
-#' with three layers and \code{32} neurons per layer).
-#' @param learning_rate learning rate for the neural network optimizer
-#' @param family A description of the link function used in the model:
-#' \code{"gaussian"} or \code{"binomial"}
-#' Defaults to \code{"gaussian"}
+#' @param num_units defines the architecture of each neural network:
+#'  * `numeric` value: for shallow neural networks, number of hidden units.
+#'  * `list()` of `numeric` values: number of hidden units on each layer
+#'  (i.e. \code{list(32,32,32)} generates a DNN
+#'  with three layers and \code{32} neurons per layer).
+#' @param family A description of the link function used in the model
+#' (defaults to \code{gaussian})
+#'  * `gaussian` for linear regression.
+#'  * `binomial` for logistic regression.
+#' @param learning_rate learning rate for the neural network optimizer.
+#' @param kernel_initializer kernel initializer for the Dense layers.
+#' Defaults to Xavier Initializer (\code{glorot_normal}).
 #' @param w_train optional sample weights.
 #' @param bf_threshold convergence criterion of the backfitting algorithm.
-#' Defaults to \code{0.00001}
+#' Defaults to \code{0.001}
 #' @param ls_threshold convergence criterion of the local scoring algorithm.
 #' Defaults to \code{0.1}
 #' @param max_iter_backfitting an integer with the maximum number of iterations
 #' of the backfitting algorithm. Defaults to \code{10}.
 #' @param max_iter_ls an integer with the maximum number of iterations of the
 #' local scoring Algorithm. Defaults to \code{10}.
+#' @param \ldots Other parameters.
 #' @return NeuralGAM object. See  \code{summary(ngam)} for details
 #' @export
 #'
@@ -36,15 +42,14 @@
 #' X_train <- train[c('X0','X1','X2')]
 #' y_train <- train$y
 #'
-#' ngam <- fit_NeuralGAM(num_units = 1024, learning_rate = 0.001, x=X_train,
-#'               y = y_train, family = "gaussian", bf_threshold=0.00001,
-#'               ls_threshold = 0.1, max_iter_backfitting = 10,
-#'               max_iter_ls=10)
+#' ngam <- fit_NeuralGAM(x=X_train, y = y_train, num_units = 1024,family = "gaussian",
+#'                       learning_rate = 0.001, bf_threshold=0.001,
+#'                       max_iter_backfitting = 10,max_iter_ls=10)
 #'
-fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
-                          w_train = NULL, bf_threshold=0.00001,
-                          ls_threshold = 0.1, max_iter_backfitting = 10,
-                          max_iter_ls=10){
+fit_NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.001,
+                          kernel_initializer = "glorot_normal", w_train = NULL,
+                          bf_threshold=0.001, ls_threshold = 0.1,
+                          max_iter_backfitting = 10,max_iter_ls=10, ...){
 
   #Initialization
   converged <- FALSE
@@ -68,7 +73,7 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
 
   model <- list()
   for (k in 1:nvars){
-    model[[k]] <- build_feature_NN(num_units, learning_rate)
+    model[[k]] <- build_feature_NN(num_units, learning_rate, ...)
     print(paste("Model ", k ," Summary "))
     model[[k]] %>% summary()
   }
@@ -163,7 +168,7 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
   # set conda environment for tensorflow and keras
   envs <- reticulate::conda_list()
   if (is.element("NeuralGAM-env", envs$name)){
-    if (.isConda()) {
+    if (.isConda() && .isTensorFlow()) {
       print("Loading environment...")
       i <- which(envs$name == "NeuralGAM-env")
       tryCatch(
@@ -175,7 +180,7 @@ fit_NeuralGAM <- function(x, y, num_units, learning_rate, family = "gaussian",
     Sys.setenv(RETICULATE_PYTHON = envs$python[i])
   }
   else{
-    print("Environment NeuralGAM-env not found... setting up tensorflow and keras")
+    print("Set-up environment NeuralGAM-env not found...")
     installNeuralGAMDeps()
     envs <- reticulate::conda_list()
     i <- which(envs$name == "NeuralGAM-env")

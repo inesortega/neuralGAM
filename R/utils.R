@@ -19,10 +19,19 @@ installNeuralGAMDeps <- function() {
   }
   conda <- reticulate::conda_binary("auto")
   message("Creating environment")
+
+  if (.isMacARM()){
+    channels = "apple"
+    print("Adding APPLE channel to conda...")
+  }
+  else{
+    channel <- NULL
+  }
   status <- tryCatch(
     reticulate::conda_create(
       envname = "NeuralGAM-env",
-      packages = "python==3.9.6"
+      packages = "python==3.9",
+      channels = channels
     ),
     error = function(e) {
       return(TRUE)
@@ -38,7 +47,8 @@ installNeuralGAMDeps <- function() {
     # https://developer.apple.com/forums/thread/721619
     message("Installing tensorflow for MAC ARM")
     status2 <- tryCatch(
-      reticulate::py_install(c("tensorflow-macos==2.9", "tensorflow-metal==0.5.0"),
+      reticulate::py_install(c("tensorflow-deps==2.8.0", "tensorflow-macos==2.8.0",
+                               "tensorflow-metal==0.4.0", "tensorflow==2.8.0"),
                              method="conda",
                              conda = conda,
                              envname = "NeuralGAM-env"),
@@ -50,8 +60,6 @@ installNeuralGAMDeps <- function() {
       stop(
         "Error during tensorflow installation.",call. = FALSE)
     }
-
-
   }
 
   message("Installing keras...")
@@ -80,6 +88,10 @@ installNeuralGAMDeps <- function() {
     reticulate::conda_binary("auto"), error = function(e) NULL
   )
   !is.null(conda)
+  tryCatch(
+    udpate <- reticulate::conda_update("auto"), error = function(e) NULL
+  )
+  !is.null(update)
 }
 
 

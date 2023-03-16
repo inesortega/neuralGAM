@@ -8,13 +8,15 @@ fit_NeuralGAM(
   x,
   y,
   num_units,
-  learning_rate,
   family = "gaussian",
+  learning_rate = 0.001,
+  kernel_initializer = "glorot_normal",
   w_train = NULL,
-  bf_threshold = 1e-05,
+  bf_threshold = 0.001,
   ls_threshold = 0.1,
   max_iter_backfitting = 10,
-  max_iter_ls = 10
+  max_iter_ls = 10,
+  ...
 )
 }
 \arguments{
@@ -22,20 +24,26 @@ fit_NeuralGAM(
 
 \item{y}{A numeric vector with the response values.}
 
-\item{num_units}{number of hidden units (for shallow neural networks) or
-list of hidden units per layer (i.e. \code{"list(32,32,32)"} generates a DNN
+\item{num_units}{defines the architecture of each neural network:
+* `numeric` value: for shallow neural networks, number of hidden units.
+* `list()` of `numeric` values: number of hidden units on each layer
+(i.e. \code{list(32,32,32)} generates a DNN
 with three layers and \code{32} neurons per layer).}
 
-\item{learning_rate}{learning rate for the neural network optimizer}
+\item{family}{A description of the link function used in the model
+(defaults to \code{gaussian})
+ * `gaussian` for linear regression.
+ * `binomial` for logistic regression.}
 
-\item{family}{A description of the link function used in the model:
-\code{"gaussian"} or \code{"binomial"}
-Defaults to \code{"gaussian"}}
+\item{learning_rate}{learning rate for the neural network optimizer.}
+
+\item{kernel_initializer}{kernel initializer for the Dense layers.
+Defaults to Xavier Initializer (\code{glorot_normal}).}
 
 \item{w_train}{optional sample weights.}
 
 \item{bf_threshold}{convergence criterion of the backfitting algorithm.
-Defaults to \code{0.00001}}
+Defaults to \code{0.001}}
 
 \item{ls_threshold}{convergence criterion of the local scoring algorithm.
 Defaults to \code{0.1}}
@@ -45,6 +53,8 @@ of the backfitting algorithm. Defaults to \code{10}.}
 
 \item{max_iter_ls}{an integer with the maximum number of iterations of the
 local scoring Algorithm. Defaults to \code{10}.}
+
+\item{\ldots}{Other parameters.}
 }
 \value{
 NeuralGAM object. See  \code{summary(ngam)} for details
@@ -55,7 +65,7 @@ neural network to attend to each to each feature in x, using the
 backfitting and local scoring algorithms to fit a weighted additive model
 using neural networks as function approximators. The adjustment of the
 dependent variable and the weights is determined by the distribution of the
-response \code{"y"} (\code{"gaussian"} or #' \code{"binomial"}).
+response \code{y} (\code{gaussian} or \code{binomial}).
 }
 \examples{
 
@@ -65,10 +75,9 @@ head(train)
 X_train <- train[c('X0','X1','X2')]
 y_train <- train$y
 
-ngam <- fit_NeuralGAM(num_units = 1024, learning_rate = 0.001, x=X_train,
-              y = y_train, family = "gaussian", bf_threshold=0.00001,
-              ls_threshold = 0.1, max_iter_backfitting = 10,
-              max_iter_ls=10)
+ngam <- fit_NeuralGAM(x=X_train, y = y_train, num_units = 1024,family = "gaussian",
+                      learning_rate = 0.001, bf_threshold=0.001,
+                      max_iter_backfitting = 10,max_iter_ls=10)
 
 }
 \author{

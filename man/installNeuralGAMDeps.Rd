@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{installNeuralGAMDeps}
 \alias{installNeuralGAMDeps}
-\title{installNeuralGAMDeps}
+\title{Installs a custom conda environment with tensorflow and keras}
 \usage{
 installNeuralGAMDeps()
 }

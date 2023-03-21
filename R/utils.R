@@ -1,6 +1,10 @@
-#' installNeuralGAMDeps
+#' Installs a custom conda environment with tensorflow and keras
 #' @description Installs a custom conda environment with tensorflow and keras
 #'
+#' @importFrom reticulate miniconda_path install_miniconda conda_create
+#' py_install conda_binary py_module_available
+#' @importFrom keras install_keras
+#' @export
 installNeuralGAMDeps <- function() {
   if ((!.isConda())) {
     message("=== No miniconda detected, installing it using reticulate R package")
@@ -48,8 +52,10 @@ installNeuralGAMDeps <- function() {
     status2 <- tryCatch(
       reticulate::py_install(
         c(
-          "tensorflow-deps==2.8.0", "tensorflow-macos==2.8.0",
-          "tensorflow-metal==0.4.0", "tensorflow==2.8.0"
+          "tensorflow-deps==2.8.0",
+          "tensorflow-macos==2.8.0",
+          "tensorflow-metal==0.4.0",
+          "tensorflow==2.8.0"
         ),
         method = "conda",
         conda = conda,
@@ -60,10 +66,8 @@ installNeuralGAMDeps <- function() {
       }
     )
     if (isTRUE(status2)) {
-      stop(
-        "Error during tensorflow installation.",
-        call. = FALSE
-      )
+      stop("Error during tensorflow installation.",
+           call. = FALSE)
     }
   }
 
@@ -80,10 +84,8 @@ installNeuralGAMDeps <- function() {
     }
   )
   if (isTRUE(status3)) {
-    stop(
-      "Error during keras installation.",
-      call. = FALSE
-    )
+    stop("Error during keras installation.",
+         call. = FALSE)
   }
 
   message("Installation complete!")
@@ -93,9 +95,10 @@ installNeuralGAMDeps <- function() {
 .isConda <- function() {
   conda <- tryCatch(
     reticulate::conda_binary("auto"),
-    error = function(e) NULL
+    error = function(e)
+      NULL
   )
-  !is.null(conda)
+  ! is.null(conda)
 }
 
 
@@ -110,5 +113,6 @@ installNeuralGAMDeps <- function() {
 
 .isMacARM <- function() {
   sys_info <- Sys.info()
-  return(sys_info[["sysname"]] == "Darwin" && sys_info[["machine"]] == "arm64")
+  return(sys_info[["sysname"]] == "Darwin" &&
+           sys_info[["machine"]] == "arm64")
 }

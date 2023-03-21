@@ -20,9 +20,6 @@ for the given fitted values
 Applies the link function according to the distribution family
 specified in the \code{"family"} parameter.
 }
-\examples{
-eta <- link("gaussian", muhat)
-}
 \author{
-Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+Ines Ortega-Fernandez, Marta Sestelo.
 }

@@ -12,11 +12,9 @@ build_feature_NN(
 )
 }
 \arguments{
-\item{num_units}{defines the architecture of each neural network:
-* `numeric` value: for shallow neural networks, number of hidden units.
-* `list()` of `numeric` values: number of hidden units on each layer
-(i.e. \code{list(32,32,32)} generates a DNN
-with three layers and \code{32} neurons per layer).}
+\item{num_units}{defines the architecture of each neural network. Use a \code{numeric}
+value for shallow neural networks, where \code{num_units} defines the number of hidden units, and
+a \code{list()} of \code{numeric} values, where each element defines the number of hidden units on each hidden layer.}
 
 \item{learning_rate}{learning rate for the neural network optimizer.}
 
@@ -24,14 +22,13 @@ with three layers and \code{32} neurons per layer).}
 Defaults to Xavier Initializer (\code{glorot_normal}).}
 
 \item{...}{
-  Arguments passed on to \code{\link[=fit_NeuralGAM]{fit_NeuralGAM}}
+  Arguments passed on to \code{\link[=NeuralGAM]{NeuralGAM}}
   \describe{
     \item{\code{x}}{A data frame containing all the covariates.}
     \item{\code{y}}{A numeric vector with the response values.}
     \item{\code{family}}{A description of the link function used in the model
-(defaults to \code{gaussian})
- * `gaussian` for linear regression.
- * `binomial` for logistic regression.}
+(defaults to \code{gaussian}). Set \code{family="gaussian"} for linear
+regression and \code{family="binomial"} for logistic regression.}
     \item{\code{w_train}}{optional sample weights.}
     \item{\code{bf_threshold}}{convergence criterion of the backfitting algorithm.
 Defaults to \code{0.001}}
@@ -55,20 +52,9 @@ can be built by specifying the size of each hidden layer in the
  \code{"num_units"} parameter. For example, \code{"list(32,32,32)"} generates
  a DNN with three layers and 32 neurons per layer.
 }
-\examples{
-
-# Build a Shallow NN with 32 hidden units:
-model <- build_feature_NN(num_units=32, learning_rate=0.001,
-kernel_initializer="glorot_normal")
-
-# Build a Deep NN with three hidden layers with 32 hidden units on each layer
-model <- build_feature_NN(num_units=list(32,32,32),
-learning_rate=0.001, kernel_initializer="glorot_normal")
-
-}
 \references{
 Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980.
 }
 \author{
-Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+Ines Ortega-Fernandez, Marta Sestelo.
 }

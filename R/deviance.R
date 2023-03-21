@@ -2,17 +2,14 @@
 #'
 #' @description Computes the deviance of the model according to the distribution
 #' family specified in the \code{"family"} parameter.
-#' @author Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+#' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @param muhat current estimation of the response variable
 #' @param y response variable
 #' @param family A description of the link function used in the model:
 #' \code{"gaussian"} or \code{"binomial"}
 #' @return the deviance of the model
-
+#' @export
 #' @usage deviance(muhat, y, family)
-#' @examples
-#' dev <- deviance(muhat, y, "gaussian")
-#' dev <- deviance(muhat, y, "binomial")
 deviance <- function(muhat, y, family) {
   if (missing(muhat)) {
     stop("Argument \"muhat\" is missing, with no default")

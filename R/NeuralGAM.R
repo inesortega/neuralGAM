@@ -5,19 +5,16 @@
 #' backfitting and local scoring algorithms to fit a weighted additive model
 #' using neural networks as function approximators. The adjustment of the
 #' dependent variable and the weights is determined by the distribution of the
-#' response \code{y} (\code{gaussian} or \code{binomial}).
-#' @author Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+#' response \code{y}, adjusted by the \code{family} parameter.
+#' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @param x A data frame containing all the covariates.
 #' @param y A numeric vector with the response values.
-#' @param num_units defines the architecture of each neural network:
-#'  * `numeric` value: for shallow neural networks, number of hidden units.
-#'  * `list()` of `numeric` values: number of hidden units on each layer
-#'  (i.e. \code{list(32,32,32)} generates a DNN
-#'  with three layers and \code{32} neurons per layer).
+#' @param num_units defines the architecture of each neural network. Use a \code{numeric}
+#' value for shallow neural networks, where \code{num_units} defines the number of hidden units, and
+#' a \code{list()} of \code{numeric} values, where each element defines the number of hidden units on each hidden layer.
 #' @param family A description of the link function used in the model
-#' (defaults to \code{gaussian})
-#'  * `gaussian` for linear regression.
-#'  * `binomial` for logistic regression.
+#' (defaults to \code{gaussian}). Set \code{family="gaussian"} for linear
+#' regression and \code{family="binomial"} for logistic regression.
 #' @param learning_rate learning rate for the neural network optimizer.
 #' @param kernel_initializer kernel initializer for the Dense layers.
 #' Defaults to Xavier Initializer (\code{glorot_normal}).
@@ -32,6 +29,11 @@
 #' local scoring Algorithm. Defaults to \code{10}.
 #' @param \ldots Other parameters.
 #' @return NeuralGAM object. See  \code{summary(ngam)} for details
+#' @importFrom keras fit
+#' @importFrom keras compile
+#' @importFrom stats predict
+#' @importFrom reticulate conda_list use_condaenv
+#' @importFrom magrittr %>%
 #' @export
 #'
 #' @examples
@@ -42,13 +44,18 @@
 #' X_train <- train[c("X0", "X1", "X2")]
 #' y_train <- train$y
 #'
-#' ngam <- fit_NeuralGAM(
+#' ngam <- NeuralGAM(
 #'   x = X_train, y = y_train, num_units = 1024, family = "gaussian",
 #'   learning_rate = 0.001, bf_threshold = 0.001,
 #'   max_iter_backfitting = 10, max_iter_ls = 10
 #' )
 #'
-fit_NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.001,
+#' plot(ngam)
+#'
+#'
+#'
+#'
+NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.001,
                           kernel_initializer = "glorot_normal", w_train = NULL,
                           bf_threshold = 0.001, ls_threshold = 0.1,
                           max_iter_backfitting = 10, max_iter_ls = 10, ...) {
@@ -76,7 +83,7 @@ fit_NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 
   for (k in 1:nvars) {
     model[[k]] <- build_feature_NN(num_units, learning_rate, ...)
     print(paste("Model ", k, " Summary "))
-    model[[k]] %>% summary()
+    model[[k]]$summary()
   }
 
 
@@ -155,7 +162,7 @@ fit_NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 
     }
     it <- it + 1
   }
-  res <- list(muhat = muhat, partial = g, eta = eta, x = x, model = model, eta0 = eta0)
+  res <- list(muhat = muhat, partial = g, eta = eta, x = x, model = model, eta0 = eta0, family = family)
   class(res) <- "NeuralGAM"
   return(res)
 }
@@ -166,7 +173,6 @@ fit_NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 
   envs <- reticulate::conda_list()
   if (is.element("NeuralGAM-env", envs$name)) {
     if (.isConda()) {
-      print("Loading environment...")
       i <- which(envs$name == "NeuralGAM-env")
       tryCatch(
         expr = reticulate::use_condaenv("NeuralGAM-env", required = TRUE),
@@ -176,7 +182,6 @@ fit_NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 
     Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
     Sys.setenv(RETICULATE_PYTHON = envs$python[i])
   } else {
-    print("Set-up environment NeuralGAM-env not found...")
     installNeuralGAMDeps()
     envs <- reticulate::conda_list()
     i <- which(envs$name == "NeuralGAM-env")

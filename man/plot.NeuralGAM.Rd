@@ -19,11 +19,8 @@
 Returns the partial effects plot.
 }
 \description{
-This function plots the learned partial effects by the NeuralGAM object.
-}
-\examples{
-plot(ngam)
+Visualization of \code{NeuralGAM} object. Plots the learned partial effects by the NeuralGAM object.
 }
 \author{
-Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+Ines Ortega-Fernandez, Marta Sestelo.
 }

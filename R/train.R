@@ -22,7 +22,7 @@
 #' @name train
 #' @docType data
 #' @usage data(train)
-#' @author Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+#' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @format \code{train} is a data frame with 7
 #' variables (columns).
 #' The first three columns of the data frame contains the covariates \eqn{X_1, X_2, X_3}

@@ -2,8 +2,15 @@ Package: NeuralGAM
 Type: Package
 Title: NeuralGAM: interpretable Neural Network framework based on Generalized Additive Models 
 Version: 0.1.0
-Author: Ines Ortega-Fernandez, Marta Sestelo, Nora M. Villanueva
-Maintainer: Ines Ortega Fernandez <iortega@gradiant.org>
+Authors@R: c(person("Ines", "Ortega", role = c("aut", "cre"),
+                     email = "iortega@gradiant.org", 
+                     comment = c(ORCID = "0000-0002-8041-6860")),
+              person("Marta", "Sestelo", role = "aut",
+                      email = "sestelo@uvigo.es", 
+                      comment = c(ORCID = "0000-0003-4284-6509"))
+              )
+Author: Ines Ortega-Fernandez [aut, cre], Marta Sestelo [aut]
+Maintainer: Ines Ortega-Fernandez <iortega@gradiant.org>
 Description: NeuralGAM, a neural network based on Generalized Additive Models, which trains a different neural network to estimate the contribution
             of each feature to the response variable. The networks are trained independently leveraging the local scoring and backfitting algorithms 
             to ensure that the Generalized Additive Model converges and it is additive. 
@@ -15,6 +22,8 @@ Imports:
   tensorflow,
   keras,
   ggplot2,
-  gridExtra
-SystemRequirements: Python (>= 2.7.0), TensorFlow (https://www.tensorflow.org/)
+  patchwork,
+  magrittr,
+  reticulate
+SystemRequirements: Python (>= 3.9), TensorFlow (https://www.tensorflow.org/)
 RoxygenNote: 7.2.3

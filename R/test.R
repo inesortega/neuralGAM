@@ -22,7 +22,7 @@
 #' @name test
 #' @docType data
 #' @usage data(test)
-#' @author Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+#' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @format \code{test} is a data frame with 7
 #' variables (columns).
 #' The first three columns of the data frame contains the covariates X0, X1, X2.

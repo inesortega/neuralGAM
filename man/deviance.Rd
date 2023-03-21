@@ -21,10 +21,6 @@ the deviance of the model
 Computes the deviance of the model according to the distribution
 family specified in the \code{"family"} parameter.
 }
-\examples{
-dev <- deviance(muhat, y, "gaussian")
-dev <- deviance(muhat, y, "binomial")
-}
 \author{
-Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+Ines Ortega-Fernandez, Marta Sestelo.
 }

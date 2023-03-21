@@ -2,16 +2,14 @@
 #'
 #' @description Applies the link function according to the distribution family
 #' specified in the \code{"family"} parameter.
-#' @author Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+#' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @param family A description of the link function used in the model:
 #' \code{"gaussian"} or \code{"binomial"}
 #' @param muhat fitted values
-#'
+#' @export
 #' @return the link function specified by the \code{"family"} distribution
 #' for the given fitted values
-#'
-#' @examples
-#' eta <- link("gaussian", muhat)
+
 link <- function(family, muhat) {
   # Applies the link function
 

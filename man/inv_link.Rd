@@ -20,10 +20,6 @@ distribution for the given fitted values
 Computes the inverse of the link function according to the
 distribution family specified in the \code{"family"} parameter.
 }
-\examples{
-eta <- inv_link("gaussian", muhat)
-eta <- inv_link("binomial", muhat)
-}
 \author{
-Ines Ortega-Fernandez, Marta Sestelo and Nora M. Villanueva.
+Ines Ortega-Fernandez, Marta Sestelo.
 }

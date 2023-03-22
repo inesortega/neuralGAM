@@ -80,9 +80,12 @@ ngam <- NeuralGAM(
 
 plot(ngam)
 
-
-
-
+data(test)
+X_test <- test[c("X0", "X1", "X2")]
+# Obtain linear predictor
+eta <- predict(object = ngam, x = X_test, type = "link")
+# Obtain each component of the linear predictor separately on each column of a data.frame
+terms <- predict(object = ngam, x = X_test, type = "terms")
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.

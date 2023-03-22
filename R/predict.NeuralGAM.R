@@ -14,17 +14,6 @@
 #' @param \ldots Other options.
 #' @return Predicted values according to \code{type} parameter.
 #' @export
-#' @examples
-#' # Obtain linear predictor
-#' predict(object = ngam, x = x_test, type = "link")
-#' # Obtain each component of the linear predictor separately on each column of a data.frame
-#' predict(object = ngam, x = x_test, type = "terms")
-#' # Obtain only some terms
-#' predict(object = ngam, x = x_test, type = "terms", terms=c("X0", "X1"))
-#' # Obtain predictions on the scale of the response
-#' predict(object = ngam, x = x_test, type = "response")
-#' Obtain predictions from the training data
-#' predict(object = ngam, type = "response")
 predict.NeuralGAM <- function(object, x = NULL, type = "link", terms = NULL, ...) {
 
   ngam <- object

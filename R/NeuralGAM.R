@@ -52,9 +52,13 @@
 #'
 #' plot(ngam)
 #'
-#'
-#'
-#'
+#' data(test)
+#' X_test <- test[c("X0", "X1", "X2")]
+#' # Obtain linear predictor
+#' eta <- predict(object = ngam, x = X_test, type = "link")
+#' # Obtain each component of the linear predictor separately on each column of a data.frame
+#' terms <- predict(object = ngam, x = X_test, type = "terms")
+
 NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.001,
                           kernel_initializer = "glorot_normal", w_train = NULL,
                           bf_threshold = 0.001, ls_threshold = 0.1,

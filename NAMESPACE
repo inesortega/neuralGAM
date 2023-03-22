@@ -2,6 +2,7 @@
 
 S3method(plot,NeuralGAM)
 S3method(predict,NeuralGAM)
+S3method(print,NeuralGAM)
 export(NeuralGAM)
 export(deviance)
 export(installNeuralGAMDeps)

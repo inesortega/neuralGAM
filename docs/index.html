@@ -83,10 +83,12 @@
 <span><span class="va">y_train</span> <span class="op">&lt;-</span> <span class="va">train</span><span class="op">$</span><span class="va">y</span></span>
 <span></span>
 <span><span class="va">ngam</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/NeuralGAM.html">NeuralGAM</a></span><span class="op">(</span>num_units <span class="op">=</span> <span class="fl">1024</span>, learning_rate <span class="op">=</span> <span class="fl">0.0053</span>, x<span class="op">=</span><span class="va">X_train</span>,</span>
-<span>              y <span class="op">=</span> <span class="va">y_train</span>, family <span class="op">=</span> <span class="st">"gaussian"</span>, bf_threshold<span class="op">=</span><span class="fl">0.0001</span>,</span>
+<span>              y <span class="op">=</span> <span class="va">y_train</span>, family <span class="op">=</span> <span class="st">"gaussian"</span>, bf_threshold<span class="op">=</span><span class="fl">0.001</span>,</span>
 <span>              ls_threshold <span class="op">=</span> <span class="fl">0.1</span>, max_iter_backfitting <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>              max_iter_ls<span class="op">=</span><span class="fl">10</span><span class="op">)</span></span></code></pre>
 <p>You can then use the <code>plot</code> function to visualize the learnt partial effects:</p>
+<pre><code><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ngam</span><span class="op">)</span></span></code></pre>
+<p>To obtain predictions from new data, use the <code>predict</code> function:</p>
 <pre><code><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ngam</span><span class="op">)</span></span></code></pre>
 </div>
 </div>

@@ -1,25 +1,12 @@
 #' Short \code{NeuralGAM} summary
-#'
-#' \code{\link{NeuralGAM}} summary
+#' @description Default print statement for a NeuralGAM object. Prints
+#' the distribution family, model formula, intercept value, number of terms
+#' (neural networks), as well as neural network architecture.
 #' @param x \code{NeuralGAM} object.
 #' @param \ldots Other options.
 #' @return The printed output of the object
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @export
-#' @examples
-#' library(NeuralGAM)
-#' data(train)
-#' head(train)
-#' X_train <- train[c("X0", "X1", "X2")]
-#' y_train <- train$y
-#'
-#' ngam <- NeuralGAM(
-#'   x = X_train, y = y_train, num_units = 1024, family = "gaussian",
-#'   learning_rate = 0.001, bf_threshold = 0.001,
-#'   max_iter_backfitting = 10, max_iter_ls = 10
-#' )
-#' ngam
-
 
 print.NeuralGAM <- function(x = object, ...) {
   if (inherits(x, "NeuralGAM")) {
@@ -28,6 +15,7 @@ print.NeuralGAM <- function(x = object, ...) {
     cat("Class: NeuralGAM \n")
 
     # Print the object's contents
+    ngam <- x
 
     cat(paste("\nNumber of Neural Networks = ", ncol(ngam$x)), sep = " ")
     cat(paste("\nDistribution Family: ", ngam$family))

@@ -22,7 +22,7 @@ plot.NeuralGAM <- function(x = object, y = NULL,
   for (i in 1:ncol(x)) {
     p <- ggplot2::ggplot() +
       ggplot2::geom_line(ggplot2::aes(x = x[, i], y = f[, i])) +
-      ggplot2::labs(x=colnames(x)[i], y=paste("f(", colnames(x)[i], ")", sep="")) +
+      ggplot2::labs(x=colnames(x)[i], y=paste("s(", colnames(x)[i], ")", sep="")) +
       ggplot2::ggtitle(colnames(x)[i])
     plots_list[[i]] <- ggplot2::ggplot_gtable(ggplot2::ggplot_build(p))
   }

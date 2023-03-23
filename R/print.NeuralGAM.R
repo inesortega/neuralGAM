@@ -20,19 +20,15 @@ print.NeuralGAM <- function(x = object, ...) {
     cat(paste("\nNumber of Neural Networks = ", ncol(ngam$x)), sep = " ")
     cat(paste("\nDistribution Family: ", ngam$family))
 
-    fs <- paste("f(", colnames(ngam$x), ")", collapse=" + ", sep="")
+    fs <- paste("s(", colnames(ngam$x), ")", collapse=" + ", sep="")
     cat("\nFormula: y ~ ", paste(fs, collapse = "+"))
-    cat(paste("\nIntercept:", ngam$eta0))
+    cat(paste("\nIntercept:", round(ngam$eta0, 5)))
+    cat(paste("\nSample size:", nrow(ngam$x)))
     cat("\n\nArchitecture of each Neural Network: \n\n")
 
     # All the networks have the same architecture, print the first one
     m <- ngam$model[[1]]
     print(m)
-    # dims <- list()
-    # for(i in 2:(length(m$layers)-1)){
-    #   # get dimension of intermediate layers (discarding input and output layer)
-    #   dims <- append(dims, as.numeric(m$layers[[i]]$output$shape$as_list()[-1]))
-    # }
 
 
     invisible(x)

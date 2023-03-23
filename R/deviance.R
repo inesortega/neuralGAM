@@ -9,8 +9,8 @@
 #' \code{"gaussian"} or \code{"binomial"}
 #' @return the deviance of the model
 #' @export
-#' @usage deviance(muhat, y, family)
-deviance <- function(muhat, y, family) {
+#' @usage dev(muhat, y, family)
+dev <- function(muhat, y, family) {
   if (missing(muhat)) {
     stop("Argument \"muhat\" is missing, with no default")
   }

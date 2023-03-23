@@ -30,7 +30,7 @@
 #' @param \ldots Other parameters.
 #' @return NeuralGAM object. See  \code{summary(ngam)} for details
 #' @importFrom keras fit
-#' @importFrom keras compile
+#' @importFrom keras compile %>%
 #' @importFrom stats predict
 #' @importFrom reticulate conda_list use_condaenv
 #' @importFrom magrittr %>%
@@ -63,6 +63,9 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
                           kernel_initializer = "glorot_normal", w_train = NULL,
                           bf_threshold = 0.001, ls_threshold = 0.1,
                           max_iter_backfitting = 10, max_iter_ls = 10, ...) {
+
+  library(magrittr)
+
   # Initialization
   converged <- FALSE
   f <- x * 0
@@ -73,6 +76,11 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
   }
 
   nvars <- dim(f)[2]
+
+  epochs <- c()
+  mse <- c()
+  timestamp <- c()
+  model_i <- c()
 
   if (nvars == 0) stop("No terms available")
 
@@ -86,10 +94,7 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
   model <- list()
   for (k in 1:nvars) {
     model[[k]] <- build_feature_NN(num_units, learning_rate, ...)
-    print(paste("Model ", k, " Summary "))
-    model[[k]]$summary()
   }
-
 
   muhat <- mean(y)
   eta0 <- inv_link(family, muhat)
@@ -97,18 +102,18 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
   eta <- eta0 # initial estimation as the mean of y
   eta_prev <- eta0
 
-  dev_new <- deviance(muhat, y, family)
-
-  hat <- list()
+  dev_new <- dev(muhat, y, family)
 
   # Start local scoring algorithm
   while (!converged & (it <= max_iter_ls)) {
-    print(paste("ITER LOCAL SCORING", it))
 
     if (family == "gaussian") {
       Z <- y
       W <- w
     } else {
+
+      print(paste("ITER LOCAL SCORING", it))
+
       der <- diriv(family, muhat)
       Z <- eta + (y - muhat) * der
       W <- weight(w, muhat, family)
@@ -125,15 +130,23 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
 
         # Fit network k with x[k] towards residuals
         if (family == "gaussian") {
-          hat[[k]] <- model[[k]] %>% fit(x[, k], residuals, epochs = 1)
+          t <- Sys.time()
+          history <- model[[k]] %>% fit(x[, k], residuals, epochs = 1)
+
         } else {
           model[[k]] %>% compile(
             loss = "mean_squared_error",
             optimizer = optimizer_adam(learning_rate = learning_rate),
             loss_weights = list(W)
           )
-          hat[[k]] <- model[[k]] %>% fit(x[, k], residuals, epochs = 1, sample_weight = list(W))
+          t <- Sys.time()
+          history <- model[[k]] %>% fit(x[, k], residuals, epochs = 1, sample_weight = list(W))
         }
+
+        epochs <- c(epochs, it_back)
+        mse <- c(mse, history$metrics$loss)
+        timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
+        model_i <- c(model_i, k)
 
         # Update f with current learned function for predictor k
         f[, k] <- model[[k]] %>% predict(x[, k])
@@ -145,7 +158,6 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
       g <- data.frame(f)
       eta <- eta0 + rowSums(g)
 
-
       # compute the differences in the predictor at each iteration
       err <- sum((eta - eta_prev)**2) / sum(eta_prev**2)
       eta_prev <- eta
@@ -155,18 +167,22 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
 
     muhat <- link(family, eta)
     dev_old <- dev_new
-    dev_new <- deviance(muhat, y, family)
+    dev_new <- dev(muhat, y, family)
 
     dev_delta <- abs((dev_old - dev_new) / dev_old)
 
-    print(paste("ITERATION_LOCAL_SCORING", it, dev_delta))
     if ((dev_delta < ls_threshold) & (it > 0)) {
-      print("Z and f(x) converged...")
       converged <- TRUE
     }
     it <- it + 1
   }
-  res <- list(muhat = muhat, partial = g, eta = eta, x = x, model = model, eta0 = eta0, family = family)
+
+  stats <- data.frame(Model=model_i, Epoch=epochs,MSE=mse,
+                      Timestamp=timestamp)
+
+  res <- list(muhat = muhat, partial = g, eta = eta, x = x,
+              model = model, eta0 = eta0, family = family,
+              stats = stats)
   class(res) <- "NeuralGAM"
   return(res)
 }

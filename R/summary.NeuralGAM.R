@@ -10,10 +10,6 @@
 
 summary.NeuralGAM <- function(x = object, ...) {
   if (inherits(x, "NeuralGAM")) {
-
-    # Print the class name
-    cat("Class: NeuralGAM \n")
-
     # Print the object's contents
     ngam <- x
     print(ngam)

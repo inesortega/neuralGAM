@@ -65,6 +65,7 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
                           max_iter_backfitting = 10, max_iter_ls = 10, ...) {
 
   library(magrittr)
+  library(keras)
 
   # Initialization
   converged <- FALSE
@@ -144,7 +145,7 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
         }
 
         epochs <- c(epochs, it_back)
-        mse <- c(mse, history$metrics$loss)
+        mse <- c(mse, round(history$metrics$loss, 5))
         timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
         model_i <- c(model_i, k)
 
@@ -177,12 +178,13 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
     it <- it + 1
   }
 
-  stats <- data.frame(Model=model_i, Epoch=epochs,MSE=mse,
-                      Timestamp=timestamp)
+  stats <- data.frame(Timestamp=timestamp, Model=model_i, Epoch=epochs,MSE=mse)
+
+  mse <- mean((y - muhat)^2)
 
   res <- list(muhat = muhat, partial = g, eta = eta, x = x,
               model = model, eta0 = eta0, family = family,
-              stats = stats)
+              stats = stats, mse = mse)
   class(res) <- "NeuralGAM"
   return(res)
 }

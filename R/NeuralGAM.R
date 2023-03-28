@@ -196,13 +196,13 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
   if (is.element("NeuralGAM-env", envs$name)) {
     if (.isConda()) {
       i <- which(envs$name == "NeuralGAM-env")
+      Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
+      Sys.setenv(RETICULATE_PYTHON = envs$python[i])
       tryCatch(
         expr = reticulate::use_condaenv("NeuralGAM-env", required = TRUE),
         error = function(e) NULL
       )
     }
-    Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
-    Sys.setenv(RETICULATE_PYTHON = envs$python[i])
   } else {
     installNeuralGAMDeps()
     envs <- reticulate::conda_list()

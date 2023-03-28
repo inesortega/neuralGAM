@@ -4,14 +4,10 @@
 \alias{predict.NeuralGAM}
 \title{Produces predictions from a fitted \code{NeuralGAM} object}
 \usage{
-\method{predict}{NeuralGAM}(object, x = NULL, type = "link", terms = NULL, ...)
+\method{predict}{NeuralGAM}(object, newdata = NULL, type = "link", terms = NULL, ...)
 }
 \arguments{
 \item{object}{a fitted `NeuralGAM` object}
-
-\item{x}{A data frame or list containing the values of covariates at which
-predictions are required. If not provided, the function returns the predictions
-for the original training data.}
 
 \item{type}{when \code{type="link"} (default), the linear
 predictor is returned. When \code{type="terms"} each component of the linear
@@ -20,6 +16,10 @@ predictor is returned separately on each column of a \code{data.frame}. When
 
 \item{terms}{If \code{type="terms"}, then only results for the terms named
 in this list will be returned. If \code{NULL} then no terms are excluded (default).}
+
+\item{x}{A data frame or list containing the values of covariates at which
+predictions are required. If not provided, the function returns the predictions
+for the original training data.}
 
 \item{\ldots}{Other options.}
 }

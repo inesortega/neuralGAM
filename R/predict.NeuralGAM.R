@@ -2,7 +2,7 @@
 #' @description Takes a fitted \code{NeuralGAM} object produced by
 #' \code{NeuralGAM()} and produces predictions given a new set of values for the model covariates.
 #' @param object a fitted `NeuralGAM` object
-#' @param x A data frame or list containing the values of covariates at which
+#' @param newdata A data frame or list containing the values of covariates at which
 #' predictions are required. If not provided, the function returns the predictions
 #' for the original training data.
 #' @param type when \code{type="link"} (default), the linear
@@ -14,45 +14,60 @@
 #' @param \ldots Other options.
 #' @return Predicted values according to \code{type} parameter.
 #' @export
-predict.NeuralGAM <- function(object, x = NULL, type = "link", terms = NULL, ...) {
+predict.NeuralGAM <- function(object, newdata = NULL, type = "link", terms = NULL, ...) {
 
   ngam <- object
 
-  if (missing(x)) {
+  if (missing(newdata)) {
     x <- ngam$x
-
+  }
+  else{
+    x <- newdata
   }
 
-  f <- x * 0
+  if (type == "terms" && !is.null(terms) && !all(terms %in% colnames(x))){
+    stop(paste("Invalid terms. Valid options are: ", paste(colnames(x), collapse=",")))
+  }
+
+  f <- x*NA
 
   if (type != "link" && type != "terms" && type != "response"){
     stop("Invalid type. Valid options are {link, terms, response}")
   }
 
-  if(type == "terms" && !is.null(terms)){
-    # return only terms present in terms array
-    x <- subset(x, select = terms)
-    f <- x * 0
-  }
-  else{
-    # All terms considered:
+  for (i in 1:ncol(x)) {
 
-    for (i in 1:ncol(x)) {
-      f[, i] <- ngam$model[[i]]$predict(x[, i])
+    if (type == "terms" && !is.null(terms)){
+      # compute only certain terms
+      if(colnames(x)[[i]] %in% terms){
+        f[, colnames(x)[[i]]] <- ngam$model[[i]]$predict(x[, i])
+      }
+      else{
+        next
+      }
     }
-    eta <- rowSums(f) + ngam$eta0
-
-    if(type == "link"){
-      # Return the linear predictor
-      return(eta)
-    }
-    if(type == "terms"){
-      return(f)
-    }
-    if(type == "response"){
-      y <- link(family=ngam$family, eta)
-      return(y)
+    else{
+      # consider all terms
+      f[, colnames(x)[[i]]] <- ngam$model[[i]]$predict(x[, i])
     }
   }
 
+  if(type == "terms"){
+    if (!is.null(terms)){
+      f <- f[,terms]
+      colnames(f) <- terms
+    }
+    return(f)
+  }
+
+  eta <- rowSums(f) + ngam$eta0
+  if(type == "link"){
+    # Return the linear predictor
+    return(eta)
+  }
+
+  if(type == "response"){
+    y <- link(family=ngam$family, eta)
+    return(y)
+  }
 }

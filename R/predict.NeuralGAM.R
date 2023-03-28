@@ -18,23 +18,48 @@ predict.NeuralGAM <- function(object, newdata = NULL, type = "link", terms = NUL
 
   ngam <- object
 
+  # Check if object argument is missing or NULL
+  if (missing(object) || is.null(object)) {
+    stop("Please provide a fitted NeuralGAM object as the object argument.")
+  }
+
+  # Check if object is of class "NeuralGAM"
+  if (!inherits(object, "NeuralGAM")) {
+    stop("The object argument must be a fitted NeuralGAM object.")
+  }
+
+  # check that all parameters are OK
   if (missing(newdata)) {
     x <- ngam$x
   }
   else{
+    if(type != "terms" && ncols(x) != length(ngam$model)){
+      stop("newdata needs to have the same components as the fitted ngam model")
+    }
     x <- newdata
+  }
+
+  # Check if type argument is missing or NULL
+  if (missing(type) || is.null(type)) {
+    stop("Please provide a value for the type argument.")
+  }
+
+  # Check if type argument is valid
+  valid_types <- c("link", "terms", "response")
+  if (!type %in% valid_types) {
+    stop("The value of the type argument is invalid. Valid options are {link, terms, response}.")
   }
 
   if (type == "terms" && !is.null(terms) && !all(terms %in% colnames(x))){
     stop(paste("Invalid terms. Valid options are: ", paste(colnames(x), collapse=",")))
   }
 
-  f <- x*NA
-
-  if (type != "link" && type != "terms" && type != "response"){
-    stop("Invalid type. Valid options are {link, terms, response}")
+  # Check if newdata columns match ngam$model columns
+  if (type != "terms" && !is.null(newdata) && !all(colnames(newdata) %in% colnames(ngam$x))) {
+    stop("The newdata argument does not have the same columns as the fitted ngam model.")
   }
 
+  f <- x*NA
   for (i in 1:ncol(x)) {
 
     if (type == "terms" && !is.null(terms)){

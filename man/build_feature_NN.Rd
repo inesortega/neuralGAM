@@ -25,8 +25,9 @@ Defaults to Xavier Initializer (\code{glorot_normal}).}
 \item{...}{
   Arguments passed on to \code{\link[=NeuralGAM]{NeuralGAM}}
   \describe{
-    \item{\code{x}}{A data frame containing all the covariates.}
-    \item{\code{y}}{A numeric vector with the response values.}
+    \item{\code{formula}}{A GAM formula. You can add smooth terms using \code{s()}.}
+    \item{\code{data}}{A data frame containing the model response variable and covariates
+required by the formula. Additonal terms not present in the formula will be ignored.}
     \item{\code{family}}{A description of the link function used in the model
 (defaults to \code{gaussian}). Set \code{family="gaussian"} for linear
 regression and \code{family="binomial"} for logistic regression.}

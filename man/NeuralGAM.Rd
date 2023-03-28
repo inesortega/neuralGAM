@@ -5,8 +5,8 @@
 \title{Fit a NeuralGAM model}
 \usage{
 NeuralGAM(
-  x,
-  y,
+  formula,
+  data,
   num_units,
   family = "gaussian",
   learning_rate = 0.001,
@@ -20,9 +20,10 @@ NeuralGAM(
 )
 }
 \arguments{
-\item{x}{A data frame containing all the covariates.}
+\item{formula}{A GAM formula. You can add smooth terms using \code{s()}.}
 
-\item{y}{A numeric vector with the response values.}
+\item{data}{A data frame containing the model response variable and covariates
+required by the formula. Additonal terms not present in the formula will be ignored.}
 
 \item{num_units}{Defines the architecture of each neural network.
 If a scalar value is provided, a single hidden layer neural network with that number of units is used.
@@ -70,13 +71,11 @@ response \code{y}, adjusted by the \code{family} parameter.
 library(NeuralGAM)
 data(train)
 head(train)
-X_train <- train[c("X0", "X1", "X2")]
-y_train <- train$y
 
-ngam <- NeuralGAM(
-  x = X_train, y = y_train, num_units = 1024, family = "gaussian",
-  learning_rate = 0.001, bf_threshold = 0.001,
-  max_iter_backfitting = 10, max_iter_ls = 10
+ngam <- NeuralGAM( y ~ s(X0) + X1 + s(X2), data = train,
+num_units = 1024, family = "gaussian",
+learning_rate = 0.001, bf_threshold = 0.001,
+max_iter_backfitting = 10, max_iter_ls = 10
 )
 
 plot(ngam)

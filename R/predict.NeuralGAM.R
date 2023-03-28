@@ -65,15 +65,14 @@ predict.NeuralGAM <- function(object, newdata = NULL, type = "link", terms = NUL
     if (type == "terms" && !is.null(terms)){
       # compute only certain terms
       if(colnames(x)[[i]] %in% terms){
-        f[, colnames(x)[[i]]] <- ngam$model[[i]]$predict(x[, i])
+        f[, colnames(x)[[i]]] <- get_model_predictions(ngam$model[[i]], x[, i], colnames(x)[[i]])
       }
       else{
         next
       }
     }
     else{
-      # consider all terms
-      f[, colnames(x)[[i]]] <- ngam$model[[i]]$predict(x[, i])
+      f[, colnames(x)[[i]]] <- get_model_predictions(ngam$model[[i]], x[, i], colnames(x)[[i]])
     }
   }
 
@@ -94,5 +93,16 @@ predict.NeuralGAM <- function(object, newdata = NULL, type = "link", terms = NUL
   if(type == "response"){
     y <- link(family=ngam$family, eta)
     return(y)
+  }
+}
+
+get_model_predictions <- function(model, x, term){
+  if(length(class(model)) > 1){
+    return(model$predict(x))
+  }
+  else{
+    lm_data <- data.frame(x)
+    colnames(lm_data) <- term
+    return(predict(model, lm_data))
   }
 }

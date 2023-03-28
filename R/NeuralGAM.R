@@ -7,8 +7,9 @@
 #' dependent variable and the weights is determined by the distribution of the
 #' response \code{y}, adjusted by the \code{family} parameter.
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
-#' @param x A data frame containing all the covariates.
-#' @param y A numeric vector with the response values.
+#' @param formula A GAM formula. You can add smooth terms using \code{s()}.
+#' @param data A data frame containing the model response variable and covariates
+#' required by the formula. Additonal terms not present in the formula will be ignored.
 #' @param num_units Defines the architecture of each neural network.
 #' If a scalar value is provided, a single hidden layer neural network with that number of units is used.
 #' If a list of values is provided, a multi-layer neural network with each element of the list defining
@@ -30,12 +31,12 @@
 #' local scoring Algorithm. Defaults to \code{10}.
 #' @param ... Other parameters.
 #' @return A trained NeuralGAM object. Use \code{summary(ngam)} to see details.
-#' @import keras::fit
-#' @import keras::compile
-#' @import stats::predict
-#' @import reticulate::conda_list
-#' @import reticulate::use_condaenv
-#' @import magrittr::%>%
+#' @importFrom keras fit
+#' @importFrom keras compile
+#' @importFrom stats predict
+#' @importFrom reticulate conda_list use_condaenv
+#' @importFrom magrittr %>%
+#' @importFrom formula.tools lhs rhs
 #' @export
 #'
 #' @examples
@@ -43,13 +44,11 @@
 #' library(NeuralGAM)
 #' data(train)
 #' head(train)
-#' X_train <- train[c("X0", "X1", "X2")]
-#' y_train <- train$y
 #'
-#' ngam <- NeuralGAM(
-#'   x = X_train, y = y_train, num_units = 1024, family = "gaussian",
-#'   learning_rate = 0.001, bf_threshold = 0.001,
-#'   max_iter_backfitting = 10, max_iter_ls = 10
+#' ngam <- NeuralGAM( y ~ s(X0) + X1 + s(X2), data = train,
+#' num_units = 1024, family = "gaussian",
+#' learning_rate = 0.001, bf_threshold = 0.001,
+#' max_iter_backfitting = 10, max_iter_ls = 10
 #' )
 #'
 #' plot(ngam)
@@ -61,15 +60,13 @@
 #' # Obtain each component of the linear predictor separately on each column of a data.frame
 #' terms <- predict(object = ngam, x = X_test, type = "terms")
 
-NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.001,
+NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_rate = 0.001,
                           kernel_initializer = "glorot_normal", w_train = NULL,
                           bf_threshold = 0.001, ls_threshold = 0.1,
                           max_iter_backfitting = 10, max_iter_ls = 10, ...) {
 
 
-  if (!is.data.frame(x)) stop("x should be a data.frame")
-
-  if (!is.numeric(y)) stop("y should be a numeric vector")
+  if (!is.data.frame(data)) stop("data should be a data.frame")
 
   if (is.null(num_units)) stop("num_units should not be null")
 
@@ -89,31 +86,38 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
 
   if (!is.numeric(ls_threshold)) stop("ls_threshold should be a numeric value")
 
-  if (!is.integer(max_iter_backfitting)) stop("max_iter_backfitting should be an integer value")
-
-  if (!is.integer(max_iter_ls)) stop("max_iter_ls should be an integer value")
+  if (!is.numeric(max_iter_backfitting)) stop("max_iter_backfitting should be a numeric value")
+  if (!is.numeric(max_iter_ls)) stop("max_iter_ls should be a numeric value")
 
 
   library(magrittr)
   library(keras)
 
+
+  # all vars get.vars(form)
+
   # Initialization
   converged <- FALSE
+
+  n <- nrow(data)
+  eta <- rep(0, n)
+
+  form <- get_formula_elements(formula)
+
+  # extract x and y from data
+
+  y <- data[[form$y]]
+  x <- data[form$terms]
+
   f <- x * 0
   g <- x * 0
-
-  if (is.data.frame(y)) {
-    y <- as.numeric(y)
-  }
-
-  nvars <- dim(f)[2]
 
   epochs <- c()
   mse <- c()
   timestamp <- c()
   model_i <- c()
 
-  if (nvars == 0) stop("No terms available")
+  if (dim(f)[2] == 0) stop("No terms available")
 
   it <- 1
 
@@ -121,10 +125,14 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
   if (family == "gaussian") max_iter_ls <- 1
 
   print("Initializing NeuralGAM...")
-
   model <- list()
-  for (k in 1:nvars) {
-    model[[k]] <- build_feature_NN(num_units, learning_rate, ...)
+  for (k in 1:ncol(x)) {
+    if(colnames(x)[[k]] %in% form$smooth_terms){
+      model[[k]] <- build_feature_NN(num_units, learning_rate, ...)
+    }
+    if(colnames(x)[[k]] %in% form$linear_terms){
+      model[[k]] <- NULL # will be fitted in bf
+    }
   }
 
   muhat <- mean(y)
@@ -155,34 +163,53 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
     err <- bf_threshold + 0.1 # Force backfitting iteration
 
     while ((err > bf_threshold) & (it_back <= max_iter_backfitting)) {
-      for (k in 1:nvars) {
+      for (k in 1:ncol(x)) {
+
         eta <- eta - f[, k]
         residuals <- Z - eta
 
-        # Fit network k with x[k] towards residuals
-        if (family == "gaussian") {
-          t <- Sys.time()
-          history <- model[[k]] %>% fit(x[, k], residuals, epochs = 1)
 
-        } else {
-          model[[k]] %>% compile(
-            loss = "mean_squared_error",
-            optimizer = optimizer_adam(learning_rate = learning_rate),
-            loss_weights = list(W)
-          )
-          t <- Sys.time()
-          history <- model[[k]] %>% fit(x[, k], residuals, epochs = 1, sample_weight = list(W))
+        if(colnames(x)[[k]] %in% form$smooth_terms){
+          # Fit network k with x[k] towards residuals
+          if (family == "gaussian") {
+            t <- Sys.time()
+            history <- model[[k]] %>% fit(x[, k], residuals, epochs = 1)
+
+          } else {
+            model[[k]] %>% compile(
+              loss = "mean_squared_error",
+              optimizer = optimizer_adam(learning_rate = learning_rate),
+              loss_weights = list(W)
+            )
+            t <- Sys.time()
+            history <- model[[k]] %>% fit(x[, k], residuals, epochs = 1, sample_weight = list(W))
+          }
+
+          epochs <- c(epochs, it_back)
+          mse <- c(mse, round(history$metrics$loss, 4))
+          timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
+          model_i <- c(model_i, k)
+
+          # Update f with current learned function for predictor k
+          f[, k] <- model[[k]] %>% predict(x[, k])
+          f[, k] <- f[, k] - mean(f[, k])
+          eta <- eta + f[, k]
+        }
+        else{
+          # fit linear model
+          lm_formula <- as.formula(paste("residuals ~ ", colnames(x)[k]))
+          lm_data <- data.frame(x[, k])
+          colnames(lm_data) <- colnames(x)[k]
+
+          model[[k]] <- lm(lm_formula, lm_data)
+
+          # Update f with current learned function for predictor k
+          f[, k] <- predict(model[[k]], lm_data)
+          f[, k] <- f[, k] - mean(f[, k])
+          eta <- eta + f[, k]
+
         }
 
-        epochs <- c(epochs, it_back)
-        mse <- c(mse, round(history$metrics$loss, 4))
-        timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
-        model_i <- c(model_i, k)
-
-        # Update f with current learned function for predictor k
-        f[, k] <- model[[k]] %>% predict(x[, k])
-        f[, k] <- f[, k] - mean(f[, k])
-        eta <- eta + f[, k]
       }
 
       # update current estimations
@@ -214,9 +241,26 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
 
   res <- list(muhat = muhat, partial = g, eta = eta, x = x, model = model,
               eta0 = eta0, family = family, beta0 = link(family, eta0),
-              stats = stats, mse = mse)
+              stats = stats, mse = mse, formula = formula)
   class(res) <- "NeuralGAM"
   return(res)
+}
+
+
+get_formula_elements <- function(formula) {
+
+  # Separate model terms (response, all_terms, smooth_terms)
+  y <- formula.tools::lhs(formula)
+  all_terms <- all.vars(formula.tools::rhs(formula))
+  terms <- formula.tools::rhs(formula)
+
+  smooth_terms <- attr(terms(formula), "term.labels")[grepl("^s", attr(terms(formula), "term.labels"))]
+  smooth_formula <- as.formula(paste("y ~ ", paste(smooth_terms, collapse = " + ")))
+  smooth_terms <- all.vars(formula.tools::rhs(smooth_formula))
+
+  return(list(y=y, terms=all_terms, smooth_terms=smooth_terms,
+              linear_terms =setdiff(all_terms, smooth_terms)))
+
 }
 
 
@@ -241,3 +285,4 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
     Sys.setenv(RETICULATE_PYTHON = envs$python[i])
   }
 }
+

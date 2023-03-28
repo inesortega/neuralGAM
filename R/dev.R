@@ -11,6 +11,7 @@
 #' @export
 #' @usage dev(muhat, y, family)
 dev <- function(muhat, y, family) {
+
   if (missing(muhat)) {
     stop("Argument \"muhat\" is missing, with no default")
   }

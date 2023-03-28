@@ -24,8 +24,6 @@
 
 build_feature_NN <- function(num_units, learning_rate = 0.001, kernel_initializer = "glorot_normal", ...) {
 
-  library(magrittr)
-
   if (missing(num_units)) {
     stop("Argument \"num_units\" is missing, with no default")
   }
@@ -33,6 +31,8 @@ build_feature_NN <- function(num_units, learning_rate = 0.001, kernel_initialize
   if (class(num_units) != "numeric" & !(is.list(num_units))) {
     stop("Argument num_units must be an integer or a list of integers")
   }
+
+  library(magrittr)
 
   model <- keras::keras_model_sequential()
 

@@ -64,6 +64,34 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
                           bf_threshold = 0.001, ls_threshold = 0.1,
                           max_iter_backfitting = 10, max_iter_ls = 10, ...) {
 
+
+  if (!is.data.frame(x)) stop("x should be a data.frame")
+
+  if (!is.numeric(y)) stop("y should be a numeric vector")
+
+  if (is.null(num_units)) stop("num_units should not be null")
+
+  if (family != "gaussian" & family != "binomial") stop("family must be 'gaussian' or 'binomial'")
+
+  if (!is.numeric(learning_rate)) stop("learning_rate should be a numeric value")
+
+  if (!is.null(kernel_initializer)) {
+    if (!is.character(kernel_initializer)) stop("kernel_initializer should be a character value")
+  }
+
+  if (!is.null(w_train)) {
+    if (!is.numeric(w_train)) stop("w_train should be a numeric vector")
+  }
+
+  if (!is.numeric(bf_threshold)) stop("bf_threshold should be a numeric value")
+
+  if (!is.numeric(ls_threshold)) stop("ls_threshold should be a numeric value")
+
+  if (!is.integer(max_iter_backfitting)) stop("max_iter_backfitting should be an integer value")
+
+  if (!is.integer(max_iter_ls)) stop("max_iter_ls should be an integer value")
+
+
   library(magrittr)
   library(keras)
 

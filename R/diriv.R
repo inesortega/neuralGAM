@@ -9,7 +9,18 @@
 #'
 #' @return derivative of the link function for the fitted values
 diriv <- function(family, muhat) {
-  # Calculates the derivative of link function
+
+  if (missing(muhat)) {
+    stop("Argument \"muhat\" is missing, with no default")
+  }
+
+  if (missing(family)) {
+    stop("Argument \"family\" is missing, with no default")
+  }
+
+  if (family != "gaussian" & family != "binomial") {
+    stop("Unsupported distribution family. Supported values are \"gaussian\" and \"binomial\"")
+  }
 
   if (family == "gaussian") { # Identity
     out <- 1

@@ -145,7 +145,7 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
         }
 
         epochs <- c(epochs, it_back)
-        mse <- c(mse, round(history$metrics$loss, 5))
+        mse <- c(mse, round(history$metrics$loss, 4))
         timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
         model_i <- c(model_i, k)
 
@@ -182,8 +182,8 @@ NeuralGAM <- function(x, y, num_units, family = "gaussian", learning_rate = 0.00
 
   mse <- mean((y - muhat)^2)
 
-  res <- list(muhat = muhat, partial = g, eta = eta, x = x,
-              model = model, eta0 = eta0, family = family,
+  res <- list(muhat = muhat, partial = g, eta = eta, x = x, model = model,
+              eta0 = eta0, family = family, beta0 = link(family, eta0),
               stats = stats, mse = mse)
   class(res) <- "NeuralGAM"
   return(res)

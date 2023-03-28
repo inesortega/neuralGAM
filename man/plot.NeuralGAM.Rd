@@ -4,16 +4,30 @@
 \alias{plot.NeuralGAM}
 \title{Visualization of \code{NeuralGAM} object}
 \usage{
-\method{plot}{NeuralGAM}(x = object, y = NULL, ylab = NULL, ...)
+\method{plot}{NeuralGAM}(
+  x = object,
+  select = NULL,
+  xlab = NULL,
+  ylab = NULL,
+  all.terms = FALSE,
+  ...
+)
 }
 \arguments{
-\item{x}{\code{NeuralGAM} object.}
+\item{x}{a fitted \code{NeuralGAM} object as produced by \code{NeuralGAM()}.}
 
-\item{y}{NULL}
+\item{select}{allows to plot a set of selected terms. e.g. if you just want to plot the first term,
+select="X0"}
 
-\item{ylab}{NULL}
+\item{xlab}{if supplied, this value will be used as the \code{x} label for all plots}
 
-\item{\ldots}{Other options.}
+\item{ylab}{if supplied, this value will be used as the \code{y} label for all plots}
+
+\item{all.terms}{if set to \code{TRUE} then the partial effects of the parametric model
+component are also plotted using \code{termplot} from the stats package.}
+
+\item{\ldots}{other graphics parameters to pass on to plotting commands.
+See details for ggplot2::geom_line options}
 }
 \value{
 Returns the partial effects plot.

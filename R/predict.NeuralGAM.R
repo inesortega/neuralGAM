@@ -16,17 +16,17 @@
 #' @export
 predict.NeuralGAM <- function(object, newdata = NULL, type = "link", terms = NULL, ...) {
 
-  ngam <- object
+  # Check if object is of class "NeuralGAM"
+  if (!inherits(object, "NeuralGAM")) {
+    stop("The object argument must be a fitted NeuralGAM object.")
+  }
 
   # Check if object argument is missing or NULL
   if (missing(object) || is.null(object)) {
     stop("Please provide a fitted NeuralGAM object as the object argument.")
   }
 
-  # Check if object is of class "NeuralGAM"
-  if (!inherits(object, "NeuralGAM")) {
-    stop("The object argument must be a fitted NeuralGAM object.")
-  }
+  ngam <- object
 
   # check that all parameters are OK
   if (missing(newdata)) {

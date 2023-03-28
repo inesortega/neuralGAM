@@ -12,13 +12,14 @@ build_feature_NN(
 )
 }
 \arguments{
-\item{num_units}{defines the architecture of each neural network. Use a \code{numeric}
-value for shallow neural networks, where \code{num_units} defines the number of hidden units, and
-a \code{list()} of \code{numeric} values, where each element defines the number of hidden units on each hidden layer.}
+\item{num_units}{Defines the architecture of each neural network.
+If a scalar value is provided, a single hidden layer neural network with that number of units is used.
+If a list of values is provided, a multi-layer neural network with each element of the list defining
+the number of hidden units on each hidden layer is used.}
 
-\item{learning_rate}{learning rate for the neural network optimizer.}
+\item{learning_rate}{Learning rate for the neural network optimizer.}
 
-\item{kernel_initializer}{kernel initializer for the Dense layers.
+\item{kernel_initializer}{Kernel initializer for the Dense layers.
 Defaults to Xavier Initializer (\code{glorot_normal}).}
 
 \item{...}{
@@ -29,14 +30,13 @@ Defaults to Xavier Initializer (\code{glorot_normal}).}
     \item{\code{family}}{A description of the link function used in the model
 (defaults to \code{gaussian}). Set \code{family="gaussian"} for linear
 regression and \code{family="binomial"} for logistic regression.}
-    \item{\code{w_train}}{optional sample weights.}
-    \item{\code{bf_threshold}}{convergence criterion of the backfitting algorithm.
+    \item{\code{bf_threshold}}{Convergence criterion of the backfitting algorithm.
 Defaults to \code{0.001}}
-    \item{\code{ls_threshold}}{convergence criterion of the local scoring algorithm.
+    \item{\code{ls_threshold}}{Convergence criterion of the local scoring algorithm.
 Defaults to \code{0.1}}
-    \item{\code{max_iter_backfitting}}{an integer with the maximum number of iterations
+    \item{\code{max_iter_backfitting}}{An integer with the maximum number of iterations
 of the backfitting algorithm. Defaults to \code{10}.}
-    \item{\code{max_iter_ls}}{an integer with the maximum number of iterations of the
+    \item{\code{max_iter_ls}}{An integer with the maximum number of iterations of the
 local scoring Algorithm. Defaults to \code{10}.}
   }}
 }

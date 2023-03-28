@@ -24,41 +24,42 @@ NeuralGAM(
 
 \item{y}{A numeric vector with the response values.}
 
-\item{num_units}{defines the architecture of each neural network. Use a \code{numeric}
-value for shallow neural networks, where \code{num_units} defines the number of hidden units, and
-a \code{list()} of \code{numeric} values, where each element defines the number of hidden units on each hidden layer.}
+\item{num_units}{Defines the architecture of each neural network.
+If a scalar value is provided, a single hidden layer neural network with that number of units is used.
+If a list of values is provided, a multi-layer neural network with each element of the list defining
+the number of hidden units on each hidden layer is used.}
 
 \item{family}{A description of the link function used in the model
 (defaults to \code{gaussian}). Set \code{family="gaussian"} for linear
 regression and \code{family="binomial"} for logistic regression.}
 
-\item{learning_rate}{learning rate for the neural network optimizer.}
+\item{learning_rate}{Learning rate for the neural network optimizer.}
 
-\item{kernel_initializer}{kernel initializer for the Dense layers.
+\item{kernel_initializer}{Kernel initializer for the Dense layers.
 Defaults to Xavier Initializer (\code{glorot_normal}).}
 
-\item{w_train}{optional sample weights.}
-
-\item{bf_threshold}{convergence criterion of the backfitting algorithm.
+\item{bf_threshold}{Convergence criterion of the backfitting algorithm.
 Defaults to \code{0.001}}
 
-\item{ls_threshold}{convergence criterion of the local scoring algorithm.
+\item{ls_threshold}{Convergence criterion of the local scoring algorithm.
 Defaults to \code{0.1}}
 
-\item{max_iter_backfitting}{an integer with the maximum number of iterations
+\item{max_iter_backfitting}{An integer with the maximum number of iterations
 of the backfitting algorithm. Defaults to \code{10}.}
 
-\item{max_iter_ls}{an integer with the maximum number of iterations of the
+\item{max_iter_ls}{An integer with the maximum number of iterations of the
 local scoring Algorithm. Defaults to \code{10}.}
 
-\item{\ldots}{Other parameters.}
+\item{...}{Other parameters.}
+
+\item{sample_weights}{Optional sample weights.}
 }
 \value{
-NeuralGAM object. See  \code{summary(ngam)} for details
+A trained NeuralGAM object. Use \code{summary(ngam)} to see details.
 }
 \description{
 Main function to fit a NeuralGAM model. The function builds one
-neural network to attend to each to each feature in x, using the
+neural network to attend to each feature in x, using the
 backfitting and local scoring algorithms to fit a weighted additive model
 using neural networks as function approximators. The adjustment of the
 dependent variable and the weights is determined by the distribution of the

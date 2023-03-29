@@ -7,6 +7,7 @@
 build_feature_NN(
   num_units,
   learning_rate = 0.001,
+  name = NULL,
   kernel_initializer = "glorot_normal",
   ...
 )

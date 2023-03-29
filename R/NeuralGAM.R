@@ -45,7 +45,7 @@
 #' data(train)
 #' head(train)
 #'
-#' ngam <- NeuralGAM( y ~ s(X0) + X1 + s(X2), data = train,
+#' ngam <- NeuralGAM( y ~ X1 + s(X0) + s(X2), data = train,
 #' num_units = 1024, family = "gaussian",
 #' learning_rate = 0.001, bf_threshold = 0.001,
 #' max_iter_backfitting = 10, max_iter_ls = 10
@@ -109,8 +109,10 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
   y <- data[[form$y]]
   x <- data[form$terms]
 
-  f <- x * 0
-  g <- x * 0
+  print(form)
+
+  f <- g <- data.frame(matrix(0, nrow = nrow(x), ncol = ncol(x)))
+  colnames(f) <- colnames(g) <- colnames(x)
 
   epochs <- c()
   mse <- c()
@@ -128,7 +130,8 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
   model <- list()
   for (k in 1:ncol(x)) {
     if(colnames(x)[[k]] %in% form$smooth_terms){
-      model[[k]] <- build_feature_NN(num_units, learning_rate, ...)
+      model[[k]] <- build_feature_NN(num_units = num_units, name=colnames(x)[[k]],
+                                     learning_rate = learning_rate, ...)
     }
     if(colnames(x)[[k]] %in% form$linear_terms){
       model[[k]] <- NULL # will be fitted in bf

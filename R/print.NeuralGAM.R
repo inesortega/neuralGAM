@@ -17,7 +17,6 @@ print.NeuralGAM <- function(x = object, ...) {
     # Print the object's contents
     ngam <- x
 
-    cat(paste("\nNumber of Neural Networks = ", ncol(ngam$x)), sep = " ")
     cat(paste("\nDistribution Family: ", ngam$family))
     cat(paste("\nFormula: ", ngam$formula))
     cat(paste("\nIntercept:", round(ngam$beta0, 4)))

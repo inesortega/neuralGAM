@@ -16,7 +16,7 @@
 #' @importFrom patchwork wrap_plots plot_layout plot_annotation
 #' @export
 plot.NeuralGAM <- function(x = object, select=NULL, xlab = NULL, ylab = NULL,
-                           all.terms=FALSE, ...) {
+                           all.terms=FALSE, title = NULL, ...) {
 
   if (!inherits(x, "NeuralGAM")) {
     stop("Argument 'x' must be of class 'NeuralGAM'")
@@ -82,6 +82,6 @@ plot.NeuralGAM <- function(x = object, select=NULL, xlab = NULL, ylab = NULL,
 
   return(patchwork::wrap_plots(plotlist = plots_list) +
            patchwork::plot_layout(ncol = ncol(x)) +
-           patchwork::plot_annotation(title = "Learnt partial effects")
+           patchwork::plot_annotation(title = title)
          )
 }

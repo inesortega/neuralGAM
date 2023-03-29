@@ -22,7 +22,7 @@
 #' @references
 #' Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980.
 
-build_feature_NN <- function(num_units, learning_rate = 0.001, kernel_initializer = "glorot_normal", ...) {
+build_feature_NN <- function(num_units, learning_rate = 0.001, name = NULL, kernel_initializer = "glorot_normal", ...) {
 
   if (missing(num_units)) {
     stop("Argument \"num_units\" is missing, with no default")
@@ -34,7 +34,8 @@ build_feature_NN <- function(num_units, learning_rate = 0.001, kernel_initialize
 
   library(magrittr)
 
-  model <- keras::keras_model_sequential()
+  model <- keras::keras_model_sequential(name = name)
+
 
   model %>% keras::layer_dense(units = 1, input_shape = c(1))
 

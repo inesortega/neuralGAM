@@ -93,9 +93,6 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
   library(magrittr)
   library(keras)
 
-
-  # all vars get.vars(formula)
-
   # Initialization
   converged <- FALSE
 
@@ -134,9 +131,6 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
       model[[term]] <- build_feature_NN(num_units = num_units, name=term,
                                         learning_rate = learning_rate, ...)
     }
-    # if(term %in% formula$p_terms){
-    #   model[[term]] <- NULL # will be fitted in LS
-    # }
   }
 
   parametric <- data.frame(x[formula$p_terms])
@@ -145,13 +139,10 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
 
   ## Parametric part -- Use LM to estimate the parametric components
   linear_model <- lm(formula$p_formula, parametric)
+  t <- Sys.time()
   muhat <- linear_model$coefficients["(Intercept)"]
   eta0 <- inv_link(family, muhat)
-
   model[["linear"]] <- linear_model
-
-  #muhat <- mean(linear_model$fitted.values)
-  #muhat <- linear_model$fitted.values
 
   # Update eta with parametric part
   f[formula$p_terms] <- predict(linear_model, type="terms")
@@ -178,35 +169,6 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
     # Start backfitting  algorithm
     it_back <- 1
     err <- bf_threshold + 0.1 # Force backfitting iteration
-
-
-    # for (k in 1:ncol(x_p)){
-    #
-    #   term <- colnames(x_p)[[k]]
-    #
-    #   eta <- eta - g[[term]]
-    #   residuals <- Z - eta
-    #
-    #   lm_formula <- as.formula(paste("residuals ~ ", term))
-    #   lm_data <- data.frame(x_p[, k])
-    #   colnames(lm_data) <- term
-    #
-    #   t <- Sys.time()
-    #   model[[term]] <- lm(lm_formula, lm_data)
-    #
-    #   # Update g with current learned function for linear predictor
-    #   g[[term]] <- model[[term]]$fitted.values
-    #   g[[term]] <- g[[term]] - mean(g[[term]])
-    #   eta <- eta + g[[term]]
-    #
-    #   # add metrics
-    #
-    #   epochs <- c(epochs, 1)
-    #   mse <- c(mse, round(mean(model[[term]]$residuals^2), 4))
-    #   timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
-    #   model_i <- c(model_i, term)
-    #
-    # }
 
 
     ## Non parametric part -- BF Algorithm to estimate the non-parametric components with NN

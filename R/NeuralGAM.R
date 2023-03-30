@@ -108,8 +108,8 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
 
   y <- data[[form$y]]
   x <- data[form$terms]
-
-  print(form)
+  x_p <- data[form$p_terms]
+  x_np <- data[form$np_terms]
 
   f <- g <- data.frame(matrix(0, nrow = nrow(x), ncol = ncol(x)))
   colnames(f) <- colnames(g) <- colnames(x)
@@ -129,21 +129,32 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
   print("Initializing NeuralGAM...")
   model <- list()
   for (k in 1:ncol(x)) {
-    if(colnames(x)[[k]] %in% form$smooth_terms){
-      model[[k]] <- build_feature_NN(num_units = num_units, name=colnames(x)[[k]],
+    term <- colnames(x)[[k]]
+    if(term %in% form$np_terms){
+      model[[term]] <- build_feature_NN(num_units = num_units, name=term,
                                      learning_rate = learning_rate, ...)
     }
-    if(colnames(x)[[k]] %in% form$linear_terms){
-      model[[k]] <- NULL # will be fitted in bf
+    if(term %in% form$p_terms){
+      model[[term]] <- NULL # will be fitted in LS
     }
   }
 
-  muhat <- mean(y)
+  parametric <- data.frame(x[form$p_terms])
+  colnames(parametric) <- form$p_terms
+  parametric$y <- y
+
+  ## Parametric part -- Use LM to estimate the parametric components
+  linear_model <- lm(form$p_formula, parametric)
+  muhat <- linear_model$coefficients["(Intercept)"]
+  #muhat <- mean(linear_model$fitted.values)
+
+  #muhat <- linear_model$fitted.values
   eta0 <- inv_link(family, muhat)
 
-  eta <- eta0 # initial estimation as the mean of y
-  eta_prev <- eta0
+  model[[term]]
 
+  eta <- eta0
+  eta_prev <- eta0
   dev_new <- dev(muhat, y, family)
 
   # Start local scoring algorithm
@@ -165,53 +176,74 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
     it_back <- 1
     err <- bf_threshold + 0.1 # Force backfitting iteration
 
-    while ((err > bf_threshold) & (it_back <= max_iter_backfitting)) {
-      for (k in 1:ncol(x)) {
 
-        eta <- eta - f[, k]
+    for (k in 1:ncol(x_p)){
+
+      term <- colnames(x_p)[[k]]
+
+      eta <- eta - g[[term]]
+      residuals <- Z - eta
+
+      lm_formula <- as.formula(paste("residuals ~ ", term))
+      lm_data <- data.frame(x_p[, k])
+      colnames(lm_data) <- term
+
+      t <- Sys.time()
+      model[[term]] <- lm(lm_formula, lm_data)
+
+      # Update g with current learned function for linear predictor
+      g[[term]] <- model[[term]]$fitted.values
+      g[[term]] <- g[[term]] - mean(g[[term]])
+      eta <- eta + g[[term]]
+
+      # add metrics
+
+      epochs <- c(epochs, 1)
+      mse <- c(mse, round(mean(model[[term]]$residuals^2), 4))
+      timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
+      model_i <- c(model_i, term)
+
+    }
+
+    # Update current eta with parametric part
+    eta <- eta0 + rowSums(g)
+    f <- data.frame(g)
+
+    ## Non parametric part -- BF Algorithm to estimate the non-parametric components with NN
+
+    while ((err > bf_threshold) & (it_back <= max_iter_backfitting)) {
+
+      for (k in 1:ncol(x_np)) {
+
+        term <- colnames(x_np)[[k]]
+
+        eta <- eta - f[[term]]
         residuals <- Z - eta
 
+        # Fit network k with x[k] towards residuals
+        if (family == "gaussian") {
+          t <- Sys.time()
+          history <- model[[term]] %>% fit(x_np[[term]], residuals, epochs = 1)
 
-        if(colnames(x)[[k]] %in% form$smooth_terms){
-          # Fit network k with x[k] towards residuals
-          if (family == "gaussian") {
-            t <- Sys.time()
-            history <- model[[k]] %>% fit(x[, k], residuals, epochs = 1)
-
-          } else {
-            model[[k]] %>% compile(
-              loss = "mean_squared_error",
-              optimizer = optimizer_adam(learning_rate = learning_rate),
-              loss_weights = list(W)
-            )
-            t <- Sys.time()
-            history <- model[[k]] %>% fit(x[, k], residuals, epochs = 1, sample_weight = list(W))
-          }
-
-          epochs <- c(epochs, it_back)
-          mse <- c(mse, round(history$metrics$loss, 4))
-          timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
-          model_i <- c(model_i, k)
-
-          # Update f with current learned function for predictor k
-          f[, k] <- model[[k]] %>% predict(x[, k])
-          f[, k] <- f[, k] - mean(f[, k])
-          eta <- eta + f[, k]
+        } else {
+          model[[term]] %>% compile(
+            loss = "mean_squared_error",
+            optimizer = optimizer_adam(learning_rate = learning_rate),
+            loss_weights = list(W)
+          )
+          t <- Sys.time()
+          history <- model[[term]] %>% fit(x_np[[term]], residuals, epochs = 1, sample_weight = list(W))
         }
-        else{
-          # fit linear model
-          lm_formula <- as.formula(paste("residuals ~ ", colnames(x)[k]))
-          lm_data <- data.frame(x[, k])
-          colnames(lm_data) <- colnames(x)[k]
 
-          model[[k]] <- lm(lm_formula, lm_data)
+        epochs <- c(epochs, it_back)
+        mse <- c(mse, round(history$metrics$loss, 4))
+        timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
+        model_i <- c(model_i, term)
 
-          # Update f with current learned function for predictor k
-          f[, k] <- predict(model[[k]], lm_data)
-          f[, k] <- f[, k] - mean(f[, k])
-          eta <- eta + f[, k]
-
-        }
+        # Update f with current learned function for predictor k
+        f[[term]] <- model[[term]] %>% predict(x_np[[term]])
+        f[[term]] <- f[[term]] - mean(f[[term]])
+        eta <- eta + f[[term]]
 
       }
 
@@ -224,6 +256,7 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
       eta_prev <- eta
       print(paste("BACKFITTING Iteration", it_back, "- Current Err = ", err, "BF Threshold = ", bf_threshold, "Converged = ", err < bf_threshold))
       it_back <- it_back + 1
+
     }
 
     muhat <- link(family, eta)
@@ -261,8 +294,12 @@ get_formula_elements <- function(formula) {
   smooth_formula <- as.formula(paste("y ~ ", paste(smooth_terms, collapse = " + ")))
   smooth_terms <- all.vars(formula.tools::rhs(smooth_formula))
 
-  return(list(y=y, terms=all_terms, smooth_terms=smooth_terms,
-              linear_terms =setdiff(all_terms, smooth_terms)))
+  linear_terms =setdiff(all_terms, smooth_terms)
+  linear_formula <- as.formula(paste("y ~ ", paste(linear_terms, collapse = " + ")))
+
+  return(list(y=y, terms=all_terms, np_terms=smooth_terms,
+              p_terms =linear_terms, np_formula=smooth_formula,
+              p_formula=linear_formula))
 
 }
 

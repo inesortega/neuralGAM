@@ -10,6 +10,7 @@
   xlab = NULL,
   ylab = NULL,
   all.terms = FALSE,
+  title = NULL,
   ...
 )
 }

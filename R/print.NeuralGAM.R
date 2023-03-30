@@ -18,7 +18,7 @@ print.NeuralGAM <- function(x = object, ...) {
     ngam <- x
 
     cat(paste("\nDistribution Family: ", ngam$family))
-    cat(paste("\nFormula: ", ngam$formula))
+    cat(paste("\nFormula: ", ngam$formula$formula))
     cat(paste("\nIntercept:", round(ngam$beta0, 4)))
     cat(paste("\nMean Squared Error:", round(ngam$mse, 4)))
     cat(paste("\nSample size:", nrow(ngam$x)))

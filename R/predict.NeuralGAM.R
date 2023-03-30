@@ -33,7 +33,7 @@ predict.NeuralGAM <- function(object, newdata = NULL, type = "link", terms = NUL
     x <- ngam$x
   }
   else{
-    if(type != "terms" && ncols(x) != length(ngam$model)){
+    if(type != "terms" && ncols(x) != length(ngam$x)){
       stop("newdata needs to have the same components as the fitted ngam model")
     }
     x <- newdata
@@ -60,19 +60,21 @@ predict.NeuralGAM <- function(object, newdata = NULL, type = "link", terms = NUL
   }
 
   f <- x*NA
+
   for (i in 1:ncol(x)) {
 
     if (type == "terms" && !is.null(terms)){
       # compute only certain terms
-      if(colnames(x)[[i]] %in% terms){
-        f[, colnames(x)[[i]]] <- get_model_predictions(ngam$model[[i]], x[, i], colnames(x)[[i]])
+      term <- colnames(x)[[i]]
+      if(term %in% terms){
+        f[[term]] <- get_model_predictions(ngam, x[[term]], term)
       }
       else{
         next
       }
     }
     else{
-      f[, colnames(x)[[i]]] <- get_model_predictions(ngam$model[[i]], x[, i], colnames(x)[[i]])
+      f[[term]] <- get_model_predictions(ngam, x[[term]], term)
     }
   }
 
@@ -96,13 +98,22 @@ predict.NeuralGAM <- function(object, newdata = NULL, type = "link", terms = NUL
   }
 }
 
-get_model_predictions <- function(model, x, term){
-  if(length(class(model)) > 1){
-    return(model$predict(x))
-  }
-  else{
+get_model_predictions <- function(ngam, x, term){
+
+  # Linear term
+  if(term %in% ngam$formula$p_terms){
+    model <- ngam$model[["linear"]]
+
     lm_data <- data.frame(x)
     colnames(lm_data) <- term
-    return(predict(model, lm_data))
+
+    return(predict(model,
+                   newdata=lm_data,
+                   type="terms",
+                   terms=term))
+  }
+  # Non-Parametric term
+  if(term %in% ngam$formula$np_terms){
+    return(model$predict(x))
   }
 }

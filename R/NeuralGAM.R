@@ -61,9 +61,9 @@
 #' terms <- predict(object = ngam, x = X_test, type = "terms")
 
 NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_rate = 0.001,
-                          kernel_initializer = "glorot_normal", w_train = NULL,
-                          bf_threshold = 0.001, ls_threshold = 0.1,
-                          max_iter_backfitting = 10, max_iter_ls = 10, ...) {
+                      kernel_initializer = "glorot_normal", w_train = NULL,
+                      bf_threshold = 0.001, ls_threshold = 0.1,
+                      max_iter_backfitting = 10, max_iter_ls = 10, ...) {
 
 
   if (!is.data.frame(data)) stop("data should be a data.frame")
@@ -94,7 +94,7 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
   library(keras)
 
 
-  # all vars get.vars(form)
+  # all vars get.vars(formula)
 
   # Initialization
   converged <- FALSE
@@ -102,14 +102,14 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
   n <- nrow(data)
   eta <- rep(0, n)
 
-  form <- get_formula_elements(formula)
+  formula <- get_formula_elements(formula)
 
   # extract x and y from data
 
-  y <- data[[form$y]]
-  x <- data[form$terms]
-  x_p <- data[form$p_terms]
-  x_np <- data[form$np_terms]
+  y <- data[[formula$y]]
+  x <- data[formula$terms]
+  x_p <- data[formula$p_terms]
+  x_np <- data[formula$np_terms]
 
   f <- g <- data.frame(matrix(0, nrow = nrow(x), ncol = ncol(x)))
   colnames(f) <- colnames(g) <- colnames(x)
@@ -128,33 +128,36 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
 
   print("Initializing NeuralGAM...")
   model <- list()
-  for (k in 1:ncol(x)) {
-    term <- colnames(x)[[k]]
-    if(term %in% form$np_terms){
+  for (k in 1:ncol(x_np)) {
+    term <- colnames(x_np)[[k]]
+    if(term %in% formula$np_terms){
       model[[term]] <- build_feature_NN(num_units = num_units, name=term,
-                                     learning_rate = learning_rate, ...)
+                                        learning_rate = learning_rate, ...)
     }
-    if(term %in% form$p_terms){
-      model[[term]] <- NULL # will be fitted in LS
-    }
+    # if(term %in% formula$p_terms){
+    #   model[[term]] <- NULL # will be fitted in LS
+    # }
   }
 
-  parametric <- data.frame(x[form$p_terms])
-  colnames(parametric) <- form$p_terms
+  parametric <- data.frame(x[formula$p_terms])
+  colnames(parametric) <- formula$p_terms
   parametric$y <- y
 
   ## Parametric part -- Use LM to estimate the parametric components
-  linear_model <- lm(form$p_formula, parametric)
+  linear_model <- lm(formula$p_formula, parametric)
   muhat <- linear_model$coefficients["(Intercept)"]
-  #muhat <- mean(linear_model$fitted.values)
-
-  #muhat <- linear_model$fitted.values
   eta0 <- inv_link(family, muhat)
 
-  model[[term]]
+  model[["linear"]] <- linear_model
 
-  eta <- eta0
-  eta_prev <- eta0
+  #muhat <- mean(linear_model$fitted.values)
+  #muhat <- linear_model$fitted.values
+
+  # Update eta with parametric part
+  f[formula$p_terms] <- predict(linear_model, type="terms")
+  eta <- eta0 + rowSums(f)
+
+  eta_prev <- eta
   dev_new <- dev(muhat, y, family)
 
   # Start local scoring algorithm
@@ -177,37 +180,34 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
     err <- bf_threshold + 0.1 # Force backfitting iteration
 
 
-    for (k in 1:ncol(x_p)){
+    # for (k in 1:ncol(x_p)){
+    #
+    #   term <- colnames(x_p)[[k]]
+    #
+    #   eta <- eta - g[[term]]
+    #   residuals <- Z - eta
+    #
+    #   lm_formula <- as.formula(paste("residuals ~ ", term))
+    #   lm_data <- data.frame(x_p[, k])
+    #   colnames(lm_data) <- term
+    #
+    #   t <- Sys.time()
+    #   model[[term]] <- lm(lm_formula, lm_data)
+    #
+    #   # Update g with current learned function for linear predictor
+    #   g[[term]] <- model[[term]]$fitted.values
+    #   g[[term]] <- g[[term]] - mean(g[[term]])
+    #   eta <- eta + g[[term]]
+    #
+    #   # add metrics
+    #
+    #   epochs <- c(epochs, 1)
+    #   mse <- c(mse, round(mean(model[[term]]$residuals^2), 4))
+    #   timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
+    #   model_i <- c(model_i, term)
+    #
+    # }
 
-      term <- colnames(x_p)[[k]]
-
-      eta <- eta - g[[term]]
-      residuals <- Z - eta
-
-      lm_formula <- as.formula(paste("residuals ~ ", term))
-      lm_data <- data.frame(x_p[, k])
-      colnames(lm_data) <- term
-
-      t <- Sys.time()
-      model[[term]] <- lm(lm_formula, lm_data)
-
-      # Update g with current learned function for linear predictor
-      g[[term]] <- model[[term]]$fitted.values
-      g[[term]] <- g[[term]] - mean(g[[term]])
-      eta <- eta + g[[term]]
-
-      # add metrics
-
-      epochs <- c(epochs, 1)
-      mse <- c(mse, round(mean(model[[term]]$residuals^2), 4))
-      timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
-      model_i <- c(model_i, term)
-
-    }
-
-    # Update current eta with parametric part
-    eta <- eta0 + rowSums(g)
-    f <- data.frame(g)
 
     ## Non parametric part -- BF Algorithm to estimate the non-parametric components with NN
 
@@ -286,6 +286,7 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
 get_formula_elements <- function(formula) {
 
   # Separate model terms (response, all_terms, smooth_terms)
+  formula <- formula
   y <- formula.tools::lhs(formula)
   all_terms <- all.vars(formula.tools::rhs(formula))
   terms <- formula.tools::rhs(formula)
@@ -299,7 +300,7 @@ get_formula_elements <- function(formula) {
 
   return(list(y=y, terms=all_terms, np_terms=smooth_terms,
               p_terms =linear_terms, np_formula=smooth_formula,
-              p_formula=linear_formula))
+              p_formula=linear_formula, formula=formula))
 
 }
 

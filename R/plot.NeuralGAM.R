@@ -2,12 +2,10 @@
 #'
 #' @description Visualization of \code{NeuralGAM} object. Plots the learned partial effects by the NeuralGAM object.
 #' @param x a fitted \code{NeuralGAM} object as produced by \code{NeuralGAM()}.
-#' @param xlab if supplied, this value will be used as the \code{x} label for all plots
-#' @param ylab if supplied, this value will be used as the \code{y} label for all plots
 #' @param select allows to plot a set of selected terms. e.g. if you just want to plot the first term,
 #' select="X0"
-#' @param all.terms if set to \code{TRUE} then the partial effects of the parametric model
-#' component are also plotted using \code{termplot} from the stats package.
+#' @param xlab if supplied, this value will be used as the \code{x} label for all plots
+#' @param ylab if supplied, this value will be used as the \code{y} label for all plots
 #' @param \ldots other graphics parameters to pass on to plotting commands.
 #' See details for ggplot2::geom_line options
 #' @return Returns the partial effects plot.
@@ -15,8 +13,7 @@
 #' @importFrom ggplot2 ggplot labs ggplot_gtable ggplot_build aes geom_line
 #' @importFrom patchwork wrap_plots plot_layout plot_annotation
 #' @export
-plot.NeuralGAM <- function(x = object, select=NULL, xlab = NULL, ylab = NULL,
-                           all.terms=FALSE, title = NULL, ...) {
+plot.NeuralGAM <- function(x = object, select=NULL, xlab = NULL, ylab = NULL,title = NULL, ...) {
 
   if (!inherits(x, "NeuralGAM")) {
     stop("Argument 'x' must be of class 'NeuralGAM'")
@@ -36,14 +33,6 @@ plot.NeuralGAM <- function(x = object, select=NULL, xlab = NULL, ylab = NULL,
     stop(paste("Invalid select argument. Valid options are: ", paste(colnames(x), collapse=",")))
   }
 
-  if (ncol(x) != length(ngam$model)){
-    stop("The number of columns in 'ngam$x' must be equal to the number of terms in 'model'")
-  }
-
-  if (!is.logical(all.terms)) {
-    stop("all.terms must be a logical value.")
-  }
-
   if (!is.null(select)){
     # plot only selected terms
     x <- data.frame(x[,select])
@@ -52,7 +41,7 @@ plot.NeuralGAM <- function(x = object, select=NULL, xlab = NULL, ylab = NULL,
     colnames(f) <- select
   }
 
-  plots_list <- vector("list", length = ncol(x))
+  plots_list <- (vector("list", length = ncol(x)))
 
 
   # Generate custom labels if xlab or ylab is provided
@@ -68,16 +57,36 @@ plot.NeuralGAM <- function(x = object, select=NULL, xlab = NULL, ylab = NULL,
   else{
     y_lab <- list()
     for (i in 1:length(x_lab)){
-      y_lab[i] <- paste("s(", x_lab[i], ")", sep="")
+      if(x_lab[i] %in% ngam$formula$np_terms){
+        y_lab[i] <- paste("s(", x_lab[i], ")", sep="")
+      }
+      else{ ## todo take into account factor terms!
+        if(is.factor(x_lab[i])){
+          paste("Partial for ", x_lab[i])
+        }
+        y_lab[i] <- x_lab[i]
+      }
     }
   }
 
   for (i in 1:ncol(x)) {
-    p <- ggplot2::ggplot() +
-      ggplot2::geom_line(ggplot2::aes(x = x[, i], y = f[, i]), ...) +
-      ggplot2::labs(x=x_lab[i], y=y_lab[i]) +
-      ggplot2::ggtitle(x_lab[i])
+
+    term <- colnames(x)[[i]]
+
+    if(is.factor(x[[term]])){
+      p <- ggplot2::ggplot() +
+        ggplot2::geom_boxplot(ggplot2::aes(x = x[, i], y = f[, i]), ...) +
+        ggplot2::labs(x=x_lab[i], y=y_lab[i]) +
+        ggplot2::ggtitle(x_lab[i])
+    }
+    else{
+      p <- ggplot2::ggplot() +
+        ggplot2::geom_line(ggplot2::aes(x = x[, i], y = f[, i]), ...) +
+        ggplot2::labs(x=x_lab[i], y=y_lab[i]) +
+        ggplot2::ggtitle(x_lab[i])
+    }
     plots_list[[i]] <- ggplot2::ggplot_gtable(ggplot2::ggplot_build(p))
+
   }
 
   return(patchwork::wrap_plots(plotlist = plots_list) +

@@ -43,7 +43,6 @@
 #'
 #' library(NeuralGAM)
 #' data(train)
-#' head(train)
 #'
 #' ngam <- NeuralGAM( y ~ X1 + s(X0) + s(X2), data = train,
 #' num_units = 1024, family = "gaussian",
@@ -51,7 +50,7 @@
 #' max_iter_backfitting = 10, max_iter_ls = 10
 #' )
 #'
-#' plot(ngam)
+#' ngam
 #'
 #' data(test)
 #' X_test <- test[c("X0", "X1", "X2")]
@@ -89,7 +88,6 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
   if (!is.numeric(max_iter_backfitting)) stop("max_iter_backfitting should be a numeric value")
   if (!is.numeric(max_iter_ls)) stop("max_iter_ls should be a numeric value")
 
-
   library(magrittr)
   library(keras)
 
@@ -105,9 +103,8 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
 
   y <- data[[formula$y]]
   x <- data[formula$terms]
-  x_p <- data[formula$p_terms]
-  x_np <- data[formula$np_terms]
 
+  x_np <- data[formula$np_terms]
   f <- g <- data.frame(matrix(0, nrow = nrow(x), ncol = ncol(x)))
   colnames(f) <- colnames(g) <- colnames(x)
 
@@ -132,21 +129,33 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
                                         learning_rate = learning_rate, ...)
     }
   }
+#
+#   if(length(formula$p_terms) > 0 ){
+#
+#     ## Adjust Parametric part -- Use LM to estimate the parametric components
+#     parametric <- data.frame(x[formula$p_terms])
+#     colnames(parametric) <- formula$p_terms
+#     parametric$y <- link(family,y)
+#
+#     linear_model <- lm(formula$p_formula, parametric)
+#     eta <- predict(linear_model, type="response")
+#     muhat <- mean(eta)
+#     eta0 <- muhat
+#
+#     model[["linear"]] <- linear_model
+#
+#     # Update eta with parametric part
+#     f[formula$p_terms] <- predict(linear_model, type="terms")
+#     eta <- eta0 + rowSums(f)
+#
+#   }
+#   else{
+#     muhat <- mean(y)
+#     eta <- inv_link(family, muhat) #initially estimate eta as the mean of y
+#   }
 
-  parametric <- data.frame(x[formula$p_terms])
-  colnames(parametric) <- formula$p_terms
-  parametric$y <- y
-
-  ## Parametric part -- Use LM to estimate the parametric components
-  linear_model <- lm(formula$p_formula, parametric)
-  t <- Sys.time()
-  muhat <- linear_model$coefficients["(Intercept)"]
-  eta0 <- inv_link(family, muhat)
-  model[["linear"]] <- linear_model
-
-  # Update eta with parametric part
-  f[formula$p_terms] <- predict(linear_model, type="terms")
-  eta <- eta0 + rowSums(f)
+  muhat <- mean(y)
+  eta <- inv_link(family, muhat) #initially estimate eta as the mean of y
 
   eta_prev <- eta
   dev_new <- dev(muhat, y, family)
@@ -158,18 +167,37 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
       Z <- y
       W <- w
     } else {
-
       print(paste("ITER LOCAL SCORING", it))
-
       der <- diriv(family, muhat)
       Z <- eta + (y - muhat) * der
       W <- weight(w, muhat, family)
     }
 
+    # Estimate parametric components
+    if(length(formula$p_terms) > 0 ){
+      parametric <- data.frame(x[formula$p_terms])
+      colnames(parametric) <- formula$p_terms
+      parametric$y <- Z
+
+      linear_model <- lm(formula$p_formula, parametric)
+      eta0 <- linear_model$coefficients["(Intercept)"]
+      model[["linear"]] <- linear_model
+
+      # Update eta with parametric component
+      f[formula$p_terms] <- predict(linear_model, type="terms")
+      eta <- eta0 + rowSums(f)
+
+    }
+    else{
+      # if no parametric components, keep the mean of the adjusted dependen var.
+      eta0 <- mean(Z)
+      eta <- eta0
+    }
+    eta_prev <- eta
+
     # Start backfitting  algorithm
     it_back <- 1
     err <- bf_threshold + 0.1 # Force backfitting iteration
-
 
     ## Non parametric part -- BF Algorithm to estimate the non-parametric components with NN
 
@@ -226,7 +254,7 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
     dev_new <- dev(muhat, y, family)
 
     dev_delta <- abs((dev_old - dev_new) / dev_old)
-
+    print(paste("Current delta ", dev_delta, " LS Threshold = ", ls_threshold, "Converged = ", dev_delta < ls_threshold))
     if ((dev_delta < ls_threshold) & (it > 0)) {
       converged <- TRUE
     }
@@ -238,8 +266,8 @@ NeuralGAM <- function(formula, data, num_units, family = "gaussian", learning_ra
   mse <- mean((y - muhat)^2)
 
   res <- list(muhat = muhat, partial = g, eta = eta, x = x, model = model,
-              eta0 = eta0, family = family, beta0 = link(family, eta0),
-              stats = stats, mse = mse, formula = formula)
+              eta0 = eta0, family = family, stats = stats, mse = mse,
+              formula = formula)
   class(res) <- "NeuralGAM"
   return(res)
 }
@@ -258,7 +286,13 @@ get_formula_elements <- function(formula) {
   smooth_terms <- all.vars(formula.tools::rhs(smooth_formula))
 
   linear_terms =setdiff(all_terms, smooth_terms)
-  linear_formula <- as.formula(paste("y ~ ", paste(linear_terms, collapse = " + ")))
+  if(length(linear_terms) > 0){
+    linear_formula <- as.formula(paste("y ~ ", paste(linear_terms, collapse = " + ")))
+  }
+  else{
+    linear_formula <- NULL
+  }
+
 
   return(list(y=y, terms=all_terms, np_terms=smooth_terms,
               p_terms =linear_terms, np_formula=smooth_formula,

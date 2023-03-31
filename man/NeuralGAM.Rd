@@ -70,7 +70,6 @@ response \code{y}, adjusted by the \code{family} parameter.
 
 library(NeuralGAM)
 data(train)
-head(train)
 
 ngam <- NeuralGAM( y ~ X1 + s(X0) + s(X2), data = train,
 num_units = 1024, family = "gaussian",
@@ -78,7 +77,7 @@ learning_rate = 0.001, bf_threshold = 0.001,
 max_iter_backfitting = 10, max_iter_ls = 10
 )
 
-plot(ngam)
+ngam
 
 data(test)
 X_test <- test[c("X0", "X1", "X2")]

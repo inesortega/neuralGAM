@@ -41,16 +41,15 @@ build_feature_NN <- function(num_units, learning_rate = 0.001, name = NULL, kern
 
   if (is.list(num_units)) {
     for (units in num_units) {
-      model %>% keras::layer_dense(units = units, kernel_initializer = kernel_initializer, activation = "relu", ...)
+      model %>% keras::layer_dense(units = units, kernel_initializer = kernel_initializer, activation = "relu")
     }
   } else {
-    model %>% keras::layer_dense(units = num_units, kernel_initializer = kernel_initializer, activation = "relu", ...)
+    model %>% keras::layer_dense(units = num_units, kernel_initializer = kernel_initializer, activation = "relu")
   }
 
   model %>% keras::layer_dense(units = 1)
 
   adam <- keras::optimizer_adam(learning_rate = learning_rate, ...)
-
 
   model$compile(
     loss = "mean_squared_error",

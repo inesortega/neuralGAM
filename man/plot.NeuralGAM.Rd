@@ -4,15 +4,7 @@
 \alias{plot.NeuralGAM}
 \title{Visualization of \code{NeuralGAM} object}
 \usage{
-\method{plot}{NeuralGAM}(
-  x = object,
-  select = NULL,
-  xlab = NULL,
-  ylab = NULL,
-  all.terms = FALSE,
-  title = NULL,
-  ...
-)
+\method{plot}{NeuralGAM}(x = object, select = NULL, xlab = NULL, ylab = NULL, title = NULL, ...)
 }
 \arguments{
 \item{x}{a fitted \code{NeuralGAM} object as produced by \code{NeuralGAM()}.}
@@ -24,9 +16,6 @@ select="X0"}
 
 \item{ylab}{if supplied, this value will be used as the \code{y} label for all plots}
 
-\item{all.terms}{if set to \code{TRUE} then the partial effects of the parametric model
-component are also plotted using \code{termplot} from the stats package.}
-
 \item{\ldots}{other graphics parameters to pass on to plotting commands.
 See details for ggplot2::geom_line options}
 }
@@ -35,6 +24,23 @@ Returns the partial effects plot.
 }
 \description{
 Visualization of \code{NeuralGAM} object. Plots the learned partial effects by the NeuralGAM object.
+}
+\examples{
+#' library(NeuralGAM)
+data(train)
+
+ngam <- NeuralGAM( y ~ X1 + s(X0) + s(X2), data = train,
+num_units = 1024, family = "gaussian",
+learning_rate = 0.001, bf_threshold = 0.001,
+max_iter_backfitting = 10, max_iter_ls = 10
+)
+
+plot(ngam)
+
+# Plot only a given term
+
+plot(ngam, select="X1")
+
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.

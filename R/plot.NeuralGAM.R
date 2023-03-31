@@ -13,6 +13,22 @@
 #' @importFrom ggplot2 ggplot labs ggplot_gtable ggplot_build aes geom_line
 #' @importFrom patchwork wrap_plots plot_layout plot_annotation
 #' @export
+#' @examples
+#' #' library(NeuralGAM)
+#' data(train)
+#'
+#' ngam <- NeuralGAM( y ~ X1 + s(X0) + s(X2), data = train,
+#' num_units = 1024, family = "gaussian",
+#' learning_rate = 0.001, bf_threshold = 0.001,
+#' max_iter_backfitting = 10, max_iter_ls = 10
+#' )
+#'
+#' plot(ngam)
+#'
+#' # Plot only a given term
+#'
+#' plot(ngam, select="X1")
+#'
 plot.NeuralGAM <- function(x = object, select=NULL, xlab = NULL, ylab = NULL,title = NULL, ...) {
 
   if (!inherits(x, "NeuralGAM")) {

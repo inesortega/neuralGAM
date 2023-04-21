@@ -45,25 +45,35 @@
 
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for NeuralGAM</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">object</span>, y <span class="op">=</span> <span class="cn">NULL</span>, ylab <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">x</span>, select <span class="op">=</span> <span class="cn">NULL</span>, xlab <span class="op">=</span> <span class="cn">NULL</span>, ylab <span class="op">=</span> <span class="cn">NULL</span>, title <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>x</dt>
-<dd><p><code>NeuralGAM</code> object.</p></dd>
+<dd><p>a fitted <code>NeuralGAM</code> object as produced by <code><a href="NeuralGAM.html">NeuralGAM()</a></code>.</p></dd>
 
 
-<dt>y</dt>
-<dd><p>NULL</p></dd>
+<dt>select</dt>
+<dd><p>allows to plot a set of selected terms. e.g. if you just want to plot the first term,
+select="X0"</p></dd>
+
+
+<dt>xlab</dt>
+<dd><p>if supplied, this value will be used as the <code>x</code> label for all plots</p></dd>
 
 
 <dt>ylab</dt>
-<dd><p>NULL</p></dd>
+<dd><p>if supplied, this value will be used as the <code>y</code> label for all plots</p></dd>
+
+
+<dt>title</dt>
+<dd><p>if supplied, this value will be used as the main plot title</p></dd>
 
 
 <dt>...</dt>
-<dd><p>Other options.</p></dd>
+<dd><p>other graphics parameters to pass on to plotting commands.
+See details for ggplot2::geom_line options</p></dd>
 
 </dl></div>
     <div id="value">
@@ -77,6 +87,47 @@
     <p>Ines Ortega-Fernandez, Marta Sestelo.</p>
     </div>
 
+    <div id="ref-examples">
+    <h2>Examples</h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">24500</span></span></span>
+<span class="r-in"><span><span class="va">x1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span>, <span class="op">-</span><span class="fl">2.5</span>, <span class="fl">2.5</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">x2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span>, <span class="op">-</span><span class="fl">2.5</span>, <span class="fl">2.5</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">x3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span>, <span class="op">-</span><span class="fl">2.5</span>, <span class="fl">2.5</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">f1</span> <span class="op">&lt;-</span><span class="va">x1</span><span class="op">**</span><span class="fl">2</span></span></span>
+<span class="r-in"><span><span class="va">f2</span> <span class="op">&lt;-</span> <span class="fl">2</span><span class="op">*</span><span class="va">x2</span></span></span>
+<span class="r-in"><span><span class="va">f3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="va">x3</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">f1</span> <span class="op">&lt;-</span> <span class="va">f1</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">f1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">f2</span> <span class="op">&lt;-</span> <span class="va">f2</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">f2</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">f3</span> <span class="op">&lt;-</span> <span class="va">f3</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">f3</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">eta0</span> <span class="op">&lt;-</span> <span class="fl">2</span> <span class="op">+</span> <span class="va">f1</span> <span class="op">+</span> <span class="va">f2</span> <span class="op">+</span> <span class="va">f3</span></span></span>
+<span class="r-in"><span><span class="va">epsilon</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">0.25</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">eta0</span> <span class="op">+</span> <span class="va">epsilon</span></span></span>
+<span class="r-in"><span><span class="va">train</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">x1</span>, <span class="va">x2</span>, <span class="va">x3</span>, <span class="va">y</span>, <span class="va">f1</span>, <span class="va">f2</span>, <span class="va">f3</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">NeuralGAM</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">ngam</span> <span class="op">&lt;-</span> <span class="fu"><a href="NeuralGAM.html">NeuralGAM</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="fu">s</span><span class="op">(</span><span class="va">x1</span><span class="op">)</span> <span class="op">+</span> <span class="va">x2</span> <span class="op">+</span> <span class="fu">s</span><span class="op">(</span><span class="va">x3</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">train</span>,</span></span>
+<span class="r-in"><span>                 num_units <span class="op">=</span> <span class="fl">1024</span>, family <span class="op">=</span> <span class="st">"gaussian"</span>,</span></span>
+<span class="r-in"><span>                 activation <span class="op">=</span> <span class="st">"relu"</span>,</span></span>
+<span class="r-in"><span>                 learning_rate <span class="op">=</span> <span class="fl">0.001</span>, bf_threshold <span class="op">=</span> <span class="fl">0.001</span>,</span></span>
+<span class="r-in"><span>                 max_iter_backfitting <span class="op">=</span> <span class="fl">10</span>, max_iter_ls <span class="op">=</span> <span class="fl">10</span></span></span>
+<span class="r-in"><span>                 <span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Initializing NeuralGAM..."</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 1 - Current Err =  0.300450126308617 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 2 - Current Err =  0.00448238405431189 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 3 - Current Err =  0.0027490746009042 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 4 - Current Err =  0.00173908723155919 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 5 - Current Err =  0.00198269144261631 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 6 - Current Err =  0.00381115408055781 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 7 - Current Err =  0.000468525332811227 BF Threshold =  0.001 Converged =  TRUE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Current delta  0.924718700210272  LS Threshold =  0.1 Converged =  FALSE"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">ngam</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="plot.NeuralGAM-1.png" alt="" width="700" height="433"></span>
+</code></pre></div>
+    </div>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top"><h2 data-toc-skip>Contents</h2>

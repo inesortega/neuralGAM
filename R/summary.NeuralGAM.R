@@ -17,8 +17,8 @@ summary.NeuralGAM <- function(object, ...) {
     print(ngam$model)
     cat("\n\nTraining History \n\n")
     print(ngam$stats)
-    invisible(x)
+    invisible(object)
   }else{
-    stop("Argument x must be a NeuralGAM object.")
+    stop("Argument object must be a NeuralGAM object.")
   }
 }

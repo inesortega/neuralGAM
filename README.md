@@ -56,6 +56,21 @@ plot(ngam)
 To obtain predictions from new data, use the `predict` function: 
 
 ```
-plot(ngam)
+n <- 5000
+x1 <- runif(n, -2.5, 2.5)
+x2 <- runif(n, -2.5, 2.5)
+x3 <- runif(n, -2.5, 2.5)
+
+test <- data.frame(x1, x2, x3)
+
+# Obtain linear predictor
+eta <- predict(ngam, test, type = "link")
+
+# Obtain predicted response
+yhat <- predict(ngam, test, type = "response")
+
+# Obtain each component of the linear predictor 
+terms <- predict(ngam, test, type = "terms")
+
 ```
 

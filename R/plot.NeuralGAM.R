@@ -6,6 +6,7 @@
 #' select="X0"
 #' @param xlab if supplied, this value will be used as the \code{x} label for all plots
 #' @param ylab if supplied, this value will be used as the \code{y} label for all plots
+#' @param title if supplied, this value will be used as the main plot title
 #' @param \ldots other graphics parameters to pass on to plotting commands.
 #' See details for ggplot2::geom_line options
 #' @return Returns the partial effects plot.
@@ -14,22 +15,34 @@
 #' @importFrom patchwork wrap_plots plot_layout plot_annotation
 #' @export
 #' @examples
-#' #' library(NeuralGAM)
-#' data(train)
 #'
-#' ngam <- NeuralGAM( y ~ X1 + s(X0) + s(X2), data = train,
-#' num_units = 1024, family = "gaussian",
-#' learning_rate = 0.001, bf_threshold = 0.001,
-#' max_iter_backfitting = 10, max_iter_ls = 10
-#' )
+#' n <- 24500
+#' x1 <- runif(n, -2.5, 2.5)
+#' x2 <- runif(n, -2.5, 2.5)
+#' x3 <- runif(n, -2.5, 2.5)
+#'
+#' f1 <-x1**2
+#' f2 <- 2*x2
+#' f3 <- sin(x3)
+#' f1 <- f1 - mean(f1)
+#' f2 <- f2 - mean(f2)
+#' f3 <- f3 - mean(f3)
+#'
+#' eta0 <- 2 + f1 + f2 + f3
+#' epsilon <- rnorm(n, 0.25)
+#' y <- eta0 + epsilon
+#' train <- data.frame(x1, x2, x3, y, f1, f2, f3)
+#'
+#' library(NeuralGAM)
+#' ngam <- NeuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
+#'                  num_units = 1024, family = "gaussian",
+#'                  activation = "relu",
+#'                  learning_rate = 0.001, bf_threshold = 0.001,
+#'                  max_iter_backfitting = 10, max_iter_ls = 10
+#'                  )
 #'
 #' plot(ngam)
-#'
-#' # Plot only a given term
-#'
-#' plot(ngam, select="X1")
-#'
-plot.NeuralGAM <- function(x = object, select=NULL, xlab = NULL, ylab = NULL,title = NULL, ...) {
+plot.NeuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL,title = NULL, ...) {
 
   if (!inherits(x, "NeuralGAM")) {
     stop("Argument 'x' must be of class 'NeuralGAM'")

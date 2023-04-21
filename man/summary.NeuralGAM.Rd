@@ -4,10 +4,10 @@
 \alias{summary.NeuralGAM}
 \title{\code{NeuralGAM} summary}
 \usage{
-\method{summary}{NeuralGAM}(x = object, ...)
+\method{summary}{NeuralGAM}(object, ...)
 }
 \arguments{
-\item{x}{\code{NeuralGAM} object.}
+\item{object}{\code{NeuralGAM} object.}
 
 \item{\ldots}{Other options.}
 }

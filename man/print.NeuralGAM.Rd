@@ -4,12 +4,12 @@
 \alias{print.NeuralGAM}
 \title{Short \code{NeuralGAM} summary}
 \usage{
-\method{print}{NeuralGAM}(x = object, ...)
+\method{print}{NeuralGAM}(x, ...)
 }
 \arguments{
 \item{x}{\code{NeuralGAM} object.}
 
-\item{\ldots}{Other options.}
+\item{\ldots}{Other arguments.}
 }
 \value{
 The printed output of the object
@@ -18,6 +18,35 @@ The printed output of the object
 Default print statement for a NeuralGAM object. Prints
 the distribution family, model formula, intercept value, number of terms
 (neural networks), as well as neural network architecture.
+}
+\examples{
+
+n <- 24500
+x1 <- runif(n, -2.5, 2.5)
+x2 <- runif(n, -2.5, 2.5)
+x3 <- runif(n, -2.5, 2.5)
+
+f1 <-x1**2
+f2 <- 2*x2
+f3 <- sin(x3)
+f1 <- f1 - mean(f1)
+f2 <- f2 - mean(f2)
+f3 <- f3 - mean(f3)
+
+eta0 <- 2 + f1 + f2 + f3
+epsilon <- rnorm(n, 0.25)
+y <- eta0 + epsilon
+train <- data.frame(x1, x2, x3, y, f1, f2, f3)
+
+library(NeuralGAM)
+ngam <- NeuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
+                 num_units = 1024, family = "gaussian",
+                 activation = "relu",
+                 learning_rate = 0.001, bf_threshold = 0.001,
+                 max_iter_backfitting = 10, max_iter_ls = 10
+                 )
+
+print(ngam)
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.

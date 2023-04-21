@@ -4,7 +4,7 @@
 \alias{plot.NeuralGAM}
 \title{Visualization of \code{NeuralGAM} object}
 \usage{
-\method{plot}{NeuralGAM}(x = object, select = NULL, xlab = NULL, ylab = NULL, title = NULL, ...)
+\method{plot}{NeuralGAM}(x, select = NULL, xlab = NULL, ylab = NULL, title = NULL, ...)
 }
 \arguments{
 \item{x}{a fitted \code{NeuralGAM} object as produced by \code{NeuralGAM()}.}
@@ -16,6 +16,8 @@ select="X0"}
 
 \item{ylab}{if supplied, this value will be used as the \code{y} label for all plots}
 
+\item{title}{if supplied, this value will be used as the main plot title}
+
 \item{\ldots}{other graphics parameters to pass on to plotting commands.
 See details for ggplot2::geom_line options}
 }
@@ -26,21 +28,33 @@ Returns the partial effects plot.
 Visualization of \code{NeuralGAM} object. Plots the learned partial effects by the NeuralGAM object.
 }
 \examples{
-#' library(NeuralGAM)
-data(train)
 
-ngam <- NeuralGAM( y ~ X1 + s(X0) + s(X2), data = train,
-num_units = 1024, family = "gaussian",
-learning_rate = 0.001, bf_threshold = 0.001,
-max_iter_backfitting = 10, max_iter_ls = 10
-)
+n <- 24500
+x1 <- runif(n, -2.5, 2.5)
+x2 <- runif(n, -2.5, 2.5)
+x3 <- runif(n, -2.5, 2.5)
+
+f1 <-x1**2
+f2 <- 2*x2
+f3 <- sin(x3)
+f1 <- f1 - mean(f1)
+f2 <- f2 - mean(f2)
+f3 <- f3 - mean(f3)
+
+eta0 <- 2 + f1 + f2 + f3
+epsilon <- rnorm(n, 0.25)
+y <- eta0 + epsilon
+train <- data.frame(x1, x2, x3, y, f1, f2, f3)
+
+library(NeuralGAM)
+ngam <- NeuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
+                 num_units = 1024, family = "gaussian",
+                 activation = "relu",
+                 learning_rate = 0.001, bf_threshold = 0.001,
+                 max_iter_backfitting = 10, max_iter_ls = 10
+                 )
 
 plot(ngam)
-
-# Plot only a given term
-
-plot(ngam, select="X1")
-
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.

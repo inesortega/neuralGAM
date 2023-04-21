@@ -24,6 +24,10 @@ Imports:
   ggplot2,
   patchwork,
   magrittr,
-  reticulate
+  reticulate,
+  formula.tools
 SystemRequirements: Python (>= 3.9), TensorFlow (https://www.tensorflow.org/)
 RoxygenNote: 7.2.3
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

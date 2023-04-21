@@ -2,16 +2,16 @@
 #' @description Summary of a fitted NeuralGAM object. Prints
 #' the distribution family, model formula, intercept value, sample size,
 #' as well as neural network architecture and training history.
-#' @param x \code{NeuralGAM} object.
+#' @param object \code{NeuralGAM} object.
 #' @param \ldots Other options.
 #' @return The summary of the object
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @export
 
-summary.NeuralGAM <- function(x = object, ...) {
-  if (inherits(x, "NeuralGAM")) {
+summary.NeuralGAM <- function(object, ...) {
+  if (inherits(object, "NeuralGAM")) {
     # Print the object's contents
-    ngam <- x
+    ngam <- object
     print(ngam)
     cat("\n\n Model architecture: \n\n")
     print(ngam$model)

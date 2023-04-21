@@ -19,9 +19,24 @@ In the following example, we use the sample synthetic dataset and fit a NeuralGA
 with a single layer with 1024 units.  
 
 ```
-library(NeuralGAM)
+n <- 24500
+x1 <- runif(n, -2.5, 2.5)
+x2 <- runif(n, -2.5, 2.5)
+x3 <- runif(n, -2.5, 2.5)
 
-data(train)
+f1 <-x1**2
+f2 <- 2*x2
+f3 <- sin(x3)
+f1 <- f1 - mean(f1)
+f2 <- f2 - mean(f2)
+f3 <- f3 - mean(f3)
+
+eta0 <- 2 + f1 + f2 + f3
+epsilon <- rnorm(n, 0.25)
+y <- eta0 + epsilon
+train <- data.frame(x1, x2, x3, y, f1, f2, f3)
+
+library(NeuralGAM)
 
 X_train <- train[c('X0','X1','X2')]
 y_train <- train$y

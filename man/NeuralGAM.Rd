@@ -88,6 +88,10 @@ response \code{y}, adjusted by the \code{family} parameter.
 \examples{
 
 n <- 24500
+
+seed <- 42
+set.seed(seed)
+
 x1 <- runif(n, -2.5, 2.5)
 x2 <- runif(n, -2.5, 2.5)
 x3 <- runif(n, -2.5, 2.5)
@@ -102,14 +106,15 @@ f3 <- f3 - mean(f3)
 eta0 <- 2 + f1 + f2 + f3
 epsilon <- rnorm(n, 0.25)
 y <- eta0 + epsilon
-train <- data.frame(x1, x2, x3, y, f1, f2, f3)
+train <- data.frame(x1, x2, x3, y)
 
 library(NeuralGAM)
 ngam <- NeuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
                  num_units = 1024, family = "gaussian",
                  activation = "relu",
                  learning_rate = 0.001, bf_threshold = 0.001,
-                 max_iter_backfitting = 10, max_iter_ls = 10
+                 max_iter_backfitting = 10, max_iter_ls = 10,
+                 seed = seed
                  )
 
 ngam

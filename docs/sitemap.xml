@@ -16,9 +16,6 @@
     <loc>/reference/dev.html</loc>
   </url>
   <url>
-    <loc>/reference/deviance.html</loc>
-  </url>
-  <url>
     <loc>/reference/diriv.html</loc>
   </url>
   <url>
@@ -50,12 +47,6 @@
   </url>
   <url>
     <loc>/reference/summary.NeuralGAM.html</loc>
-  </url>
-  <url>
-    <loc>/reference/test.html</loc>
-  </url>
-  <url>
-    <loc>/reference/train.html</loc>
   </url>
   <url>
     <loc>/reference/weight.html</loc>

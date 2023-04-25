@@ -72,5 +72,8 @@ yhat <- predict(ngam, test, type = "response")
 # Obtain each component of the linear predictor 
 terms <- predict(ngam, test, type = "terms")
 
+# Obtain only certain terms: 
+terms <- predict(ngam, test, type = "terms", terms = c("x1", "x2"))
+
 ```
 

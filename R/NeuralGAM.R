@@ -51,6 +51,10 @@
 #' @examples
 #'
 #' n <- 24500
+#'
+#' seed <- 42
+#' set.seed(seed)
+#'
 #' x1 <- runif(n, -2.5, 2.5)
 #' x2 <- runif(n, -2.5, 2.5)
 #' x3 <- runif(n, -2.5, 2.5)
@@ -65,14 +69,15 @@
 #' eta0 <- 2 + f1 + f2 + f3
 #' epsilon <- rnorm(n, 0.25)
 #' y <- eta0 + epsilon
-#' train <- data.frame(x1, x2, x3, y, f1, f2, f3)
+#' train <- data.frame(x1, x2, x3, y)
 #'
 #' library(NeuralGAM)
 #' ngam <- NeuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
 #'                  num_units = 1024, family = "gaussian",
 #'                  activation = "relu",
 #'                  learning_rate = 0.001, bf_threshold = 0.001,
-#'                  max_iter_backfitting = 10, max_iter_ls = 10
+#'                  max_iter_backfitting = 10, max_iter_ls = 10,
+#'                  seed = seed
 #'                  )
 #'
 #' ngam
@@ -129,12 +134,10 @@ NeuralGAM <-
       stop("learning_rate should be a numeric value")
     }
 
-    if (family != "gaussian" &
-        family != "binomial")
+    if (family != "gaussian" && family != "binomial")
       stop("family must be 'gaussian' or 'binomial'")
 
-    if (!is.null(w_train)) {
-      if (!is.numeric(w_train))
+    if (!is.null(w_train) && !is.numeric(w_train)) {
         stop("w_train should be a numeric vector")
     }
 
@@ -150,7 +153,7 @@ NeuralGAM <-
     if (!is.numeric(max_iter_ls))
       stop("max_iter_ls should be a numeric value")
 
-    if (!is.null(seed) && !is.integer(seed)) {
+    if (!is.null(seed) && !is.numeric(seed)) {
       stop("seed should be a positive integer value")
     }
 
@@ -171,8 +174,6 @@ NeuralGAM <-
     x <- data[formula$terms]
 
     x_np <- data[formula$np_terms]
-
-
 
     f <- g <- data.frame(matrix(0, nrow = nrow(x), ncol = ncol(x)))
     colnames(f) <- colnames(g) <- colnames(x)
@@ -327,18 +328,20 @@ NeuralGAM <-
       dev_new <- dev(muhat, y, family)
 
       dev_delta <- abs((dev_old - dev_new) / dev_old)
-      print(
-        paste(
-          "Current delta ",
-          dev_delta,
-          " LS Threshold = ",
-          ls_threshold,
-          "Converged = ",
-          dev_delta < ls_threshold
+      if(family == "binomial"){
+        if ((dev_delta < ls_threshold) & (it > 0)) {
+          converged <- TRUE
+        }
+        print(
+          paste(
+            "Current delta ",
+            dev_delta,
+            " LS Threshold = ",
+            ls_threshold,
+            "Converged = ",
+            dev_delta < ls_threshold
+          )
         )
-      )
-      if ((dev_delta < ls_threshold) & (it > 0)) {
-        converged <- TRUE
       }
       it <- it + 1
     }

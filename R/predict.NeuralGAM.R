@@ -18,6 +18,10 @@
 #' @examples
 #'
 #' n <- 24500
+#'
+#' seed <- 42
+#' set.seed(seed)
+#'
 #' x1 <- runif(n, -2.5, 2.5)
 #' x2 <- runif(n, -2.5, 2.5)
 #' x3 <- runif(n, -2.5, 2.5)
@@ -32,27 +36,33 @@
 #' eta0 <- 2 + f1 + f2 + f3
 #' epsilon <- rnorm(n, 0.25)
 #' y <- eta0 + epsilon
-#' train <- data.frame(x1, x2, x3, y, f1, f2, f3)
+#' train <- data.frame(x1, x2, x3, y)
 #'
 #' library(NeuralGAM)
 #' ngam <- NeuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
 #'                  num_units = 1024, family = "gaussian",
 #'                  activation = "relu",
 #'                  learning_rate = 0.001, bf_threshold = 0.001,
-#'                  max_iter_backfitting = 10, max_iter_ls = 10
+#'                  max_iter_backfitting = 10, max_iter_ls = 10,
+#'                  seed = seed
 #'                  )
-#'
 #' n <- 5000
 #' x1 <- runif(n, -2.5, 2.5)
 #' x2 <- runif(n, -2.5, 2.5)
 #' x3 <- runif(n, -2.5, 2.5)
 #' test <- data.frame(x1, x2, x3)
+#'
 #' # Obtain linear predictor
 #' eta <- predict(ngam, test, type = "link")
+#'
 #' # Obtain predicted response
 #' yhat <- predict(ngam, test, type = "response")
-#' #Obtain each component of the linear predictor
+#'
+#' # Obtain each component of the linear predictor
 #' terms <- predict(ngam, test, type = "terms")
+#'
+#' # Obtain only certain terms:
+#' terms <- predict(ngam, test, type = "terms", terms = c("x1", "x2"))
 
 predict.NeuralGAM <-
   function(object,
@@ -77,15 +87,10 @@ predict.NeuralGAM <-
       x <- ngam$x
     }
     else{
-      if (type != "terms" && ncol(x) != length(ngam$x)) {
+      if (type != "terms" && ncol(newdata) != length(ngam$x)) {
         stop("newdata needs to have the same components as the fitted ngam model")
       }
       x <- newdata
-    }
-
-    # Check if type argument is missing or NULL
-    if (missing(type) || is.null(type)) {
-      stop("Please provide a value for the type argument.")
     }
 
     # Check if type argument is valid
@@ -112,9 +117,9 @@ predict.NeuralGAM <-
     f <- x * NA
 
     for (i in 1:ncol(x)) {
+      term <- colnames(x)[[i]]
       if (type == "terms" && !is.null(terms)) {
         # compute only certain terms
-        term <- colnames(x)[[i]]
         if (term %in% terms) {
           f[[term]] <- get_model_predictions(ngam, x[[term]], term)
         }
@@ -149,8 +154,9 @@ predict.NeuralGAM <-
 
 get_model_predictions <- function(ngam, x, term) {
   # Linear term
+  paste(term)
   if (term %in% ngam$formula$p_terms) {
-    model <- ngam$model[["linear"]]
+    model <- ngam$model$linear
 
     lm_data <- data.frame(x)
     colnames(lm_data) <- term
@@ -164,6 +170,7 @@ get_model_predictions <- function(ngam, x, term) {
   }
   # Non-Parametric term
   if (term %in% ngam$formula$np_terms) {
+    model <- ngam$model[[term]]
     return(model$predict(x))
   }
 }

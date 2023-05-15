@@ -32,7 +32,7 @@ Defaults to Xavier Initializer (\code{glorot_normal}).}
 
 \item{kernel_regularizer}{Optional regularizer function applied to the kernel weights matrix.}
 
-\item{bias_regularizer}{Optional regularizer funciton applied to the bias vector.}
+\item{bias_regularizer}{Optional regularizer function applied to the bias vector.}
 
 \item{bias_initializer}{Optional initializer for the bias vector.}
 

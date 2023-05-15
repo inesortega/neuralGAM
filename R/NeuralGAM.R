@@ -24,7 +24,7 @@
 #' @param kernel_initializer Kernel initializer for the Dense layers.
 #' Defaults to Xavier Initializer (\code{glorot_normal}).
 #' @param kernel_regularizer Optional regularizer function applied to the kernel weights matrix.
-#' @param bias_regularizer Optional regularizer funciton applied to the bias vector.
+#' @param bias_regularizer Optional regularizer function applied to the bias vector.
 #' @param bias_initializer Optional initializer for the bias vector.
 #' @param activity_regularizer Optional regularizer function applied to the output of the layer
 #' @param bf_threshold Convergence criterion of the backfitting algorithm.

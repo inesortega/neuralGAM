@@ -21,7 +21,6 @@
 #'
 #' @importFrom formula.tools lhs rhs
 #' @importFrom stats as.formula
-
 get_formula_elements <- function(formula) {
   # Separate model terms (response, all_terms, smooth_terms)
   formula <- formula

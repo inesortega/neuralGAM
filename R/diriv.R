@@ -17,7 +17,7 @@ diriv <- function(family, muhat) {
     stop("Argument \"family\" is missing, with no default")
   }
 
-  if (family != "gaussian" & family != "binomial") {
+  if (family != "gaussian" & family != "binomial"){
     stop("Unsupported distribution family. Supported values are \"gaussian\" and \"binomial\"")
   }
 

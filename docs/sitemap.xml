@@ -13,10 +13,13 @@
     <loc>/reference/build_feature_NN.html</loc>
   </url>
   <url>
-    <loc>/reference/deviance.html</loc>
+    <loc>/reference/dev.html</loc>
   </url>
   <url>
     <loc>/reference/diriv.html</loc>
+  </url>
+  <url>
+    <loc>/reference/get_formula_elements.html</loc>
   </url>
   <url>
     <loc>/reference/index.html</loc>
@@ -43,10 +46,7 @@
     <loc>/reference/print.NeuralGAM.html</loc>
   </url>
   <url>
-    <loc>/reference/test.html</loc>
-  </url>
-  <url>
-    <loc>/reference/train.html</loc>
+    <loc>/reference/summary.NeuralGAM.html</loc>
   </url>
   <url>
     <loc>/reference/weight.html</loc>

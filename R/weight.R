@@ -6,7 +6,6 @@
 #' @param muhat fitted values
 #' @param family A description of the link function used in the model:
 #' \code{"gaussian"} or \code{"binomial"}
-#' @export
 #' @return computed weights for the Local Scoring algorithm
 #' according to the \code{"family"} distribution
 weight <- function(w, muhat, family) {

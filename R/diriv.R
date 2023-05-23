@@ -6,7 +6,6 @@
 #' @param family A description of the link function used in the model:
 #' \code{"gaussian"} or \code{"binomial"}
 #' @param muhat fitted values
-#'
 #' @return derivative of the link function for the fitted values
 diriv <- function(family, muhat) {
 

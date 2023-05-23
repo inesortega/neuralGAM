@@ -34,8 +34,8 @@ weight <- function(w, muhat, family) {
   if (family == "binomial") { # Derivative Logit
     muhat[muhat <= 0.001] <- 0.001
     muhat[muhat >= 0.999] <- 0.999
-    temp <- diriv(muhat, family)
-    aux <- muhat * (1 - muhat) * temp**2
+    temp <- diriv(family, muhat)
+    aux <- muhat * (1 - muhat) * (temp**2)
     aux[aux <= 0.001] <- 0.001
     wei <- w / aux
   }

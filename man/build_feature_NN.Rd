@@ -7,7 +7,13 @@
 build_feature_NN(
   num_units,
   learning_rate = 0.001,
+  activation = "relu",
   kernel_initializer = "glorot_normal",
+  kernel_regularizer = NULL,
+  bias_regularizer = NULL,
+  bias_initializer = "zeros",
+  activity_regularizer = NULL,
+  name = NULL,
   ...
 )
 }
@@ -19,14 +25,27 @@ the number of hidden units on each hidden layer is used.}
 
 \item{learning_rate}{Learning rate for the neural network optimizer.}
 
+\item{activation}{Activation function of the neural network. Defaults to \code{relu}}
+
 \item{kernel_initializer}{Kernel initializer for the Dense layers.
 Defaults to Xavier Initializer (\code{glorot_normal}).}
+
+\item{kernel_regularizer}{Optional regularizer function applied to the kernel weights matrix.}
+
+\item{bias_regularizer}{Optional regularizer function applied to the bias vector.}
+
+\item{bias_initializer}{Optional initializer for the bias vector.}
+
+\item{activity_regularizer}{Optional regularizer function applied to the output of the layer}
+
+\item{name}{Neural Network name.}
 
 \item{...}{
   Arguments passed on to \code{\link[=NeuralGAM]{NeuralGAM}}
   \describe{
-    \item{\code{x}}{A data frame containing all the covariates.}
-    \item{\code{y}}{A numeric vector with the response values.}
+    \item{\code{formula}}{A GAM formula. You can add smooth terms using \code{s()}.}
+    \item{\code{data}}{A data frame containing the model response variable and covariates
+required by the formula. Additional terms not present in the formula will be ignored.}
     \item{\code{family}}{A description of the link function used in the model
 (defaults to \code{gaussian}). Set \code{family="gaussian"} for linear
 regression and \code{family="binomial"} for logistic regression.}
@@ -38,6 +57,9 @@ Defaults to \code{0.1}}
 of the backfitting algorithm. Defaults to \code{10}.}
     \item{\code{max_iter_ls}}{An integer with the maximum number of iterations of the
 local scoring Algorithm. Defaults to \code{10}.}
+    \item{\code{w_train}}{Optional sample weights}
+    \item{\code{seed}}{A positive integer which specifies the random number generator
+seed for algorithms dependent on randomization.}
   }}
 }
 \value{
@@ -49,8 +71,8 @@ The architecture of the neural network is configurable using the
 \code{"num_units"} parameter. A single integer with the number of hidden
 units builds a shallow (single layer) neural network. Deep Neural Networks
 can be built by specifying the size of each hidden layer in the
- \code{"num_units"} parameter. For example, \code{"list(32,32,32)"} generates
- a DNN with three layers and 32 neurons per layer.
+\code{"num_units"} parameter. For example, \code{"list(32,32,32)"} generates
+a DNN with three layers and 32 neurons per layer.
 }
 \references{
 Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980.

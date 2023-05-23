@@ -5,24 +5,31 @@
 \title{Fit a NeuralGAM model}
 \usage{
 NeuralGAM(
-  x,
-  y,
+  formula,
+  data,
   num_units,
   family = "gaussian",
   learning_rate = 0.001,
+  activation = "relu",
   kernel_initializer = "glorot_normal",
+  kernel_regularizer = NULL,
+  bias_regularizer = NULL,
+  bias_initializer = "zeros",
+  activity_regularizer = NULL,
   w_train = NULL,
   bf_threshold = 0.001,
   ls_threshold = 0.1,
   max_iter_backfitting = 10,
   max_iter_ls = 10,
+  seed = NULL,
   ...
 )
 }
 \arguments{
-\item{x}{A data frame containing all the covariates.}
+\item{formula}{A GAM formula. You can add smooth terms using \code{s()}.}
 
-\item{y}{A numeric vector with the response values.}
+\item{data}{A data frame containing the model response variable and covariates
+required by the formula. Additional terms not present in the formula will be ignored.}
 
 \item{num_units}{Defines the architecture of each neural network.
 If a scalar value is provided, a single hidden layer neural network with that number of units is used.
@@ -35,8 +42,20 @@ regression and \code{family="binomial"} for logistic regression.}
 
 \item{learning_rate}{Learning rate for the neural network optimizer.}
 
+\item{activation}{Activation function of the neural network. Defaults to \code{relu}}
+
 \item{kernel_initializer}{Kernel initializer for the Dense layers.
 Defaults to Xavier Initializer (\code{glorot_normal}).}
+
+\item{kernel_regularizer}{Optional regularizer function applied to the kernel weights matrix.}
+
+\item{bias_regularizer}{Optional regularizer function applied to the bias vector.}
+
+\item{bias_initializer}{Optional initializer for the bias vector.}
+
+\item{activity_regularizer}{Optional regularizer function applied to the output of the layer}
+
+\item{w_train}{Optional sample weights}
 
 \item{bf_threshold}{Convergence criterion of the backfitting algorithm.
 Defaults to \code{0.001}}
@@ -50,9 +69,10 @@ of the backfitting algorithm. Defaults to \code{10}.}
 \item{max_iter_ls}{An integer with the maximum number of iterations of the
 local scoring Algorithm. Defaults to \code{10}.}
 
-\item{...}{Other parameters.}
+\item{seed}{A positive integer which specifies the random number generator
+seed for algorithms dependent on randomization.}
 
-\item{sample_weights}{Optional sample weights.}
+\item{\ldots}{Additional parameters for the Adam optimizer (see ?keras::optimizer_adam)}
 }
 \value{
 A trained NeuralGAM object. Use \code{summary(ngam)} to see details.
@@ -67,26 +87,37 @@ response \code{y}, adjusted by the \code{family} parameter.
 }
 \examples{
 
+n <- 24500
+
+seed <- 42
+set.seed(seed)
+
+x1 <- runif(n, -2.5, 2.5)
+x2 <- runif(n, -2.5, 2.5)
+x3 <- runif(n, -2.5, 2.5)
+
+f1 <-x1**2
+f2 <- 2*x2
+f3 <- sin(x3)
+f1 <- f1 - mean(f1)
+f2 <- f2 - mean(f2)
+f3 <- f3 - mean(f3)
+
+eta0 <- 2 + f1 + f2 + f3
+epsilon <- rnorm(n, 0.25)
+y <- eta0 + epsilon
+train <- data.frame(x1, x2, x3, y)
+
 library(NeuralGAM)
-data(train)
-head(train)
-X_train <- train[c("X0", "X1", "X2")]
-y_train <- train$y
+ngam <- NeuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
+                 num_units = 1024, family = "gaussian",
+                 activation = "relu",
+                 learning_rate = 0.001, bf_threshold = 0.001,
+                 max_iter_backfitting = 10, max_iter_ls = 10,
+                 seed = seed
+                 )
 
-ngam <- NeuralGAM(
-  x = X_train, y = y_train, num_units = 1024, family = "gaussian",
-  learning_rate = 0.001, bf_threshold = 0.001,
-  max_iter_backfitting = 10, max_iter_ls = 10
-)
-
-plot(ngam)
-
-data(test)
-X_test <- test[c("X0", "X1", "X2")]
-# Obtain linear predictor
-eta <- predict(object = ngam, x = X_test, type = "link")
-# Obtain each component of the linear predictor separately on each column of a data.frame
-terms <- predict(object = ngam, x = X_test, type = "terms")
+ngam
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.

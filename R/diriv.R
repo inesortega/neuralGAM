@@ -6,7 +6,7 @@
 #' @param family A description of the link function used in the model:
 #' \code{"gaussian"} or \code{"binomial"}
 #' @param muhat fitted values
-#'
+#' @export
 #' @return derivative of the link function for the fitted values
 diriv <- function(family, muhat) {
 
@@ -18,7 +18,7 @@ diriv <- function(family, muhat) {
     stop("Argument \"family\" is missing, with no default")
   }
 
-  if (family != "gaussian" & family != "binomial") {
+  if (family != "gaussian" & family != "binomial"){
     stop("Unsupported distribution family. Supported values are \"gaussian\" and \"binomial\"")
   }
 

@@ -13,86 +13,164 @@
 #' in this list will be returned. If \code{NULL} then no terms are excluded (default).
 #' @param \ldots Other options.
 #' @return Predicted values according to \code{type} parameter.
+#' @importFrom stats predict
 #' @export
-predict.NeuralGAM <- function(object, newdata = NULL, type = "link", terms = NULL, ...) {
+#' @examples
+#'
+#' n <- 24500
+#'
+#' seed <- 42
+#' set.seed(seed)
+#'
+#' x1 <- runif(n, -2.5, 2.5)
+#' x2 <- runif(n, -2.5, 2.5)
+#' x3 <- runif(n, -2.5, 2.5)
+#'
+#' f1 <-x1**2
+#' f2 <- 2*x2
+#' f3 <- sin(x3)
+#' f1 <- f1 - mean(f1)
+#' f2 <- f2 - mean(f2)
+#' f3 <- f3 - mean(f3)
+#'
+#' eta0 <- 2 + f1 + f2 + f3
+#' epsilon <- rnorm(n, 0.25)
+#' y <- eta0 + epsilon
+#' train <- data.frame(x1, x2, x3, y)
+#'
+#' library(NeuralGAM)
+#' ngam <- NeuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
+#'                  num_units = 1024, family = "gaussian",
+#'                  activation = "relu",
+#'                  learning_rate = 0.001, bf_threshold = 0.001,
+#'                  max_iter_backfitting = 10, max_iter_ls = 10,
+#'                  seed = seed
+#'                  )
+#' n <- 5000
+#' x1 <- runif(n, -2.5, 2.5)
+#' x2 <- runif(n, -2.5, 2.5)
+#' x3 <- runif(n, -2.5, 2.5)
+#' test <- data.frame(x1, x2, x3)
+#'
+#' # Obtain linear predictor
+#' eta <- predict(ngam, test, type = "link")
+#'
+#' # Obtain predicted response
+#' yhat <- predict(ngam, test, type = "response")
+#'
+#' # Obtain each component of the linear predictor
+#' terms <- predict(ngam, test, type = "terms")
+#'
+#' # Obtain only certain terms:
+#' terms <- predict(ngam, test, type = "terms", terms = c("x1", "x2"))
 
-  # Check if object is of class "NeuralGAM"
-  if (!inherits(object, "NeuralGAM")) {
-    stop("The object argument must be a fitted NeuralGAM object.")
-  }
-
-  # Check if object argument is missing or NULL
-  if (missing(object) || is.null(object)) {
-    stop("Please provide a fitted NeuralGAM object as the object argument.")
-  }
-
-  ngam <- object
-
-  # check that all parameters are OK
-  if (missing(newdata)) {
-    x <- ngam$x
-  }
-  else{
-    if(type != "terms" && ncols(x) != length(ngam$model)){
-      stop("newdata needs to have the same components as the fitted ngam model")
+predict.NeuralGAM <-
+  function(object,
+           newdata = NULL,
+           type = "link",
+           terms = NULL,
+           ...) {
+    # Check if object is of class "NeuralGAM"
+    if (!inherits(object, "NeuralGAM")) {
+      stop("The object argument must be a fitted NeuralGAM object.")
     }
-    x <- newdata
-  }
 
-  # Check if type argument is missing or NULL
-  if (missing(type) || is.null(type)) {
-    stop("Please provide a value for the type argument.")
-  }
+    # Check if object argument is missing or NULL
+    if (missing(object) || is.null(object)) {
+      stop("Please provide a fitted NeuralGAM object as the object argument.")
+    }
 
-  # Check if type argument is valid
-  valid_types <- c("link", "terms", "response")
-  if (!type %in% valid_types) {
-    stop("The value of the type argument is invalid. Valid options are {link, terms, response}.")
-  }
+    ngam <- object
 
-  if (type == "terms" && !is.null(terms) && !all(terms %in% colnames(x))){
-    stop(paste("Invalid terms. Valid options are: ", paste(colnames(x), collapse=",")))
-  }
-
-  # Check if newdata columns match ngam$model columns
-  if (type != "terms" && !is.null(newdata) && !all(colnames(newdata) %in% colnames(ngam$x))) {
-    stop("The newdata argument does not have the same columns as the fitted ngam model.")
-  }
-
-  f <- x*NA
-  for (i in 1:ncol(x)) {
-
-    if (type == "terms" && !is.null(terms)){
-      # compute only certain terms
-      if(colnames(x)[[i]] %in% terms){
-        f[, colnames(x)[[i]]] <- ngam$model[[i]]$predict(x[, i])
-      }
-      else{
-        next
-      }
+    # check that all parameters are OK
+    if (missing(newdata)) {
+      x <- ngam$x
     }
     else{
-      # consider all terms
-      f[, colnames(x)[[i]]] <- ngam$model[[i]]$predict(x[, i])
+      if (type != "terms" && ncol(newdata) != length(ngam$x)) {
+        stop("newdata needs to have the same components as the fitted ngam model")
+      }
+      x <- newdata
+    }
+
+    # Check if type argument is valid
+    valid_types <- c("link", "terms", "response")
+    if (!type %in% valid_types) {
+      stop("The value of the type argument is invalid. Valid options are {link, terms, response}.")
+    }
+
+    if (type == "terms" &&
+        !is.null(terms) && !all(terms %in% colnames(x))) {
+      stop(paste(
+        "Invalid terms. Valid options are: ",
+        paste(colnames(x), collapse = ",")
+      ))
+    }
+
+    # Check if newdata columns match ngam$model columns
+    if (type != "terms" &&
+        !is.null(newdata) &&
+        !all(colnames(newdata) %in% colnames(ngam$x))) {
+      stop("The newdata argument does not have the same columns as the fitted ngam model.")
+    }
+
+    f <- x * NA
+
+    for (i in 1:ncol(x)) {
+      term <- colnames(x)[[i]]
+      if (type == "terms" && !is.null(terms)) {
+        # compute only certain terms
+        if (term %in% terms) {
+          f[[term]] <- get_model_predictions(ngam, x[[term]], term)
+        }
+        else{
+          next
+        }
+      }
+      else{
+        f[[term]] <- get_model_predictions(ngam, x[[term]], term)
+      }
+    }
+
+    if (type == "terms") {
+      if (!is.null(terms)) {
+        f <- f[, terms]
+        colnames(f) <- terms
+      }
+      return(f)
+    }
+
+    eta <- rowSums(f) + ngam$eta0
+    if (type == "link") {
+      # Return the linear predictor
+      return(eta)
+    }
+
+    if (type == "response") {
+      y <- link(family = ngam$family, eta)
+      return(y)
     }
   }
 
-  if(type == "terms"){
-    if (!is.null(terms)){
-      f <- f[,terms]
-      colnames(f) <- terms
-    }
-    return(f)
-  }
+get_model_predictions <- function(ngam, x, term) {
+  # Linear term
+  paste(term)
+  if (term %in% ngam$formula$p_terms) {
+    model <- ngam$model$linear
 
-  eta <- rowSums(f) + ngam$eta0
-  if(type == "link"){
-    # Return the linear predictor
-    return(eta)
-  }
+    lm_data <- data.frame(x)
+    colnames(lm_data) <- term
 
-  if(type == "response"){
-    y <- link(family=ngam$family, eta)
-    return(y)
+    return(stats::predict(
+      model,
+      newdata = lm_data,
+      type = "terms",
+      terms = term
+    ))
+  }
+  # Non-Parametric term
+  if (term %in% ngam$formula$np_terms) {
+    model <- ngam$model[[term]]
+    return(model$predict(x))
   }
 }

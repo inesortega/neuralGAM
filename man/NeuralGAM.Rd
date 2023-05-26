@@ -96,8 +96,8 @@ x1 <- runif(n, -2.5, 2.5)
 x2 <- runif(n, -2.5, 2.5)
 x3 <- runif(n, -2.5, 2.5)
 
-f1 <-x1**2
-f2 <- 2*x2
+f1 <- x1 ** 2
+f2 <- 2 * x2
 f3 <- sin(x3)
 f1 <- f1 - mean(f1)
 f2 <- f2 - mean(f2)

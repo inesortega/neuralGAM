@@ -31,7 +31,7 @@ Visualization of \code{NeuralGAM} object. Plots the learned partial effects by t
 
 n <- 24500
 
-seed <- 42
+seed <- 341431
 set.seed(seed)
 
 x1 <- runif(n, -2.5, 2.5)

@@ -4,6 +4,7 @@
 #' @importFrom reticulate miniconda_path install_miniconda conda_create
 #' py_install conda_binary py_module_available
 #' @importFrom keras install_keras
+#' @export
 installNeuralGAMDeps <- function() {
   if ((!.isConda())) {
     message("=== No miniconda detected, installing it using reticulate R package")

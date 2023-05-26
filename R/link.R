@@ -6,6 +6,7 @@
 #' @param family A description of the link function used in the model:
 #' \code{"gaussian"} or \code{"binomial"}
 #' @param muhat fitted values
+#' @export
 #' @return the link function specified by the \code{"family"} distribution
 #' for the given fitted values
 

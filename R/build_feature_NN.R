@@ -19,6 +19,7 @@
 #' @importFrom magrittr %>%
 #' @importFrom keras fit
 #' @importFrom keras compile
+#' @export
 #' @references
 #' Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980.
 

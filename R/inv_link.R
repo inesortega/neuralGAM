@@ -9,6 +9,7 @@
 #'
 #' @return the inverse link function specified by the \code{"family"}
 #' distribution for the given fitted values
+#' @export
 inv_link <- function(family, muhat) {
 
   if (missing(muhat)) {

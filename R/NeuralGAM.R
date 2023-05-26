@@ -40,7 +40,8 @@
 #' seed for algorithms dependent on randomization.
 #' @param \ldots Additional parameters for the Adam optimizer (see ?keras::optimizer_adam)
 #' @return A trained NeuralGAM object. Use \code{summary(ngam)} to see details.
-#' @importFrom keras fit compile
+#' @importFrom keras fit
+#' @importFrom keras compile
 #' @importFrom tensorflow set_random_seed
 #' @importFrom stats predict lm
 #' @importFrom reticulate conda_list use_condaenv
@@ -59,8 +60,8 @@
 #' x2 <- runif(n, -2.5, 2.5)
 #' x3 <- runif(n, -2.5, 2.5)
 #'
-#' f1 <-x1**2
-#' f2 <- 2*x2
+#' f1 <- x1 ** 2
+#' f2 <- 2 * x2
 #' f3 <- sin(x3)
 #' f1 <- f1 - mean(f1)
 #' f2 <- f2 - mean(f2)
@@ -138,7 +139,7 @@ NeuralGAM <-
       stop("family must be 'gaussian' or 'binomial'")
 
     if (!is.null(w_train) && !is.numeric(w_train)) {
-        stop("w_train should be a numeric vector")
+      stop("w_train should be a numeric vector")
     }
 
     if (!is.numeric(bf_threshold))
@@ -277,7 +278,7 @@ NeuralGAM <-
           } else {
             model[[term]] %>% compile(
               loss = "mean_squared_error",
-              optimizer = optimizer_adam(learning_rate = learning_rate),
+              optimizer = optimizer_adam(learning_rate = learning_rate, ...),
               loss_weights = list(W)
             )
             t <- Sys.time()
@@ -328,21 +329,21 @@ NeuralGAM <-
       dev_new <- dev(muhat, y, family)
 
       dev_delta <- abs((dev_old - dev_new) / dev_old)
-      if(family == "binomial"){
+      if (family == "binomial") {
         if ((dev_delta < ls_threshold) & (it > 0)) {
           converged <- TRUE
         }
-        print(
-          paste(
-            "Current delta ",
-            dev_delta,
-            " LS Threshold = ",
-            ls_threshold,
-            "Converged = ",
-            dev_delta < ls_threshold
-          )
-        )
       }
+      print(
+        paste(
+          "Current delta ",
+          dev_delta,
+          " LS Threshold = ",
+          ls_threshold,
+          "Converged = ",
+          dev_delta < ls_threshold
+        )
+      )
       it <- it + 1
     }
 
@@ -378,6 +379,7 @@ NeuralGAM <-
 
 .onLoad <- function(libname, pkgname) {
   # set conda environment for tensorflow and keras
+  paste("Installing requirements....")
   envs <- reticulate::conda_list()
   if (is.element("NeuralGAM-env", envs$name)) {
     if (.isConda()) {

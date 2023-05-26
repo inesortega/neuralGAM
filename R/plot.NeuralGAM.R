@@ -18,7 +18,7 @@
 #'
 #' n <- 24500
 #'
-#' seed <- 42
+#' seed <- 341431
 #' set.seed(seed)
 #'
 #' x1 <- runif(n, -2.5, 2.5)
@@ -46,7 +46,7 @@
 #'                  seed = seed
 #'                  )
 #' plot(ngam)
-plot.NeuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL,title = NULL, ...) {
+plot.NeuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL, title = NULL, ...) {
 
   if (!inherits(x, "NeuralGAM")) {
     stop("Argument 'x' must be of class 'NeuralGAM'")
@@ -76,7 +76,6 @@ plot.NeuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL,title = NULL
 
   plots_list <- (vector("list", length = ncol(x)))
 
-
   # Generate custom labels if xlab or ylab is provided
   if(!is.null(xlab)){
     x_lab <- rep(xlab, ncol(x))
@@ -90,7 +89,7 @@ plot.NeuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL,title = NULL
   else{
     y_lab <- list()
     for (i in 1:length(x_lab)){
-      if(x_lab[i] %in% ngam$formula$np_terms){
+      if(colnames(x)[i] %in% ngam$formula$np_terms){
         y_lab[i] <- paste("s(", x_lab[i], ")", sep="")
       }
       else{ ## todo take into account factor terms!
@@ -110,13 +109,12 @@ plot.NeuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL,title = NULL
       p <- ggplot2::ggplot() +
         ggplot2::geom_boxplot(ggplot2::aes(x = x[, i], y = f[, i]), ...) +
         ggplot2::labs(x=x_lab[i], y=y_lab[i]) +
-        ggplot2::ggtitle(x_lab[i])
+        ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(angle = 45))
     }
     else{
       p <- ggplot2::ggplot() +
         ggplot2::geom_line(ggplot2::aes(x = x[, i], y = f[, i]), ...) +
-        ggplot2::labs(x=x_lab[i], y=y_lab[i]) +
-        ggplot2::ggtitle(x_lab[i])
+        ggplot2::labs(x=x_lab[i], y=y_lab[i])
     }
     plots_list[[i]] <- ggplot2::ggplot_gtable(ggplot2::ggplot_build(p))
 

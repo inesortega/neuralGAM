@@ -24,8 +24,8 @@ x1 <- runif(n, -2.5, 2.5)
 x2 <- runif(n, -2.5, 2.5)
 x3 <- runif(n, -2.5, 2.5)
 
-f1 <-x1**2
-f2 <- 2*x2
+f1 <-x1 ** 2
+f2 <- 2 * x2
 f3 <- sin(x3)
 f1 <- f1 - mean(f1)
 f2 <- f2 - mean(f2)
@@ -41,10 +41,10 @@ library(NeuralGAM)
 X_train <- train[c('X0','X1','X2')]
 y_train <- train$y
 
-ngam <- NeuralGAM(num_units = 1024, learning_rate = 0.0053, x=X_train,
-              y = y_train, family = "gaussian", bf_threshold=0.001,
+ngam <- NeuralGAM(num_units = 1024, learning_rate = 0.001, x = X_train,
+              y = y_train, family = "gaussian", bf_threshold = 0.001,
               ls_threshold = 0.1, max_iter_backfitting = 10,
-              max_iter_ls=10)
+              max_iter_ls = 10)
 
 ```
 You can then use the `plot` function to visualize the learnt partial effects: 

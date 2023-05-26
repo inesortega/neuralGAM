@@ -21,6 +21,7 @@
 #'
 #' @importFrom formula.tools lhs rhs
 #' @importFrom stats as.formula
+#' @export
 get_formula_elements <- function(formula) {
   # Separate model terms (response, all_terms, smooth_terms)
   formula <- formula
@@ -28,8 +29,8 @@ get_formula_elements <- function(formula) {
   all_terms <- all.vars(formula.tools::rhs(formula))
   terms <- formula.tools::rhs(formula)
 
-  smooth_terms <-
-    attr(terms(formula), "term.labels")[grepl("^s", attr(terms(formula), "term.labels"))]
+  pattern <- "s\\(.*\\)"
+  smooth_terms <- grep(pattern, attr(terms(formula), "term.labels"), value = TRUE)
 
   if (length(smooth_terms) > 0) {
     smooth_formula <-

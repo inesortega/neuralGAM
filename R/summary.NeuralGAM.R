@@ -46,9 +46,9 @@ summary.NeuralGAM <- function(object, ...) {
     # Print the object's contents
     ngam <- object
     print(ngam)
-    cat("\n\n Model architecture: \n\n")
+    cat("\n\nModel architecture: \n\n")
     print(ngam$model)
-    cat("\n\nTraining History \n\n")
+    cat("Training History \n\n")
     print(ngam$stats)
     invisible(object)
   }else{

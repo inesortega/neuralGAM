@@ -122,14 +122,14 @@ predict.NeuralGAM <-
       if (type == "terms" && !is.null(terms)) {
         # compute only certain terms
         if (term %in% terms) {
-          f[[term]] <- get_model_predictions(ngam, x[[term]], term)
+          f[[term]] <- get_model_predictions(ngam, x, term)
         }
         else{
           next
         }
       }
       else{
-        f[[term]] <- get_model_predictions(ngam, x[[term]], term)
+        f[[term]] <- get_model_predictions(ngam, x, term)
       }
     }
 
@@ -153,25 +153,26 @@ predict.NeuralGAM <-
     }
   }
 
+
+get_linear_predictions <- function(ngam, x, term){
+
+
+
+}
+
 get_model_predictions <- function(ngam, x, term) {
   # Linear term
-  paste(term)
   if (term %in% ngam$formula$p_terms) {
     model <- ngam$model$linear
+    lm_data <- data.frame(x[ngam$formula$p_terms])
+    colnames(lm_data) <- ngam$formula$p_terms
 
-    lm_data <- data.frame(x)
-    colnames(lm_data) <- term
-
-    return(stats::predict(
-      model,
-      newdata = lm_data,
-      type = "terms",
-      terms = term
-    ))
+    return(stats::predict(model,newdata = lm_data,
+                          type = "terms",terms = term))
   }
   # Non-Parametric term
   if (term %in% ngam$formula$np_terms) {
     model <- ngam$model[[term]]
-    return(model$predict(x))
+    return(model$predict(x[[term]]))
   }
 }

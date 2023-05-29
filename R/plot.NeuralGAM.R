@@ -87,16 +87,18 @@ plot.NeuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL, title = NUL
     y_lab <- rep(ylab, ncol(x))
   }
   else{
-    y_lab <- list()
-    for (i in 1:length(x_lab)){
+    y_lab <- rep(as.character(ngam$formula$y), ncol(x))
+    for (i in 1:length(y_lab)){
       if(colnames(x)[i] %in% ngam$formula$np_terms){
-        y_lab[i] <- paste("s(", x_lab[i], ")", sep="")
+        y_lab[i] <- paste("s(", xlab[i], ")", sep="")
       }
       else{ ## todo take into account factor terms!
-        if(is.factor(x_lab[i])){
-          paste("Partial for ", x_lab[i])
+        if(is.factor(x[[colnames(x)[i]]])){
+          y_lab[i] <- paste("Partial for ", x_lab[i])
         }
-        y_lab[i] <- x_lab[i]
+        else{
+          y_lab[i] <- x_lab[i]
+        }
       }
     }
   }

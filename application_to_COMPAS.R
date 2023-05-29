@@ -13,9 +13,9 @@ set.seed(seed)
 
 library(NeuralGAM)
 ngam <- NeuralGAM(two_year_recid ~ s(priors_count) + s(age) + c_charge_degree  + race + sex,
-                  data = data, num_units = list(1024), family = "binomial",
-                  learning_rate = 0.001, ls_threshold = 0.01, seed = seed,
-                  bf_threshold = 0.01)
+                  data = data, num_units = list(1024,1024), family = "binomial",
+                  learning_rate = 0.002, ls_threshold = 0.01, seed = seed,
+                  bf_threshold = 1e-4)
 
 ngam
 

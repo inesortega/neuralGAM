@@ -8,6 +8,7 @@
 #' @param family A description of the link function used in the model:
 #' \code{"gaussian"} or \code{"binomial"}
 #' @return the deviance of the model
+#' @keywords internal
 dev <- function(muhat, y, family) {
 
   if (missing(muhat)) {

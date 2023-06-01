@@ -24,8 +24,8 @@ sample <- sample(c(TRUE, FALSE), n, replace = TRUE, prob = c(0.8,0.2))
 train <- data[sample, ]
 test <- data[!sample, ]
 
-library(NeuralGAM)
-ngam <- NeuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
+library(neuralGAM)
+ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
                   num_units = 1024, family = "gaussian",
                   activation = "relu",
                   learning_rate = 0.001, bf_threshold = 0.001,

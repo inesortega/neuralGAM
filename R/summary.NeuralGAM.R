@@ -1,8 +1,8 @@
-#' \code{NeuralGAM} summary
-#' @description Summary of a fitted NeuralGAM object. Prints
+#' \code{neuralGAM} summary
+#' @description Summary of a fitted neuralGAM object. Prints
 #' the distribution family, model formula, intercept value, sample size,
 #' as well as neural network architecture and training history.
-#' @param object \code{NeuralGAM} object.
+#' @param object \code{neuralGAM} object.
 #' @param \ldots Other options.
 #' @return The summary of the object
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
@@ -30,8 +30,8 @@
 #' y <- eta0 + epsilon
 #' train <- data.frame(x1, x2, x3, y)
 #'
-#' library(NeuralGAM)
-#' ngam <- NeuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
+#' library(neuralGAM)
+#' ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
 #'                  num_units = 1024, family = "gaussian",
 #'                  activation = "relu",
 #'                  learning_rate = 0.001, bf_threshold = 0.001,
@@ -41,17 +41,17 @@
 #' summary(ngam)
 #'
 
-summary.NeuralGAM <- function(object, ...) {
-  if (inherits(object, "NeuralGAM")) {
+summary.neuralGAM <- function(object, ...) {
+  if (inherits(object, "neuralGAM")) {
     # Print the object's contents
     ngam <- object
     print(ngam)
+    cat("\n\nTraining History: \n\n")
+    print(ngam$stats)
     cat("\n\nModel architecture: \n\n")
     print(ngam$model)
-    cat("Training History \n\n")
-    print(ngam$stats)
     invisible(object)
   }else{
-    stop("Argument object must be a NeuralGAM object.")
+    stop("Argument object must be a neuralGAM object.")
   }
 }

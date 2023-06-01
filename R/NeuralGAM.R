@@ -1,18 +1,18 @@
-#' Fit a NeuralGAM model
+#' Fit a neuralGAM model
 #'
-#' @description Main function to fit a NeuralGAM model. The function builds one
+#' @description Main function to fit a neuralGAM model. The function builds one
 #' neural network to attend to each feature in x, using the
 #' backfitting and local scoring algorithms to fit a weighted additive model
 #' using neural networks as function approximators. The adjustment of the
 #' dependent variable and the weights is determined by the distribution of the
 #' response \code{y}, adjusted by the \code{family} parameter.
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
-#' @param formula A GAM formula. You can add smooth terms using \code{s()}.
+#' @param formula An object of class "formula": a description of the model to be fitted. You can add smooth terms using \code{s()}.
 #' @param data A data frame containing the model response variable and covariates
 #' required by the formula. Additional terms not present in the formula will be ignored.
 #' @param num_units Defines the architecture of each neural network.
 #' If a scalar value is provided, a single hidden layer neural network with that number of units is used.
-#' If a list of values is provided, a multi-layer neural network with each element of the list defining
+#' If a vector of values is provided, a multi-layer neural network with each element of the vector defining
 #' the number of hidden units on each hidden layer is used.
 #' @param family A description of the link function used in the model
 #' (defaults to \code{gaussian}). Set \code{family="gaussian"} for linear
@@ -39,7 +39,7 @@
 #' @param seed A positive integer which specifies the random number generator
 #' seed for algorithms dependent on randomization.
 #' @param \ldots Additional parameters for the Adam optimizer (see ?keras::optimizer_adam)
-#' @return A trained NeuralGAM object. Use \code{summary(ngam)} to see details.
+#' @return A trained neuralGAM object. Use \code{summary(ngam)} to see details.
 #' @importFrom keras fit
 #' @importFrom keras compile
 #' @importFrom tensorflow set_random_seed
@@ -72,8 +72,8 @@
 #' y <- eta0 + epsilon
 #' train <- data.frame(x1, x2, x3, y)
 #'
-#' library(NeuralGAM)
-#' ngam <- NeuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
+#' library(neuralGAM)
+#' ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
 #'                  num_units = 1024, family = "gaussian",
 #'                  activation = "relu",
 #'                  learning_rate = 0.001, bf_threshold = 0.001,
@@ -83,7 +83,7 @@
 #'
 #' ngam
 
-NeuralGAM <-
+neuralGAM <-
   function(formula,
            data,
            num_units,
@@ -194,7 +194,7 @@ NeuralGAM <-
     if (family == "gaussian")
       max_iter_ls <- 1
 
-    print("Initializing NeuralGAM...")
+    print("Initializing neuralGAM...")
     model <- list()
     for (k in 1:ncol(x_np)) {
       term <- colnames(x_np)[[k]]
@@ -370,7 +370,7 @@ NeuralGAM <-
         mse = mse,
         formula = formula
       )
-    class(res) <- "NeuralGAM"
+    class(res) <- "neuralGAM"
     return(res)
   }
 
@@ -381,21 +381,21 @@ NeuralGAM <-
   # set conda environment for tensorflow and keras
   paste("Installing requirements....")
   envs <- reticulate::conda_list()
-  if (is.element("NeuralGAM-env", envs$name)) {
+  if (is.element("neuralGAM-env", envs$name)) {
     if (.isConda()) {
-      i <- which(envs$name == "NeuralGAM-env")
+      i <- which(envs$name == "neuralGAM-env")
       Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
       tryCatch(
-        expr = reticulate::use_condaenv("NeuralGAM-env", required = TRUE),
+        expr = reticulate::use_condaenv("neuralGAM-env", required = TRUE),
         error = function(e)
           NULL
       )
     }
   } else {
-    installNeuralGAMDeps()
+    installneuralGAMDeps()
     envs <- reticulate::conda_list()
-    i <- which(envs$name == "NeuralGAM-env")
+    i <- which(envs$name == "neuralGAM-env")
     Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
     Sys.setenv(RETICULATE_PYTHON = envs$python[i])
   }

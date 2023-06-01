@@ -29,3 +29,4 @@ all_terms, non-parametric terms and parametric terms.
 get_formula_elements(y ~ x1 + x2 + s(x3))
 
 }
+\keyword{internal}

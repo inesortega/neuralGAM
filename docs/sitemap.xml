@@ -10,6 +10,9 @@
     <loc>/index.html</loc>
   </url>
   <url>
+    <loc>/reference/autoplot.neuralGAM.html</loc>
+  </url>
+  <url>
     <loc>/reference/build_feature_NN.html</loc>
   </url>
   <url>
@@ -25,7 +28,7 @@
     <loc>/reference/index.html</loc>
   </url>
   <url>
-    <loc>/reference/installNeuralGAMDeps.html</loc>
+    <loc>/reference/installneuralGAMDeps.html</loc>
   </url>
   <url>
     <loc>/reference/inv_link.html</loc>
@@ -34,19 +37,22 @@
     <loc>/reference/link.html</loc>
   </url>
   <url>
-    <loc>/reference/NeuralGAM.html</loc>
+    <loc>/reference/neuralGAM.html</loc>
   </url>
   <url>
-    <loc>/reference/plot.NeuralGAM.html</loc>
+    <loc>/reference/plot.neuralGAM.html</loc>
   </url>
   <url>
-    <loc>/reference/predict.NeuralGAM.html</loc>
+    <loc>/reference/predict.neuralGAM.html</loc>
   </url>
   <url>
-    <loc>/reference/print.NeuralGAM.html</loc>
+    <loc>/reference/print.neuralGAM.html</loc>
   </url>
   <url>
-    <loc>/reference/summary.NeuralGAM.html</loc>
+    <loc>/reference/reexports.html</loc>
+  </url>
+  <url>
+    <loc>/reference/summary.neuralGAM.html</loc>
   </url>
   <url>
     <loc>/reference/weight.html</loc>

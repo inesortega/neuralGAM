@@ -20,7 +20,7 @@ build_feature_NN(
 \arguments{
 \item{num_units}{Defines the architecture of each neural network.
 If a scalar value is provided, a single hidden layer neural network with that number of units is used.
-If a list of values is provided, a multi-layer neural network with each element of the list defining
+If a vector of values is provided, a multi-layer neural network with each element of the vector defining
 the number of hidden units on each hidden layer is used.}
 
 \item{learning_rate}{Learning rate for the neural network optimizer.}
@@ -41,9 +41,9 @@ Defaults to Xavier Initializer (\code{glorot_normal}).}
 \item{name}{Neural Network name.}
 
 \item{...}{
-  Arguments passed on to \code{\link[=NeuralGAM]{NeuralGAM}}
+  Arguments passed on to \code{\link[=neuralGAM]{neuralGAM}}
   \describe{
-    \item{\code{formula}}{A GAM formula. You can add smooth terms using \code{s()}.}
+    \item{\code{formula}}{An object of class "formula": a description of the model to be fitted. You can add smooth terms using \code{s()}.}
     \item{\code{data}}{A data frame containing the model response variable and covariates
 required by the formula. Additional terms not present in the formula will be ignored.}
     \item{\code{family}}{A description of the link function used in the model
@@ -80,3 +80,4 @@ Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization. arXi
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.
 }
+\keyword{internal}

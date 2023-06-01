@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/reference/test_package.html#special-files
 
 library(testthat)
-library(NeuralGAM)
+library(neuralGAM)
 
-test_check("NeuralGAM")
+test_check("neuralGAM")

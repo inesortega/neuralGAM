@@ -24,3 +24,4 @@ Computes the weights for the Local Scoring Algorithm.
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.
 }
+\keyword{internal}

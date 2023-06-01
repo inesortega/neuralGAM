@@ -1,14 +1,13 @@
-#' Visualization of \code{NeuralGAM} object
+#' Visualization of \code{neuralGAM} object with base graphics
 #'
-#' @description Visualization of \code{NeuralGAM} object. Plots the learned partial effects by the NeuralGAM object.
-#' @param x a fitted \code{NeuralGAM} object as produced by \code{NeuralGAM()}.
+#' @description Visualization of \code{neuralGAM} object. Plots the learned partial effects by the neuralGAM object.
+#' @param x a fitted \code{neuralGAM} object as produced by \code{neuralGAM()}.
 #' @param select allows to plot a set of selected terms. e.g. if you just want to plot the first term,
 #' select="X0"
 #' @param xlab if supplied, this value will be used as the \code{x} label for all plots
 #' @param ylab if supplied, this value will be used as the \code{y} label for all plots
 #' @param title if supplied, this value will be used as the main plot title
 #' @param \ldots other graphics parameters to pass on to plotting commands.
-#' See details for ggplot2::geom_line options
 #' @return Returns the partial effects plot.
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @importFrom ggplot2 ggplot labs ggplot_gtable ggplot_build aes geom_line
@@ -37,8 +36,8 @@
 #' y <- eta0 + epsilon
 #' train <- data.frame(x1, x2, x3, y)
 #'
-#' library(NeuralGAM)
-#' ngam <- NeuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
+#' library(neuralGAM)
+#' ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
 #'                  num_units = 1024, family = "gaussian",
 #'                  activation = "relu",
 #'                  learning_rate = 0.001, bf_threshold = 0.001,
@@ -46,10 +45,10 @@
 #'                  seed = seed
 #'                  )
 #' plot(ngam)
-plot.NeuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL, title = NULL, ...) {
+plot.neuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL, title = NULL, ...) {
 
-  if (!inherits(x, "NeuralGAM")) {
-    stop("Argument 'x' must be of class 'NeuralGAM'")
+  if (!inherits(x, "neuralGAM")) {
+    stop("Argument 'x' must be of class 'neuralGAM'")
   }
 
   ngam <- x
@@ -74,6 +73,13 @@ plot.NeuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL, title = NUL
     colnames(f) <- select
   }
 
+  if(!is.null(xlab) && length(xlab) != length(ncol(x))){
+    stop(paste("xlab must have labels for all the selected columns: "))
+  }
+  if(!is.null(ylab) && length(ylab) != length(ncol(x))){
+    stop(paste("ylab must have labels for all the selected columns: "))
+  }
+
   plots_list <- (vector("list", length = ncol(x)))
 
   # Generate custom labels if xlab or ylab is provided
@@ -90,7 +96,7 @@ plot.NeuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL, title = NUL
     y_lab <- rep(as.character(ngam$formula$y), ncol(x))
     for (i in 1:length(y_lab)){
       if(colnames(x)[i] %in% ngam$formula$np_terms){
-        y_lab[i] <- paste("s(", xlab[i], ")", sep="")
+        y_lab[i] <- paste("s(", x_lab[i], ")", sep="")
       }
       else{ ## todo take into account factor terms!
         if(is.factor(x[[colnames(x)[i]]])){
@@ -103,27 +109,21 @@ plot.NeuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL, title = NUL
     }
   }
 
-  for (i in 1:ncol(x)) {
+  plot_names <- colnames(x)
+
+  # Loop through the plots
+  for (i in seq_along(plot_names)) {
 
     term <- colnames(x)[[i]]
 
-    if(is.factor(x[[term]])){
-      p <- ggplot2::ggplot() +
-        ggplot2::geom_boxplot(ggplot2::aes(x = x[, i], y = f[, i]), ...) +
-        ggplot2::labs(x=x_lab[i], y=y_lab[i]) +
-        ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(angle = 45))
-    }
-    else{
-      p <- ggplot2::ggplot() +
-        ggplot2::geom_line(ggplot2::aes(x = x[, i], y = f[, i]), ...) +
-        ggplot2::labs(x=x_lab[i], y=y_lab[i])
-    }
-    plots_list[[i]] <- ggplot2::ggplot_gtable(ggplot2::ggplot_build(p))
+    # Generate the plot
+    plot(x[, i], f[,i], xlab=x_lab[i], ylab=y_lab[i], ...)
 
-  }
+    # Prompt the user to continue
+    if (i < length(plot_names)) {
+      message("Hit <Return> to see next plot: ")
+      invisible(readLines(n = 1))
+      }
+    }
 
-  return(patchwork::wrap_plots(plotlist = plots_list) +
-           patchwork::plot_layout(ncol = ncol(x)) +
-           patchwork::plot_annotation(title = title)
-         )
 }

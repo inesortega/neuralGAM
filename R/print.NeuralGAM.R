@@ -1,8 +1,8 @@
-#' Short \code{NeuralGAM} summary
-#' @description Default print statement for a NeuralGAM object. Prints
+#' Short \code{neuralGAM} summary
+#' @description Default print statement for a neuralGAM object. Prints
 #' the distribution family, model formula, intercept value, number of terms
 #' (neural networks), as well as neural network architecture.
-#' @param x \code{NeuralGAM} object.
+#' @param x \code{neuralGAM} object.
 #' @param \ldots Other arguments.
 #' @return The printed output of the object
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
@@ -30,8 +30,8 @@
 #' y <- eta0 + epsilon
 #' train <- data.frame(x1, x2, x3, y)
 #'
-#' library(NeuralGAM)
-#' ngam <- NeuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
+#' library(neuralGAM)
+#' ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
 #'                  num_units = 1024, family = "gaussian",
 #'                  activation = "relu",
 #'                  learning_rate = 0.001, bf_threshold = 0.001,
@@ -40,10 +40,10 @@
 #'                  )
 #' print(ngam)
 
-print.NeuralGAM <- function(x, ...) {
-  if (inherits(x, "NeuralGAM")) {
+print.neuralGAM <- function(x, ...) {
+  if (inherits(x, "neuralGAM")) {
     # Print the class name
-    cat("Class: NeuralGAM \n")
+    cat("Class: neuralGAM \n")
 
     # Print the object's contents
     ngam <- x
@@ -59,7 +59,7 @@ print.NeuralGAM <- function(x, ...) {
 
     invisible(x)
   } else{
-    stop("Argument x must be a NeuralGAM object.")
+    stop("Argument x must be a neuralGAM object.")
   }
 }
 

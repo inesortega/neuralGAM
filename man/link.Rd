@@ -23,3 +23,4 @@ specified in the \code{"family"} parameter.
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.
 }
+\keyword{internal}

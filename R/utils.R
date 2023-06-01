@@ -4,8 +4,8 @@
 #' @importFrom reticulate miniconda_path install_miniconda conda_create
 #' py_install conda_binary py_module_available
 #' @importFrom keras install_keras
-#' @export
-installNeuralGAMDeps <- function() {
+#' @keywords internal
+installneuralGAMDeps <- function() {
   if ((!.isConda())) {
     message("=== No miniconda detected, installing it using reticulate R package")
     if (is.null(miniconda.path)) {
@@ -32,7 +32,7 @@ installNeuralGAMDeps <- function() {
   }
   status <- tryCatch(
     reticulate::conda_create(
-      envname = "NeuralGAM-env",
+      envname = "neuralGAM-env",
       packages = "python==3.9",
       channels = channels
     ),
@@ -59,7 +59,7 @@ installNeuralGAMDeps <- function() {
         ),
         method = "conda",
         conda = conda,
-        envname = "NeuralGAM-env"
+        envname = "neuralGAM-env"
       ),
       error = function(e) {
         return(TRUE)
@@ -77,7 +77,7 @@ installNeuralGAMDeps <- function() {
       version = "default",
       method = "conda",
       conda = conda,
-      envname = "NeuralGAM-env"
+      envname = "neuralGAM-env"
     ),
     error = function(e) {
       return(TRUE)
@@ -89,7 +89,7 @@ installNeuralGAMDeps <- function() {
   }
 
   message("Installation complete!")
-  message(c("Restart R and load NeuralGAM again..."))
+  message(c("Restart R and load neuralGAM again..."))
 }
 
 .isConda <- function() {

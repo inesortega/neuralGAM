@@ -1,5 +1,5 @@
 library(testthat)
-library(NeuralGAM)
+library(neuralGAM)
 
 # Write tests using testthat
 test_that("get_formula_elements returns the correct output for a linear formula", {

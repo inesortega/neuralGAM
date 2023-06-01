@@ -1,7 +1,7 @@
-#' Produces predictions from a fitted \code{NeuralGAM} object
-#' @description Takes a fitted \code{NeuralGAM} object produced by
-#' \code{NeuralGAM()} and produces predictions given a new set of values for the model covariates.
-#' @param object a fitted `NeuralGAM` object
+#' Produces predictions from a fitted \code{neuralGAM} object
+#' @description Takes a fitted \code{neuralGAM} object produced by
+#' \code{neuralGAM()} and produces predictions given a new set of values for the model covariates.
+#' @param object a fitted `neuralGAM` object
 #' @param newdata A data frame or list containing the values of covariates at which
 #' predictions are required. If not provided, the function returns the predictions
 #' for the original training data.
@@ -38,8 +38,8 @@
 #' y <- eta0 + epsilon
 #' train <- data.frame(x1, x2, x3, y)
 #'
-#' library(NeuralGAM)
-#' ngam <- NeuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
+#' library(neuralGAM)
+#' ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
 #'                  num_units = 1024, family = "gaussian",
 #'                  activation = "relu",
 #'                  learning_rate = 0.001, bf_threshold = 0.001,
@@ -64,20 +64,20 @@
 #' # Obtain only certain terms:
 #' terms <- predict(ngam, test, type = "terms", terms = c("x1", "x2"))
 
-predict.NeuralGAM <-
+predict.neuralGAM <-
   function(object,
            newdata = NULL,
            type = "link",
            terms = NULL,
            ...) {
-    # Check if object is of class "NeuralGAM"
-    if (!inherits(object, "NeuralGAM")) {
-      stop("The object argument must be a fitted NeuralGAM object.")
+    # Check if object is of class "neuralGAM"
+    if (!inherits(object, "neuralGAM")) {
+      stop("The object argument must be a fitted neuralGAM object.")
     }
 
     # Check if object argument is missing or NULL
     if (missing(object) || is.null(object)) {
-      stop("Please provide a fitted NeuralGAM object as the object argument.")
+      stop("Please provide a fitted neuralGAM object as the object argument.")
     }
 
     ngam <- object

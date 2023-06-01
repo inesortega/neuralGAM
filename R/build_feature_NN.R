@@ -1,6 +1,4 @@
 #' Build and compile a single Neural Network
-#'
-#'
 #' @description Builds and compiles a neural network using the keras library.
 #' The architecture of the neural network is configurable using the
 #' \code{"num_units"} parameter. A single integer with the number of hidden
@@ -10,8 +8,8 @@
 #' a DNN with three layers and 32 neurons per layer.
 #' @param name Neural Network name.
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
-#' @inheritParams NeuralGAM
-#' @inheritDotParams NeuralGAM
+#' @inheritParams neuralGAM
+#' @inheritDotParams neuralGAM
 #' @return compiled Neural Network
 #' @importFrom keras keras_model_sequential
 #' @importFrom keras layer_dense
@@ -19,7 +17,7 @@
 #' @importFrom magrittr %>%
 #' @importFrom keras fit
 #' @importFrom keras compile
-#' @export
+#' @keywords internal
 #' @references
 #' Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980.
 
@@ -39,8 +37,8 @@ build_feature_NN <-
       stop("Argument \"num_units\" is missing, with no default")
     }
 
-    if (!is.numeric(num_units) & !(is.list(num_units))) {
-      stop("Argument \"num_units\" must be an integer or a list of integers")
+    if (!is.numeric(num_units) & !(is.vector(num_units))) {
+      stop("Argument \"num_units\" must be an integer or a vector of integers")
     }
 
     if (!is.numeric(learning_rate)) {

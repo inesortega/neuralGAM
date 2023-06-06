@@ -1,5 +1,4 @@
 #' Fit a neuralGAM model
-#'
 #' @description Main function to fit a neuralGAM model. The function builds one
 #' neural network to attend to each feature in x, using the
 #' backfitting and local scoring algorithms to fit a weighted additive model
@@ -366,7 +365,7 @@ neuralGAM <-
         eta0 = eta0,
         family = family,
         stats = stats,
-        err = err,
+        err = mean((y - muhat) ^ 2),
         formula = formula
       )
     class(res) <- "neuralGAM"

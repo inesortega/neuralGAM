@@ -87,16 +87,12 @@ predict.neuralGAM <-
       x <- ngam$x
     }
     else{
-      if (type != "terms" && !all(colnames(ngam$x) %in% colnames(newdata))) {
-        stop("newdata needs to have the same components as the fitted ngam model")
-      }
       x <- newdata
     }
 
     # Check if newdata columns match ngam$model columns
     if (type != "terms" &&
-        !is.null(newdata) &&
-        !all(colnames(ngam$x) %in% colnames(newdata))) {
+        !all(colnames(ngam$x) %in% colnames(x))) {
       stop("The newdata argument does not have the same columns as the fitted ngam model.")
     }
 
@@ -114,8 +110,8 @@ predict.neuralGAM <-
       ))
     }
 
-
-    f <- x * NA
+    f <- data.frame(matrix(0, nrow = nrow(x), ncol = ncol(x)))
+    colnames(f) <- colnames(x)
 
     for (i in 1:ncol(x)) {
       term <- colnames(x)[[i]]

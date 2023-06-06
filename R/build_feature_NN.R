@@ -1,11 +1,6 @@
 #' Build and compile a single Neural Network
 #' @description Builds and compiles a neural network using the keras library.
 #' The architecture of the neural network is configurable using the
-#' \code{"num_units"} parameter. A single integer with the number of hidden
-#' units builds a shallow (single layer) neural network. Deep Neural Networks
-#' can be built by specifying the size of each hidden layer in the
-#' \code{"num_units"} parameter. For example, \code{"list(32,32,32)"} generates
-#' a DNN with three layers and 32 neurons per layer.
 #' @param name Neural Network name.
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @inheritParams neuralGAM
@@ -30,6 +25,7 @@ build_feature_NN <-
            bias_regularizer = NULL,
            bias_initializer = 'zeros',
            activity_regularizer = NULL,
+           loss = "mean_squared_error",
            name = NULL,
            ...) {
 
@@ -55,7 +51,7 @@ build_feature_NN <-
 
     model %>% keras::layer_dense(units = 1, input_shape = c(1))
 
-    if (is.list(num_units)) {
+    if (is.vector(num_units)) {
       for (units in num_units) {
         model %>% keras::layer_dense(
           units = units,
@@ -84,7 +80,7 @@ build_feature_NN <-
     adam <-
       keras::optimizer_adam(learning_rate = learning_rate, ...)
 
-    model$compile(loss = "mean_squared_error",
+    model$compile(loss = loss,
                   optimizer = adam)
     return(model)
   }

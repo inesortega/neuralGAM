@@ -51,6 +51,9 @@ ggplot2::autoplot
 #' autoplot(ngam, select="x1") + ggplot2::ggtitle("Main Title")
 #' # add labels
 #' autoplot(ngam, select="x1") + ggplot2::xlab("test") + ggplot2::ylab("my y lab")
+#' # plot multiple terms:
+#' plots <- lapply(c("x1", "x2", "x3"), function(x) autoplot(ngam, select = x))
+#' gridExtra::grid.arrange(grobs = plots, ncol = 2, nrow = 1)
 #' @export
 #'
 autoplot.neuralGAM <-

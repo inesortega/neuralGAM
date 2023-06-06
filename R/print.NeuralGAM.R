@@ -50,11 +50,21 @@ print.neuralGAM <- function(x, ...) {
 
     cat(paste("\nDistribution Family: ", ngam$family))
     cat(paste("\nFormula: ", ngam$formula$formula))
-    cat(paste(
-      "\nIntercept:",
-      round(ngam$model$linear$coefficients["(Intercept)"], 4)
-    ))
-    cat(paste("\nMean Squared Error:", round(ngam$mse, 4)))
+
+    if(!is.null(ngam$model$linear)){
+      cat(paste(
+        "\nIntercept:",
+        round(ngam$model$linear$coefficients["(Intercept)"], 4)
+      ))
+    }
+    else{
+      cat(paste(
+        "\nIntercept:",
+        round(ngam$eta0, 4)
+      ))
+    }
+
+    cat(paste("\nMSE:", round(ngam$err, 4)))
     cat(paste("\nSample size:", nrow(ngam$x)))
 
     invisible(x)

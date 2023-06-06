@@ -27,6 +27,7 @@
 #' @param bias_regularizer Optional regularizer function applied to the bias vector.
 #' @param bias_initializer Optional initializer for the bias vector.
 #' @param activity_regularizer Optional regularizer function applied to the output of the layer
+#' @param loss  Loss function to use during neural network training. Defaults to the mean squared error.
 #' @param bf_threshold Convergence criterion of the backfitting algorithm.
 #' Defaults to \code{0.001}
 #' @param ls_threshold Convergence criterion of the local scoring algorithm.
@@ -95,6 +96,7 @@ neuralGAM <-
            bias_regularizer = NULL,
            bias_initializer = 'zeros',
            activity_regularizer = NULL,
+           loss = "mean_squared_error",
            w_train = NULL,
            bf_threshold = 0.001,
            ls_threshold = 0.1,
@@ -119,15 +121,8 @@ neuralGAM <-
     }
 
     if (is.numeric(num_units)) {
-      if (num_units < 1) {
+      if (any(num_units < 1)) {
         stop("Argument \"num_units\" must be a positive integer or a list of positive  of integers")
-      }
-    }
-    if (is.list(num_units)) {
-      for (units in num_units) {
-        if (!is.numeric(units)) {
-          stop("Argument \"num_units\" must be a positive integer or a list of positive integers")
-        }
       }
     }
 
@@ -158,6 +153,11 @@ neuralGAM <-
       stop("seed should be a positive integer value")
     }
 
+    # Check if the argument 'loss' is NULL or a character string
+    if (!is.character(loss)) {
+      stop("Error: 'loss' argument should be a character string.")
+    }
+
     if (!is.null(seed)) {
       tensorflow::set_random_seed(seed)
     }
@@ -180,7 +180,7 @@ neuralGAM <-
     colnames(f) <- colnames(g) <- colnames(x)
 
     epochs <- c()
-    mse <- c()
+    loss_metric <- c()
     timestamp <- c()
     model_i <- c()
 
@@ -208,6 +208,7 @@ neuralGAM <-
           bias_regularizer = bias_regularizer,
           bias_initializer = bias_initializer,
           activity_regularizer = activity_regularizer,
+
           name = term,
           ...
         )
@@ -277,7 +278,7 @@ neuralGAM <-
 
           } else {
             model[[term]] %>% compile(
-              loss = "mean_squared_error",
+              loss = loss,
               optimizer = optimizer_adam(learning_rate = learning_rate, ...),
               loss_weights = list(W)
             )
@@ -290,7 +291,7 @@ neuralGAM <-
           }
 
           epochs <- c(epochs, it_back)
-          mse <- c(mse, round(history$metrics$loss, 4))
+          loss_metric <- c(loss_metric, round(history$metrics$loss, 4))
           timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
           model_i <- c(model_i, term)
 
@@ -352,10 +353,8 @@ neuralGAM <-
         Timestamp = timestamp,
         Model = model_i,
         Epoch = epochs,
-        MSE = mse
+        TrainLoss = loss_metric
       )
-
-    mse <- mean((y - muhat) ^ 2)
 
     res <-
       list(
@@ -367,7 +366,7 @@ neuralGAM <-
         eta0 = eta0,
         family = family,
         stats = stats,
-        mse = mse,
+        err = err,
         formula = formula
       )
     class(res) <- "neuralGAM"

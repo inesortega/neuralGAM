@@ -18,11 +18,11 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: macos-latest,   r: 'release'}
-          - {os: windows-latest, r: 'release'}
-          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-latest,   r: 'release'}
-          - {os: ubuntu-latest,   r: 'oldrel-1'}
+          - {os: macos-latest,   r: 'release', python: '3.9'}
+          - {os: windows-latest, r: 'release', python: '3.9'}
+          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release', python: '3.9}
+          - {os: ubuntu-latest,   r: 'release', python: '3.9'}
+          - {os: ubuntu-latest,   r: 'oldrel-1', python: '3.9'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -39,9 +39,15 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - uses: r-lib/actions/setup-conda@v1
+      - uses: actions/setup-python@v4
         with:
-          channels: conda-forge
+          python-version: ${{ matrix.config.python }}
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: rcmdcheck remotes local::.
+          cache-version: 2
+          upgrade: 'TRUE'
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:

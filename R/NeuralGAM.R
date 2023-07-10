@@ -39,7 +39,6 @@
 #' @param seed A positive integer which specifies the random number generator
 #' seed for algorithms dependent on randomization.
 #' @param \ldots Additional parameters for the Adam optimizer (see ?keras::optimizer_adam)
-#' @return A trained neuralGAM object. Use \code{summary(ngam)} to see details.
 #' @importFrom keras fit
 #' @importFrom keras compile
 #' @importFrom tensorflow set_random_seed
@@ -48,7 +47,7 @@
 #' @importFrom magrittr %>%
 #' @importFrom formula.tools lhs rhs
 #' @export
-#'
+#' @return A trained neuralGAM object. Use \code{summary(ngam)} to see details.
 #' @examples
 #'
 #' n <- 24500

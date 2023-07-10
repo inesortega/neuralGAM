@@ -14,6 +14,7 @@ ggplot2::autoplot
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @importFrom ggplot2 ggplot labs aes geom_line
 #' @importFrom ggplot2 guide_axis scale_x_discrete geom_boxplot
+#' @importFrom gridExtra grid.arrange
 #' @examples
 #' n <- 24500
 #'
@@ -52,7 +53,7 @@ ggplot2::autoplot
 #' autoplot(ngam, select="x1") + ggplot2::xlab("test") + ggplot2::ylab("my y lab")
 #' # plot multiple terms:
 #' plots <- lapply(c("x1", "x2", "x3"), function(x) autoplot(ngam, select = x))
-#' gridExtra::grid.arrange(grobs = plots, ncol = 2, nrow = 1)
+#' gridExtra::grid.arrange(grobs = plots, ncol = 3, nrow = 1)
 
 #' @method autoplot neuralGAM
 #' @export

@@ -15,10 +15,6 @@
 #' \item p_formula: The formula for the parametric terms
 #' \item formula: The original formula object
 #' }
-#'
-#' @examples
-#' get_formula_elements(y ~ x1 + x2 + s(x3))
-#'
 #' @importFrom formula.tools lhs rhs
 #' @importFrom stats as.formula
 #' @keywords internal

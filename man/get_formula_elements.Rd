@@ -25,8 +25,4 @@ A list with the following elements:
 This function separates the model terms of a given formula into response,
 all_terms, non-parametric terms and parametric terms.
 }
-\examples{
-get_formula_elements(y ~ x1 + x2 + s(x3))
-
-}
 \keyword{internal}

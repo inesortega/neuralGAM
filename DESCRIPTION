@@ -1,6 +1,6 @@
 Package: neuralGAM
 Type: Package
-Title: neuralGAM: Interpretable Neural Network Based on Generalized Additive Models
+Title: Interpretable Neural Network Based on Generalized Additive Models
 Version: 1.0.0
 Authors@R: c(person("Ines", "Ortega-Fernandez", role = c("aut", "cre", "cph"),
                      email = "iortega@gradiant.org", 
@@ -11,7 +11,7 @@ Authors@R: c(person("Ines", "Ortega-Fernandez", role = c("aut", "cre", "cph"),
               )
 Author: Ines Ortega-Fernandez [aut, cre], Marta Sestelo [aut]
 Maintainer: Ines Ortega-Fernandez <iortega@gradiant.org>
-Description: neural network framework based on Generalized Additive Models, which trains a different neural network to estimate the contribution
+Description: Neural network framework based on Generalized Additive Models, which trains a different neural network to estimate the contribution
             of each feature to the response variable. The networks are trained independently leveraging the local scoring and backfitting algorithms 
             to ensure that the Generalized Additive Model converges and it is additive. 
             The resultant Neural Network is a highly accurate and interpretable deep learning model, which can be used for high-risk AI practices where 
@@ -32,3 +32,4 @@ RoxygenNote: 7.2.3
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+URL: https://inesortega.github.io/NeuralGAM/

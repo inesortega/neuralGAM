@@ -1,3 +1,7 @@
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/inesortega/NeuralGAM/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/inesortega/NeuralGAM/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
 # neuralGAM
 
 neuralGAM, a neural network based on Generalized Additive Models, which trains a different neural network to estimate the contribution of each feature to the response variable. 

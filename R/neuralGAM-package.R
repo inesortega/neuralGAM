@@ -14,6 +14,7 @@
 #' packages. This software allows the user to fit a set of independent neural networks
 #' to estimate the contribution of each feature to the response variable, obtaining a
 #' highly accurate and explainable deep learning model.
+#'
 #' The package provides \code{neuralGAM()} function that fits a set of independent
 #' neural networks with a given architecture based on the number of units per layer.
 #'
@@ -25,6 +26,6 @@
 #'
 #' @references
 #'
-#'   ### Main Paper NeuralGAM
+#'### Main Paper NeuralGAM
 #' @keywords internal
 "_PACKAGE"

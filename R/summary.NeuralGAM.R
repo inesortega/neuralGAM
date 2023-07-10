@@ -49,7 +49,17 @@ summary.neuralGAM <- function(object, ...) {
     cat("\n\nTraining History: \n\n")
     print(ngam$stats)
     cat("\n\nModel architecture: \n\n")
-    print(ngam$model)
+
+    if(is.null(ngam$model$linear)){
+      print(ngam$model)
+    }
+    else{
+      condition <- !(names(ngam$model) %in% c("linear"))
+      print(ngam$model[condition])
+      cat("\nLinear model: \n")
+      print(ngam$model$linear$coefficients)
+    }
+
     invisible(object)
   }else{
     stop("Argument object must be a neuralGAM object.")

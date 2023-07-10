@@ -58,6 +58,6 @@ test_that("get_formula_elements returns the correct output for a formula which c
   expect_equal(result$np_terms, c("sample_var"))
   expect_equal(result$p_terms, NULL)
   expect_equal(as.character(result$np_formula), "y ~ s(sample_var)")
-  expect_equal(as.character(result$p_formula), NULL)
+  expect_equal(result$p_formula, NULL)
   expect_equal(as.character(result$formula), "y ~ s(sample_var)")
 })

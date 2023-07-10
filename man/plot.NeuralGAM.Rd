@@ -4,7 +4,7 @@
 \alias{plot.neuralGAM}
 \title{Visualization of \code{neuralGAM} object with base graphics}
 \usage{
-\method{plot}{neuralGAM}(x, select = NULL, xlab = NULL, ylab = NULL, title = NULL, ...)
+\method{plot}{neuralGAM}(x, select = NULL, xlab = NULL, ylab = NULL, ...)
 }
 \arguments{
 \item{x}{a fitted \code{neuralGAM} object as produced by \code{neuralGAM()}.}
@@ -15,8 +15,6 @@ select="X0"}
 \item{xlab}{if supplied, this value will be used as the \code{x} label for all plots}
 
 \item{ylab}{if supplied, this value will be used as the \code{y} label for all plots}
-
-\item{title}{if supplied, this value will be used as the main plot title}
 
 \item{\ldots}{other graphics parameters to pass on to plotting commands.}
 }

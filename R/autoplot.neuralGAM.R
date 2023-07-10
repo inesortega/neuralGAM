@@ -2,7 +2,6 @@
 #' @export
 ggplot2::autoplot
 
-
 #' Advanced \code{neuralGAM} visualization with ggplot2 library
 #' @param object a fitted \code{neuralGAM} object as produced by \code{neuralGAM()}.
 #' @param select selects the term to be plotted.
@@ -54,8 +53,9 @@ ggplot2::autoplot
 #' # plot multiple terms:
 #' plots <- lapply(c("x1", "x2", "x3"), function(x) autoplot(ngam, select = x))
 #' gridExtra::grid.arrange(grobs = plots, ncol = 2, nrow = 1)
+
+#' @method autoplot neuralGAM
 #' @export
-#'
 autoplot.neuralGAM <-
   function(object,
            select,

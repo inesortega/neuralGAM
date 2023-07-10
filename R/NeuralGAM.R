@@ -95,7 +95,7 @@ neuralGAM <-
            bias_regularizer = NULL,
            bias_initializer = 'zeros',
            activity_regularizer = NULL,
-           loss = "mean_squared_error",
+           loss = "mse",
            w_train = NULL,
            bf_threshold = 0.001,
            ls_threshold = 0.1,
@@ -103,6 +103,7 @@ neuralGAM <-
            max_iter_ls = 10,
            seed = NULL,
            ...) {
+
     formula <- get_formula_elements(formula)
 
     if (is.null(formula$np_terms)) {
@@ -115,11 +116,11 @@ neuralGAM <-
     if (is.null(num_units))
       stop("num_units should not be null")
 
-    if (!is.numeric(num_units) && !(is.list(num_units))) {
-      stop("Argument \"num_units\" must be a positive integer or a list of positive  of integers")
+    if (!is.numeric(num_units) & !(is.vector(num_units))) {
+      stop("Argument \"num_units\" must be an integer or a vector of integers")
     }
 
-    if (is.numeric(num_units)) {
+    if (is.vector(num_units)) {
       if (any(num_units < 1)) {
         stop("Argument \"num_units\" must be a positive integer or a list of positive  of integers")
       }
@@ -207,7 +208,6 @@ neuralGAM <-
           bias_regularizer = bias_regularizer,
           bias_initializer = bias_initializer,
           activity_regularizer = activity_regularizer,
-
           name = term,
           ...
         )
@@ -330,20 +330,20 @@ neuralGAM <-
 
       dev_delta <- abs((dev_old - dev_new) / dev_old)
       if (family == "binomial") {
+        print(
+            paste(
+              "Current delta ",
+              dev_delta,
+              " LS Threshold = ",
+              ls_threshold,
+              "Converged = ",
+              dev_delta < ls_threshold
+            )
+          )
         if ((dev_delta < ls_threshold) & (it > 0)) {
           converged <- TRUE
         }
       }
-      print(
-        paste(
-          "Current delta ",
-          dev_delta,
-          " LS Threshold = ",
-          ls_threshold,
-          "Converged = ",
-          dev_delta < ls_threshold
-        )
-      )
       it <- it + 1
     }
 

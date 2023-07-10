@@ -30,7 +30,8 @@ get_formula_elements <- function(formula) {
   terms <- formula.tools::rhs(formula)
 
   pattern <- "s\\(.*\\)"
-  smooth_terms <- grep(pattern, attr(terms(formula), "term.labels"), value = TRUE)
+  smooth_terms <-
+    grep(pattern, attr(terms(formula), "term.labels"), value = TRUE)
 
   if (length(smooth_terms) > 0) {
     smooth_formula <-

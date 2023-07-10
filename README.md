@@ -5,7 +5,7 @@
 
 # neuralGAM
 
-neuralGAM, a neural network based on Generalized Additive Models, which trains a different neural network to estimate the contribution of each feature to the response variable. 
+neuralGAM is a neural network framework based on Generalized Additive Models, which trains a different neural network to estimate the contribution of each feature to the response variable. 
 
 The networks are trained independently leveraging the local scoring and backfitting algorithms to ensure that the Generalized Additive Model converges and it is additive. 
 
@@ -15,13 +15,12 @@ The resultant Neural Network is a highly accurate and interpretable deep learnin
 
 neuralGAM is based on Deep Neural Networks, and depends on Tensorflow and Keras packages. Therefore, a working Python>3.9 installation is required.
 
-When loading the package, it will automatically generate a working conda environment with 
+When installing the package, the process will automatically generate a working conda environment with 
 Keras and Tensorflow installed. 
 
 ## Sample usage
 
-In the following example, we use the sample synthetic dataset and fit a neuralGAM model
-with a single layer with 1024 units.  
+In the following example, we use synthetic data to showcase the performance of neuralGAM by fitting a model with a single layer with 1024 units.  
 
 ```
 n <- 24500
@@ -78,6 +77,5 @@ terms <- predict(ngam, test, type = "terms")
 
 # Obtain only certain terms: 
 terms <- predict(ngam, test, type = "terms", terms = c("x1", "x2"))
-
 ```
 

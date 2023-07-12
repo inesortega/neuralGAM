@@ -64,7 +64,7 @@ print.neuralGAM <- function(x, ...) {
       ))
     }
 
-    cat(paste("\nMSE:", round(ngam$err, 4)))
+    cat(paste("\nMSE:", round(ngam$mse, 4)))
     cat(paste("\nSample size:", nrow(ngam$x)))
 
     invisible(x)

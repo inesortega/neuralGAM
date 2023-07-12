@@ -40,3 +40,34 @@ test_that("neuralGAM throws an error for invalid family", {
   data <- data.frame(x = 1:10, y = rnorm(10))
   expect_error(neuralGAM(formula, data, num_units = 10, family = "abc"))
 })
+
+# Test if function throws error for invalid loss
+test_that("neuralGAM throws an error for invalid loss", {
+  formula <- y ~ s(x)
+  data <- data.frame(x = 1:10, y = rnorm(10))
+  expect_error(neuralGAM(formula, data, num_units = 10, loss = -1))
+})
+
+# Test if function throws error for invalid kernel initializer
+test_that("neuralGAM throws an error for invalid kernel_initializer", {
+  formula <- y ~ s(x)
+  data <- data.frame(x = 1:10, y = rnorm(10))
+  expect_error(neuralGAM(
+    formula,
+    data,
+    num_units = 10,
+    kernel_initializer = -1
+  ))
+})
+
+# Test if function throws error for invalid bias initializer
+test_that("neuralGAM throws an error for invalid bias_initializer", {
+  formula <- y ~ s(x)
+  data <- data.frame(x = 1:10, y = rnorm(10))
+  expect_error(neuralGAM(
+    formula,
+    data,
+    num_units = 10,
+    bias_initializer = -1
+  ))
+})

@@ -109,17 +109,16 @@ neuralGAM <-
       stop("No smooth terms defined in formula. Use s() to define smooth terms.")
     }
 
-    if (!is.data.frame(data))
+    if (!is.data.frame(data)){
       stop("data should be a data.frame")
-
-    if (is.null(num_units))
+    }
+    if (is.null(num_units)){
       stop("num_units should not be null")
-
-    if (!is.numeric(num_units) & !(is.vector(num_units))) {
+    }
+    if (!is.numeric(num_units) | !is.vector(num_units)) {
       stop("Argument \"num_units\" must be an integer or a vector of integers")
     }
-
-    if (is.vector(num_units)) {
+    else{
       if (any(num_units < 1)) {
         stop("Argument \"num_units\" must be a positive integer or a list of positive  of integers")
       }
@@ -136,26 +135,42 @@ neuralGAM <-
       stop("w_train should be a numeric vector")
     }
 
-    if (!is.numeric(bf_threshold))
+    if (!is.numeric(bf_threshold)){
       stop("bf_threshold should be a numeric value")
+    }
 
-    if (!is.numeric(ls_threshold))
+    if (!is.numeric(ls_threshold)){
       stop("ls_threshold should be a numeric value")
+    }
 
-    if (!is.numeric(max_iter_backfitting))
+    if (!is.numeric(max_iter_backfitting)){
       stop("max_iter_backfitting should be a numeric value")
+    }
 
-    if (!is.numeric(max_iter_ls))
+    if (!is.numeric(max_iter_ls)){
       stop("max_iter_ls should be a numeric value")
+    }
 
     if (!is.null(seed) && !is.numeric(seed)) {
       stop("seed should be a positive integer value")
     }
 
-    # Check if the argument 'loss' is NULL or a character string
     if (!is.character(loss)) {
       stop("Error: 'loss' argument should be a character string.")
     }
+
+    if (!is.character(kernel_initializer)) {
+      stop("Error: 'kernel_initializer' argument should be a character string.")
+    }
+
+    if (!is.character(bias_initializer)) {
+      stop("Error: 'bias_initializer' argument should be a character string.")
+    }
+
+    if (!is.character(loss)) {
+      stop("Error: 'loss' argument should be a character string.")
+    }
+
 
     if (!is.null(seed)) {
       tensorflow::set_random_seed(seed)
@@ -358,21 +373,19 @@ neuralGAM <-
       list(
         muhat = muhat,
         partial = g,
+        y = y,
         eta = eta,
         x = x,
         model = model,
         eta0 = eta0,
         family = family,
         stats = stats,
-        err = mean((y - muhat) ^ 2),
+        mse = mean((y - muhat) ^ 2),
         formula = formula
       )
     class(res) <- "neuralGAM"
     return(res)
   }
-
-
-
 
 .onLoad <- function(libname, pkgname) {
   # set conda environment for tensorflow and keras

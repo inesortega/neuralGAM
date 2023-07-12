@@ -147,6 +147,13 @@ ngam
 \references{
 ### Main Paper NeuralGAM
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://inesortega.github.io/NeuralGAM/}
+}
+
+}
 \author{
 Ines Ortega-Fernandez and Marta Sestelo
 

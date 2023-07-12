@@ -85,22 +85,22 @@ autoplot.neuralGAM <-
 
     term <- select
 
-    # Generate custom labels if xlab or ylab is provided, else use default colnames
+    # Generate custom labels if xlab or ylab is not provided, else use default colnames
     if (is.null(xlab)) {
       xlab <- colnames(x)
     }
 
     if (is.null(ylab)) {
       if (term %in% ngam$formula$np_terms) {
-        ylab <- paste("s(", xlab, ")", sep = "")
+        ylab <- paste("s(", term, ")", sep = "")
       }
       else{
         # parametric term:
         if (is.factor(x)) {
-          ylab <- paste("Partial for ", xlab)
+          ylab <- paste("Partial for ", term)
         }
         else{
-          ylab <- xlab
+          ylab <- term
         }
       }
     }

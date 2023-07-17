@@ -400,11 +400,23 @@ neuralGAM <-
   message("Setting up environment....")
   envs <- reticulate::conda_list()
   if (is.element("neuralGAM-env", envs$name)) {
-    .setupEnvironment(envs)
+    message("Loading neuralGAM-env...")
+    i <- which(envs$name == "neuralGAM-env")
+    Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
+    Sys.setenv(RETICULATE_PYTHON = envs$python[i])
+    tryCatch(
+      expr = reticulate::use_condaenv("neuralGAM-env", required = TRUE),
+      error = function(e)
+        NULL
+    )
   }
   else{
+    message("Setting neuralGAM-env...")
     installneuralGAMDeps()
-    .setupEnvironment(envs)
+    envs <- reticulate::conda_list()
+    i <- which(envs$name == "neuralGAM-env")
+    Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
+    Sys.setenv(RETICULATE_PYTHON = envs$python[i])
   }
 
 }

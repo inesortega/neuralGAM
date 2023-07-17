@@ -100,17 +100,6 @@ installneuralGAMDeps <- function() {
   ! is.null(conda)
 }
 
-.setupEnvironment <- function(envs) {
-  message("Loading neuralGAM-env...")
-  i <- which(envs$name == "neuralGAM-env")
-  Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
-  Sys.setenv(RETICULATE_PYTHON = envs$python[i])
-  tryCatch(
-    expr = reticulate::use_condaenv("neuralGAM-env", required = TRUE),
-    error = function(e)
-      NULL
-  )
-}
 .isTensorFlow <- function() {
   tfAvailable <- reticulate::py_module_available("tensorflow")
   if (tfAvailable) {

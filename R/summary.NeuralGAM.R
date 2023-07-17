@@ -4,7 +4,16 @@
 #' as well as neural network architecture and training history.
 #' @param object \code{neuralGAM} object.
 #' @param \ldots Other options.
-#' @return The summary of the object
+#' @return The summary of the object:
+#'  \itemize{
+#'  \item Distribution family
+#'  \item Formula
+#'  \item Intercept value
+#'  \item Mean Squared Error (MSE)
+#'  \item Training sample size
+#'  \item Training History
+#'  \item Model Architecture
+#'}
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @export
 #' @examples

@@ -81,9 +81,11 @@ seed for algorithms dependent on randomization.}
 A trained neuralGAM object. Use \code{summary(ngam)} to see details.
 }
 \description{
-Main function to fit a neuralGAM model. The function builds one
-neural network to attend to each feature in x, using the
-backfitting and local scoring algorithms to fit a weighted additive model
+Fits a neuralGAM model by building a neural network to attend to each covariate.
+}
+\details{
+The function builds one neural network to attend to each feature in x,
+using the backfitting and local scoring algorithms to fit a weighted additive model
 using neural networks as function approximators. The adjustment of the
 dependent variable and the weights is determined by the distribution of the
 response \code{y}, adjusted by the \code{family} parameter.
@@ -121,6 +123,9 @@ ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
                  )
 
 ngam
+}
+\references{
+Hastie, T., & Tibshirani, R. (1990). Generalized Additive Models. London: Chapman and Hall, 1931(11), 683–741.
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.

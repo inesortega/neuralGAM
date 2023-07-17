@@ -6,21 +6,8 @@
 #' @importFrom keras install_keras
 #' @keywords internal
 installneuralGAMDeps <- function() {
-  if ((!.isConda())) {
-    print("=== No miniconda detected, installing it using reticulate R package")
-    status <- tryCatch(
-      reticulate::install_miniconda(path = reticulate::miniconda_path()),
-      error = function(e) {
-        print(e)
-        return(TRUE)
-      }
-    )
-    if (isTRUE(status)) {
-      stop("Error in Miniconda Installation.", call. = FALSE)
-    }
-  }
   conda <- reticulate::conda_binary("auto")
-  print("Creating environment")
+  print("Creating neuralGAM-env...")
 
   if (.isMacARM()) {
     channels <- "apple"
@@ -90,6 +77,20 @@ installneuralGAMDeps <- function() {
   print(c("Restart R and load neuralGAM again..."))
 }
 
+.installConda <- function() {
+  print("=== No miniconda detected, installing it using reticulate R package")
+  status <- tryCatch(
+    reticulate::install_miniconda(path = reticulate::miniconda_path()),
+    error = function(e) {
+      print(e)
+      return(TRUE)
+    }
+  )
+  if (isTRUE(status)) {
+    stop("Error in Miniconda Installation.", call. = FALSE)
+  }
+}
+
 .isConda <- function() {
   conda <- tryCatch(
     reticulate::conda_binary("auto"),
@@ -99,7 +100,17 @@ installneuralGAMDeps <- function() {
   ! is.null(conda)
 }
 
-
+.setupEnvironment <- function(envs) {
+  print("Loading neuralGAM-env...")
+  i <- which(envs$name == "neuralGAM-env")
+  Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
+  Sys.setenv(RETICULATE_PYTHON = envs$python[i])
+  tryCatch(
+    expr = reticulate::use_condaenv("neuralGAM-env", required = TRUE),
+    error = function(e)
+      NULL
+  )
+}
 .isTensorFlow <- function() {
   tfAvailable <- reticulate::py_module_available("tensorflow")
   if (tfAvailable) {

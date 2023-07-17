@@ -1,7 +1,8 @@
 #' Fit a neuralGAM model
-#' @description Main function to fit a neuralGAM model. The function builds one
-#' neural network to attend to each feature in x, using the
-#' backfitting and local scoring algorithms to fit a weighted additive model
+#' @description Fits a neuralGAM model by building a neural network to attend to each covariate.
+#' @details
+#' The function builds one neural network to attend to each feature in x,
+#' using the backfitting and local scoring algorithms to fit a weighted additive model
 #' using neural networks as function approximators. The adjustment of the
 #' dependent variable and the weights is determined by the distribution of the
 #' response \code{y}, adjusted by the \code{family} parameter.
@@ -47,6 +48,8 @@
 #' @importFrom magrittr %>%
 #' @importFrom formula.tools lhs rhs
 #' @export
+#' @references
+#' Hastie, T., & Tibshirani, R. (1990). Generalized Additive Models. London: Chapman and Hall, 1931(11), 683–741.
 #' @return A trained neuralGAM object. Use \code{summary(ngam)} to see details.
 #' @examples
 #'
@@ -102,17 +105,16 @@ neuralGAM <-
            max_iter_ls = 10,
            seed = NULL,
            ...) {
-
     formula <- get_formula_elements(formula)
 
     if (is.null(formula$np_terms)) {
       stop("No smooth terms defined in formula. Use s() to define smooth terms.")
     }
 
-    if (!is.data.frame(data)){
+    if (!is.data.frame(data)) {
       stop("data should be a data.frame")
     }
-    if (is.null(num_units)){
+    if (is.null(num_units)) {
       stop("num_units should not be null")
     }
     if (!is.numeric(num_units) | !is.vector(num_units)) {
@@ -135,19 +137,19 @@ neuralGAM <-
       stop("w_train should be a numeric vector")
     }
 
-    if (!is.numeric(bf_threshold)){
+    if (!is.numeric(bf_threshold)) {
       stop("bf_threshold should be a numeric value")
     }
 
-    if (!is.numeric(ls_threshold)){
+    if (!is.numeric(ls_threshold)) {
       stop("ls_threshold should be a numeric value")
     }
 
-    if (!is.numeric(max_iter_backfitting)){
+    if (!is.numeric(max_iter_backfitting)) {
       stop("max_iter_backfitting should be a numeric value")
     }
 
-    if (!is.numeric(max_iter_ls)){
+    if (!is.numeric(max_iter_ls)) {
       stop("max_iter_ls should be a numeric value")
     }
 
@@ -304,7 +306,8 @@ neuralGAM <-
           }
 
           epochs <- c(epochs, it_back)
-          loss_metric <- c(loss_metric, round(history$metrics$loss, 4))
+          loss_metric <-
+            c(loss_metric, round(history$metrics$loss, 4))
           timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
           model_i <- c(model_i, term)
 
@@ -345,15 +348,15 @@ neuralGAM <-
       dev_delta <- abs((dev_old - dev_new) / dev_old)
       if (family == "binomial") {
         print(
-            paste(
-              "Current delta ",
-              dev_delta,
-              " LS Threshold = ",
-              ls_threshold,
-              "Converged = ",
-              dev_delta < ls_threshold
-            )
+          paste(
+            "Current delta ",
+            dev_delta,
+            " LS Threshold = ",
+            ls_threshold,
+            "Converged = ",
+            dev_delta < ls_threshold
           )
+        )
         if ((dev_delta < ls_threshold) & (it > 0)) {
           converged <- TRUE
         }
@@ -391,12 +394,17 @@ neuralGAM <-
   # set conda environment for tensorflow and keras
   print("Installing requirements....")
   if (!.isConda()) {
+    .installConda()
     installneuralGAMDeps()
   }
   print("Setting up environment....")
   envs <- reticulate::conda_list()
-  i <- which(envs$name == "neuralGAM-env")
-  Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
-  Sys.setenv(RETICULATE_PYTHON = envs$python[i])
-  print("Configuration completed")
+  if (is.element("neuralGAM-env", envs$name)) {
+    .setupEnvironment(envs)
+  }
+  else{
+    installneuralGAMDeps()
+    .setupEnvironment(envs)
+  }
+
 }

@@ -12,7 +12,16 @@
 \item{\ldots}{Other options.}
 }
 \value{
-The summary of the object
+The summary of the object:
+ \itemize{
+ \item Distribution family
+ \item Formula
+ \item Intercept value
+ \item Mean Squared Error (MSE)
+ \item Training sample size
+ \item Training History
+ \item Model Architecture
+}
 }
 \description{
 Summary of a fitted neuralGAM object. Prints

@@ -12,12 +12,17 @@
 \item{\ldots}{Other arguments.}
 }
 \value{
-The printed output of the object
+The printed output of the object:
+ \itemize{
+ \item Distribution family
+ \item Formula
+ \item Intercept value
+ \item Mean Squared Error (MSE)
+ \item Training sample size
+}
 }
 \description{
-Default print statement for a neuralGAM object. Prints
-the distribution family, model formula, intercept value, number of terms
-(neural networks), as well as neural network architecture.
+Default print statement for a neuralGAM object.
 }
 \examples{
 

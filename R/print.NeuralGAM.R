@@ -1,10 +1,15 @@
 #' Short \code{neuralGAM} summary
-#' @description Default print statement for a neuralGAM object. Prints
-#' the distribution family, model formula, intercept value, number of terms
-#' (neural networks), as well as neural network architecture.
+#' @description Default print statement for a neuralGAM object.
 #' @param x \code{neuralGAM} object.
 #' @param \ldots Other arguments.
-#' @return The printed output of the object
+#' @return The printed output of the object:
+#'  \itemize{
+#'  \item Distribution family
+#'  \item Formula
+#'  \item Intercept value
+#'  \item Mean Squared Error (MSE)
+#'  \item Training sample size
+#'}
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @export
 #' @examples

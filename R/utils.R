@@ -7,11 +7,11 @@
 #' @keywords internal
 installneuralGAMDeps <- function() {
   conda <- reticulate::conda_binary("auto")
-  message("Creating neuralGAM-env...")
+  packageStartupMessage("Creating neuralGAM-env...")
 
   if (.isMacARM()) {
     channels <- "apple"
-    message("Adding APPLE channel to conda...")
+    packageStartupMessage("Adding APPLE channel to conda...")
   } else {
     channel <- NULL
   }
@@ -26,14 +26,14 @@ installneuralGAMDeps <- function() {
     }
   )
   if (isTRUE(status)) {
-    message(status)
+    packageStartupMessage(status)
     stop("Error in Miniconda Installation.", call. = FALSE)
   }
 
   if (.isMacARM()) {
     # Workaround to install specific versions of tensorflow-macos and tensorflow-metal
     # https://developer.apple.com/forums/thread/721619
-    message("Installing tensorflow for MAC ARM")
+    packageStartupMessage("Installing tensorflow for MAC ARM")
     status2 <- tryCatch(
       reticulate::py_install(
         c(
@@ -56,7 +56,7 @@ installneuralGAMDeps <- function() {
     }
   }
 
-  message("Installing keras...")
+  packageStartupMessage("Installing keras...")
   status3 <- tryCatch(
     keras::install_keras(
       version = "default",
@@ -73,16 +73,16 @@ installneuralGAMDeps <- function() {
          call. = FALSE)
   }
 
-  message("Installation complete!")
-  message(c("Restart R and load neuralGAM again..."))
+  packageStartupMessage("Installation complete!")
+  packageStartupMessage(c("Restart R and load neuralGAM again..."))
 }
 
 .installConda <- function() {
-  message("=== No miniconda detected, installing it using reticulate R package")
+  packageStartupMessage("=== No miniconda detected, installing it using reticulate R package")
   status <- tryCatch(
     reticulate::install_miniconda(path = reticulate::miniconda_path()),
     error = function(e) {
-      message(e)
+      packageStartupMessage(e)
       return(TRUE)
     }
   )

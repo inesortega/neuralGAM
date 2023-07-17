@@ -392,12 +392,12 @@ neuralGAM <-
 
 .onLoad <- function(libname, pkgname) {
   # set conda environment for tensorflow and keras
-  print("Installing requirements....")
+  message("Installing requirements....")
   if (!.isConda()) {
     .installConda()
     installneuralGAMDeps()
   }
-  print("Setting up environment....")
+  message("Setting up environment....")
   envs <- reticulate::conda_list()
   if (is.element("neuralGAM-env", envs$name)) {
     .setupEnvironment(envs)

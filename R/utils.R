@@ -7,11 +7,11 @@
 #' @keywords internal
 installneuralGAMDeps <- function() {
   conda <- reticulate::conda_binary("auto")
-  print("Creating neuralGAM-env...")
+  message("Creating neuralGAM-env...")
 
   if (.isMacARM()) {
     channels <- "apple"
-    print("Adding APPLE channel to conda...")
+    message("Adding APPLE channel to conda...")
   } else {
     channel <- NULL
   }
@@ -26,14 +26,14 @@ installneuralGAMDeps <- function() {
     }
   )
   if (isTRUE(status)) {
-    print(status)
+    message(status)
     stop("Error in Miniconda Installation.", call. = FALSE)
   }
 
   if (.isMacARM()) {
     # Workaround to install specific versions of tensorflow-macos and tensorflow-metal
     # https://developer.apple.com/forums/thread/721619
-    print("Installing tensorflow for MAC ARM")
+    message("Installing tensorflow for MAC ARM")
     status2 <- tryCatch(
       reticulate::py_install(
         c(
@@ -56,7 +56,7 @@ installneuralGAMDeps <- function() {
     }
   }
 
-  print("Installing keras...")
+  message("Installing keras...")
   status3 <- tryCatch(
     keras::install_keras(
       version = "default",
@@ -73,16 +73,16 @@ installneuralGAMDeps <- function() {
          call. = FALSE)
   }
 
-  print("Installation complete!")
-  print(c("Restart R and load neuralGAM again..."))
+  message("Installation complete!")
+  message(c("Restart R and load neuralGAM again..."))
 }
 
 .installConda <- function() {
-  print("=== No miniconda detected, installing it using reticulate R package")
+  message("=== No miniconda detected, installing it using reticulate R package")
   status <- tryCatch(
     reticulate::install_miniconda(path = reticulate::miniconda_path()),
     error = function(e) {
-      print(e)
+      message(e)
       return(TRUE)
     }
   )
@@ -101,7 +101,7 @@ installneuralGAMDeps <- function() {
 }
 
 .setupEnvironment <- function(envs) {
-  print("Loading neuralGAM-env...")
+  message("Loading neuralGAM-env...")
   i <- which(envs$name == "neuralGAM-env")
   Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
   Sys.setenv(RETICULATE_PYTHON = envs$python[i])

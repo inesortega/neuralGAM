@@ -21,7 +21,6 @@ Imports:
   tensorflow,
   keras,
   ggplot2,
-  patchwork,
   magrittr,
   reticulate,
   formula.tools,

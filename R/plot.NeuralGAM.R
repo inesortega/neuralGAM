@@ -9,8 +9,6 @@
 #' @param \ldots other graphics parameters to pass on to plotting commands.
 #' @return Returns the partial effects plot.
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
-#' @importFrom ggplot2 ggplot labs ggplot_gtable ggplot_build aes geom_line
-#' @importFrom patchwork wrap_plots plot_layout plot_annotation
 #' @export
 #' @examples
 #'

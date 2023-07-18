@@ -411,7 +411,7 @@ neuralGAM <-
     )
   }
   else{
-    message("Setting neuralGAM-env...")
+    packageStartupMessage("Setting neuralGAM-env...")
     installneuralGAMDeps()
     envs <- reticulate::conda_list()
     i <- which(envs$name == "neuralGAM-env")

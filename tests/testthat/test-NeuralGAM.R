@@ -71,3 +71,15 @@ test_that("neuralGAM throws an error for invalid bias_initializer", {
     bias_initializer = -1
   ))
 })
+
+
+# Test if function runs OK main example
+test_that("neuralGAM runs OK", {
+  formula <- y ~ s(x)
+  seed <- 10
+  set.seed(seed)
+  data <- data.frame(x = 1:10, y = rnorm(10))
+  ngam <- neuralGAM(formula, data, num_units = 10, seed = seed)
+  expect_equal(ngam$mse, 0.56552945)
+})
+

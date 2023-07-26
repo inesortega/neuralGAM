@@ -7,14 +7,13 @@
 #' @keywords internal
 installneuralGAMDeps <- function() {
   conda <- reticulate::conda_binary("auto")
-  packageStartupMessage("Creating neuralGAM-env...")
-
-  if (.isMacARM()) {
+  if (.isMac()) {
     channels <- "apple"
     packageStartupMessage("Adding APPLE channel to conda...")
   } else {
     channel <- NULL
   }
+  packageStartupMessage("Creating neuralGAM-env...")
   status <- tryCatch(
     reticulate::conda_create(
       envname = "neuralGAM-env",
@@ -107,6 +106,12 @@ installneuralGAMDeps <- function() {
     tfAvailable <- utils::compareVersion("2.2", tfVersion) <= 0
   }
   return(tfAvailable)
+}
+
+
+.isMac <- function() {
+  sys_info <- Sys.info()
+  return(sys_info[["sysname"]] == "Darwin")
 }
 
 .isMacARM <- function() {

@@ -20,7 +20,3 @@ PackageUseDevtools: Yes
 PackageInstallArgs: --no-multiarch --with-keep.source
 PackageCheckArgs: --as-cran
 PackageRoxygenize: rd,namespace,vignette
-
-PythonType: conda
-PythonVersion: 3.9.0
-PythonPath: C:/Users/iortega/AppData/Local/r-miniconda/envs/neuralGAM-env/python.exe

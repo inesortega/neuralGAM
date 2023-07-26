@@ -392,7 +392,6 @@ neuralGAM <-
 
 .onLoad <- function(libname, pkgname) {
   # set conda environment for tensorflow and keras
-  packageStartupMessage("Installing requirements....")
   if (!.isConda()) {
     .installConda()
     installneuralGAMDeps()

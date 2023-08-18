@@ -49,9 +49,8 @@ Defaults to Xavier Initializer (\code{glorot_normal}).}
     \item{\code{formula}}{An object of class "formula": a description of the model to be fitted. You can add smooth terms using \code{s()}.}
     \item{\code{data}}{A data frame containing the model response variable and covariates
 required by the formula. Additional terms not present in the formula will be ignored.}
-    \item{\code{family}}{A description of the link function used in the model
-(defaults to \code{gaussian}). Set \code{family="gaussian"} for linear
-regression and \code{family="binomial"} for logistic regression.}
+    \item{\code{family}}{This is a family object specifying the distribution and link to use for fitting.
+By default, it is \code{"gaussian"} but also works to \code{"binomial"} for logistic regression.}
     \item{\code{bf_threshold}}{Convergence criterion of the backfitting algorithm.
 Defaults to \code{0.001}}
     \item{\code{ls_threshold}}{Convergence criterion of the local scoring algorithm.

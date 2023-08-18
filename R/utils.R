@@ -33,13 +33,13 @@ installneuralGAMDeps <- function() {
     # Workaround to install specific versions of tensorflow-macos and tensorflow-metal
     # https://developer.apple.com/forums/thread/721619
     packageStartupMessage("Installing tensorflow for MAC ARM")
+    Sys.setenv(CONDA_SUBDIR = "osx-64")
     status2 <- tryCatch(
       reticulate::py_install(
         c(
-          "tensorflow-deps==2.8.0",
-          "tensorflow-macos==2.8.0",
-          "tensorflow-metal==0.4.0",
-          "tensorflow==2.8.0"
+          "tensorflow-deps",
+          "tensorflow-macos",
+          "tensorflow-metal"
         ),
         method = "conda",
         conda = conda,

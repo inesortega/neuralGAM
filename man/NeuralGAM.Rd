@@ -2,7 +2,7 @@
 % Please edit documentation in R/neuralGAM.R
 \name{neuralGAM}
 \alias{neuralGAM}
-\title{Fit a neuralGAM model}
+\title{Fit a \code{neuralGAM} model}
 \usage{
 neuralGAM(
   formula,
@@ -37,9 +37,8 @@ If a scalar value is provided, a single hidden layer neural network with that nu
 If a vector of values is provided, a multi-layer neural network with each element of the vector defining
 the number of hidden units on each hidden layer is used.}
 
-\item{family}{A description of the link function used in the model
-(defaults to \code{gaussian}). Set \code{family="gaussian"} for linear
-regression and \code{family="binomial"} for logistic regression.}
+\item{family}{This is a family object specifying the distribution and link to use for fitting.
+By default, it is \code{"gaussian"} but also works to \code{"binomial"} for logistic regression.}
 
 \item{learning_rate}{Learning rate for the neural network optimizer.}
 
@@ -78,10 +77,10 @@ seed for algorithms dependent on randomization.}
 \item{\ldots}{Additional parameters for the Adam optimizer (see ?keras::optimizer_adam)}
 }
 \value{
-A trained neuralGAM object. Use \code{summary(ngam)} to see details.
+A trained \code{neuralGAM} object. Use \code{summary(ngam)} to see details.
 }
 \description{
-Fits a neuralGAM model by building a neural network to attend to each covariate.
+Fits a \code{neuralGAM} model by building a neural network to attend to each covariate.
 }
 \details{
 The function builds one neural network to attend to each feature in x,

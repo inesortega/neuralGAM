@@ -1,5 +1,5 @@
 #' \code{neuralGAM} summary
-#' @description Summary of a fitted neuralGAM object. Prints
+#' @description Summary of a fitted \code{neuralGAM} object. Prints
 #' the distribution family, model formula, intercept value, sample size,
 #' as well as neural network architecture and training history.
 #' @param object \code{neuralGAM} object.

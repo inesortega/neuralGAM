@@ -1,5 +1,5 @@
-#' Fit a neuralGAM model
-#' @description Fits a neuralGAM model by building a neural network to attend to each covariate.
+#' Fit a \code{neuralGAM} model
+#' @description Fits a \code{neuralGAM} model by building a neural network to attend to each covariate.
 #' @details
 #' The function builds one neural network to attend to each feature in x,
 #' using the backfitting and local scoring algorithms to fit a weighted additive model
@@ -14,9 +14,8 @@
 #' If a scalar value is provided, a single hidden layer neural network with that number of units is used.
 #' If a vector of values is provided, a multi-layer neural network with each element of the vector defining
 #' the number of hidden units on each hidden layer is used.
-#' @param family A description of the link function used in the model
-#' (defaults to \code{gaussian}). Set \code{family="gaussian"} for linear
-#' regression and \code{family="binomial"} for logistic regression.
+#' @param family This is a family object specifying the distribution and link to use for fitting.
+#' By default, it is \code{"gaussian"} but also works to \code{"binomial"} for logistic regression.
 #' @param learning_rate Learning rate for the neural network optimizer.
 #' @param kernel_initializer Kernel initializer for the Dense layers.
 #' Defaults to Xavier Initializer (\code{glorot_normal}).
@@ -50,7 +49,7 @@
 #' @export
 #' @references
 #' Hastie, T., & Tibshirani, R. (1990). Generalized Additive Models. London: Chapman and Hall, 1931(11), 683–741.
-#' @return A trained neuralGAM object. Use \code{summary(ngam)} to see details.
+#' @return A trained \code{neuralGAM} object. Use \code{summary(ngam)} to see details.
 #' @examples
 #'
 #' n <- 24500
@@ -390,7 +389,7 @@ neuralGAM <-
     return(res)
   }
 
-.onLoad <- function(libname, pkgname) {
+.onAttach <- function(libname, pkgname) {
   # set conda environment for tensorflow and keras
   if (!.isConda()) {
     .installConda()
@@ -399,7 +398,7 @@ neuralGAM <-
   packageStartupMessage("Setting up environment....")
   envs <- reticulate::conda_list()
   if (is.element("neuralGAM-env", envs$name)) {
-    packageStartupMessage("Loading neuralGAM-env...")
+    packageStartupMessage("Loading conda environment...")
     i <- which(envs$name == "neuralGAM-env")
     Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
     Sys.setenv(RETICULATE_PYTHON = envs$python[i])
@@ -410,7 +409,7 @@ neuralGAM <-
     )
   }
   else{
-    packageStartupMessage("Setting neuralGAM-env...")
+    # packageStartupMessage("Setting conda environment...")
     installneuralGAMDeps()
     envs <- reticulate::conda_list()
     i <- which(envs$name == "neuralGAM-env")

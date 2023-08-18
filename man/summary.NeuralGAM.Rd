@@ -24,7 +24,7 @@ The summary of the object:
 }
 }
 \description{
-Summary of a fitted neuralGAM object. Prints
+Summary of a fitted \code{neuralGAM} object. Prints
 the distribution family, model formula, intercept value, sample size,
 as well as neural network architecture and training history.
 }

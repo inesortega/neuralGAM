@@ -32,7 +32,7 @@ installneuralGAMDeps <- function() {
   if (.isMacARM()) {
     # Workaround to install specific versions of tensorflow-macos and tensorflow-metal
     # https://developer.apple.com/forums/thread/721619
-    print("Installing tensorflow for MAC ARM")
+    packageStartupMessage("Installing tensorflow for MAC ARM")
     Sys.setenv(CONDA_SUBDIR = "osx-64")
     status2 <- tryCatch(
       reticulate::py_install(

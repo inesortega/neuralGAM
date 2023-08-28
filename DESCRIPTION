@@ -29,6 +29,8 @@ SystemRequirements: Python (>= 3.9), TensorFlow (https://www.tensorflow.org/)
 RoxygenNote: 7.2.3
 Suggests: 
     covr,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    fs,
+    withr
 Config/testthat/edition: 3
 URL: https://inesortega.github.io/neuralGAM/

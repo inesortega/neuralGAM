@@ -1,9 +1,4 @@
 clean_environment <- function() {
-  #detect and delete folders with pattern "Rtmp"
-  PCTempDir <- Sys.getenv("TEMP")
-  folders <- dir(PCTempDir, pattern = "Rtmp", full.names = TRUE)
-  unlink(folders, recursive = TRUE, force = TRUE, expand = TRUE)
-
   # Clean up tensorflow-generated files and caches
   python_temp_dir <- dirname(reticulate::py_run_string(
     "import tempfile; x=tempfile.NamedTemporaryFile().name",
@@ -11,6 +6,7 @@ clean_environment <- function() {
   )$x)
 
   rm_files(python_temp_dir)
+  rm_files(tempdir())
 
   unlink(file.path(fs::path_home(), ".cache", "conda"), recursive = TRUE)
   unlink(file.path(fs::path_home(), ".cache", "pip"), recursive = TRUE)
@@ -23,10 +19,8 @@ clean_environment <- function() {
 
 rm_files <- function(location){
 
-  cat(paste("Cleaning up "), location, "\n")
-
   if (dir.exists(file.path(location, "__pycache__"))) {
-    unlink(file.path(python_temp_dir, "__pycache__"), recursive = TRUE, force = TRUE)
+    unlink(file.path(location, "__pycache__"), recursive = TRUE, force = TRUE)
   }
 
   files <- fs::dir_ls(
@@ -34,7 +28,11 @@ rm_files <- function(location){
     regexp = "__autograph_generated_file|__pycache__"
   )
 
+  cat(files)
+
   fs::file_delete(files)
 }
 
+library(withr)
+library(fs)
 withr::defer(clean_environment())

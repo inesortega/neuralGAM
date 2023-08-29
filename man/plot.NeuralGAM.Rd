@@ -52,7 +52,7 @@ ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
                  num_units = 1024, family = "gaussian",
                  activation = "relu",
                  learning_rate = 0.001, bf_threshold = 0.001,
-                 max_iter_backfitting = 10, max_iter_ls = 10,
+                 max_iter_backfitting = 1, max_iter_ls = 1,
                  seed = seed
                  )
 plot(ngam)

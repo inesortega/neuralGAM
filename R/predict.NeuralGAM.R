@@ -15,7 +15,7 @@
 #' @return Predicted values according to \code{type} parameter.
 #' @importFrom stats predict
 #' @export
-#' @examples
+#' @examples \donttest{
 #'
 #' n <- 24500
 #'
@@ -43,7 +43,7 @@
 #'                  num_units = 1024, family = "gaussian",
 #'                  activation = "relu",
 #'                  learning_rate = 0.001, bf_threshold = 0.001,
-#'                  max_iter_backfitting = 1, max_iter_ls = 1,
+#'                  max_iter_backfitting = 10, max_iter_ls = 10,
 #'                  seed = seed
 #'                  )
 #' n <- 5000
@@ -63,6 +63,7 @@
 #'
 #' # Obtain only certain terms:
 #' terms <- predict(ngam, test, type = "terms", terms = c("x1", "x2"))
+#' }
 
 predict.neuralGAM <-
   function(object,

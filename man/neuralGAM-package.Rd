@@ -12,6 +12,7 @@ Neural network framework based on Generalized Additive Models, which trains a di
 Useful links:
 \itemize{
   \item \url{https://inesortega.github.io/neuralGAM/}
+  \item Report bugs at \url{https://github.com/inesortega/neuralGAM/issues}
 }
 
 }

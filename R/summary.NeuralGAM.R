@@ -16,7 +16,7 @@
 #'}
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @export
-#' @examples
+#' @examples \donttest{
 #'
 #' n <- 24500
 #'
@@ -44,11 +44,11 @@
 #'                  num_units = 1024, family = "gaussian",
 #'                  activation = "relu",
 #'                  learning_rate = 0.001, bf_threshold = 0.001,
-#'                  max_iter_backfitting = 1, max_iter_ls = 1,
+#'                  max_iter_backfitting = 10, max_iter_ls = 10,
 #'                  seed = seed
 #'                  )
 #' summary(ngam)
-#'
+#' }
 
 summary.neuralGAM <- function(object, ...) {
   if (inherits(object, "neuralGAM")) {

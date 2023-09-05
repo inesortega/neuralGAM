@@ -50,8 +50,7 @@
 #' @references
 #' Hastie, T., & Tibshirani, R. (1990). Generalized Additive Models. London: Chapman and Hall, 1931(11), 683–741.
 #' @return A trained \code{neuralGAM} object. Use \code{summary(ngam)} to see details.
-#' @examples
-#'
+#' @examples \donttest{
 #' n <- 24500
 #'
 #' seed <- 42
@@ -78,11 +77,12 @@
 #'                  num_units = 1024, family = "gaussian",
 #'                  activation = "relu",
 #'                  learning_rate = 0.001, bf_threshold = 0.001,
-#'                  max_iter_backfitting = 1, max_iter_ls = 1,
+#'                  max_iter_backfitting = 10, max_iter_ls = 10,
 #'                  seed = seed
 #'                  )
 #'
 #' ngam
+#' }
 
 neuralGAM <-
   function(formula,

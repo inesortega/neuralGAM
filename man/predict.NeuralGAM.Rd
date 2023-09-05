@@ -31,6 +31,7 @@ Takes a fitted \code{neuralGAM} object produced by
 \code{neuralGAM()} and produces predictions given a new set of values for the model covariates.
 }
 \examples{
+\donttest{
 
 n <- 24500
 
@@ -58,7 +59,7 @@ ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
                  num_units = 1024, family = "gaussian",
                  activation = "relu",
                  learning_rate = 0.001, bf_threshold = 0.001,
-                 max_iter_backfitting = 1, max_iter_ls = 1,
+                 max_iter_backfitting = 10, max_iter_ls = 10,
                  seed = seed
                  )
 n <- 5000
@@ -78,4 +79,5 @@ terms <- predict(ngam, test, type = "terms")
 
 # Obtain only certain terms:
 terms <- predict(ngam, test, type = "terms", terms = c("x1", "x2"))
+}
 }

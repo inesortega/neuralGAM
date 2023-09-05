@@ -15,7 +15,7 @@ ggplot2::autoplot
 #' @importFrom ggplot2 ggplot labs aes geom_line
 #' @importFrom ggplot2 guide_axis scale_x_discrete geom_boxplot
 #' @importFrom gridExtra grid.arrange
-#' @examples
+#' @examples \donttest{
 #' n <- 24500
 #'
 #' seed <- 42
@@ -42,7 +42,7 @@ ggplot2::autoplot
 #'                  num_units = 1024, family = "gaussian",
 #'                  activation = "relu",
 #'                  learning_rate = 0.001, bf_threshold = 0.001,
-#'                  max_iter_backfitting = 1, max_iter_ls = 1,
+#'                  max_iter_backfitting = 10, max_iter_ls = 10,
 #'                  seed = seed
 #'                  )
 #' autoplot(ngam, select="x1")
@@ -54,7 +54,7 @@ ggplot2::autoplot
 #' # plot multiple terms:
 #' plots <- lapply(c("x1", "x2", "x3"), function(x) autoplot(ngam, select = x))
 #' gridExtra::grid.arrange(grobs = plots, ncol = 3, nrow = 1)
-
+#' }
 #' @method autoplot neuralGAM
 #' @export
 autoplot.neuralGAM <-

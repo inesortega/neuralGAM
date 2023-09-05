@@ -90,7 +90,7 @@ dependent variable and the weights is determined by the distribution of the
 response \code{y}, adjusted by the \code{family} parameter.
 }
 \examples{
-
+\donttest{
 n <- 24500
 
 seed <- 42
@@ -117,11 +117,12 @@ ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
                  num_units = 1024, family = "gaussian",
                  activation = "relu",
                  learning_rate = 0.001, bf_threshold = 0.001,
-                 max_iter_backfitting = 1, max_iter_ls = 1,
+                 max_iter_backfitting = 10, max_iter_ls = 10,
                  seed = seed
                  )
 
 ngam
+}
 }
 \references{
 Hastie, T., & Tibshirani, R. (1990). Generalized Additive Models. London: Chapman and Hall, 1931(11), 683–741.

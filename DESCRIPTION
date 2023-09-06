@@ -15,7 +15,7 @@ Description: Neural network framework based on Generalized Additive Models, whic
             to ensure that the Generalized Additive Model converges and it is additive. 
             The resultant Neural Network is a highly accurate and interpretable deep learning model, which can be used for high-risk AI practices where 
             decision-making should be based on accountable and interpretable algorithms. 
-License: file LICENSE
+License: MPL-2.0
 BugReports: https://github.com/inesortega/neuralGAM/issues
 Encoding: UTF-8
 Imports:

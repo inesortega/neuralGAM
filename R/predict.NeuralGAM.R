@@ -11,6 +11,7 @@
 #' \code{type="response"} predictions on the scale of the response are returned.
 #' @param terms If \code{type="terms"}, then only results for the terms named
 #' in this list will be returned. If \code{NULL} then no terms are excluded (default).
+#' @param verbose Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.
 #' @param \ldots Other options.
 #' @return Predicted values according to \code{type} parameter.
 #' @importFrom stats predict
@@ -70,6 +71,7 @@ predict.neuralGAM <-
            newdata = NULL,
            type = "link",
            terms = NULL,
+           verbose = 1,
            ...) {
     # Check if object is of class "neuralGAM"
     if (!inherits(object, "neuralGAM")) {
@@ -119,14 +121,14 @@ predict.neuralGAM <-
       if (type == "terms" && !is.null(terms)) {
         # compute only certain terms
         if (term %in% terms) {
-          f[[term]] <- get_model_predictions(ngam, x, term)
+          f[[term]] <- get_model_predictions(ngam, x, term, verbose)
         }
         else{
           next
         }
       }
       else{
-        f[[term]] <- get_model_predictions(ngam, x, term)
+        f[[term]] <- get_model_predictions(ngam, x, term, verbose)
       }
     }
 
@@ -150,14 +152,7 @@ predict.neuralGAM <-
     }
   }
 
-
-get_linear_predictions <- function(ngam, x, term){
-
-
-
-}
-
-get_model_predictions <- function(ngam, x, term) {
+get_model_predictions <- function(ngam, x, term, verbose) {
   # Linear term
   if (term %in% ngam$formula$p_terms) {
     model <- ngam$model$linear
@@ -170,6 +165,6 @@ get_model_predictions <- function(ngam, x, term) {
   # Non-Parametric term
   if (term %in% ngam$formula$np_terms) {
     model <- ngam$model[[term]]
-    return(model$predict(x[[term]]))
+    return(model$predict(x[[term]], verbose = verbose))
   }
 }

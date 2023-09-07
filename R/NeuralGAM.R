@@ -38,6 +38,7 @@
 #' @param w_train Optional sample weights
 #' @param seed A positive integer which specifies the random number generator
 #' seed for algorithms dependent on randomization.
+#' @param verbose Verbosity mode (0 = silent, 1 = print messages).
 #' @param \ldots Additional parameters for the Adam optimizer (see ?keras::optimizer_adam)
 #' @importFrom keras fit
 #' @importFrom keras compile
@@ -103,6 +104,7 @@ neuralGAM <-
            max_iter_backfitting = 10,
            max_iter_ls = 10,
            seed = NULL,
+           verbose = 1,
            ...) {
     formula <- get_formula_elements(formula)
 
@@ -209,7 +211,9 @@ neuralGAM <-
     if (family == "gaussian")
       max_iter_ls <- 1
 
-    print("Initializing neuralGAM...")
+    if(verbose == 1) {
+      print("Initializing neuralGAM...")
+    }
     model <- list()
     for (k in 1:ncol(x_np)) {
       term <- colnames(x_np)[[k]]
@@ -242,7 +246,9 @@ neuralGAM <-
         Z <- y
         W <- w
       } else {
-        print(paste("ITER LOCAL SCORING", it))
+        if (verbose == 1){
+          print(paste("ITER LOCAL SCORING", it))
+        }
         der <- diriv(family, muhat)
         Z <- eta + (y - muhat) * der
         W <- weight(w, muhat, family)
@@ -259,7 +265,7 @@ neuralGAM <-
         model[["linear"]] <- linear_model
 
         # Update eta with parametric component
-        f[formula$p_terms] <- predict(linear_model, type = "terms")
+        f[formula$p_terms] <- predict(linear_model, type = "terms", verbose = verbose)
         eta <- eta0 + rowSums(f)
 
       }
@@ -288,7 +294,7 @@ neuralGAM <-
           if (family == "gaussian") {
             t <- Sys.time()
             history <-
-              model[[term]] %>% fit(x_np[[term]], residuals, epochs = 1)
+              model[[term]] %>% fit(x_np[[term]], residuals, epochs = 1, verbose = verbose)
 
           } else {
             model[[term]] %>% compile(
@@ -311,7 +317,7 @@ neuralGAM <-
           model_i <- c(model_i, term)
 
           # Update f with current learned function for predictor k
-          f[[term]] <- model[[term]] %>% predict(x_np[[term]])
+          f[[term]] <- model[[term]] %>% predict(x_np[[term]], verbose = verbose)
           f[[term]] <- f[[term]] - mean(f[[term]])
           eta <- eta + f[[term]]
 
@@ -324,18 +330,20 @@ neuralGAM <-
         # compute the differences in the predictor at each iteration
         err <- sum((eta - eta_prev) ** 2) / sum(eta_prev ** 2)
         eta_prev <- eta
-        print(
-          paste(
-            "BACKFITTING Iteration",
-            it_back,
-            "- Current Err = ",
-            err,
-            "BF Threshold = ",
-            bf_threshold,
-            "Converged = ",
-            err < bf_threshold
+        if(verbose == 1) {
+          print(
+            paste(
+              "BACKFITTING Iteration",
+              it_back,
+              "- Current Err = ",
+              err,
+              "BF Threshold = ",
+              bf_threshold,
+              "Converged = ",
+              err < bf_threshold
+            )
           )
-        )
+        }
         it_back <- it_back + 1
 
       }
@@ -346,16 +354,18 @@ neuralGAM <-
 
       dev_delta <- abs((dev_old - dev_new) / dev_old)
       if (family == "binomial") {
-        print(
-          paste(
-            "Current delta ",
-            dev_delta,
-            " LS Threshold = ",
-            ls_threshold,
-            "Converged = ",
-            dev_delta < ls_threshold
+        if (verbose == 1){
+          print(
+            paste(
+              "Current delta ",
+              dev_delta,
+              " LS Threshold = ",
+              ls_threshold,
+              "Converged = ",
+              dev_delta < ls_threshold
+            )
           )
-        )
+        }
         if ((dev_delta < ls_threshold) & (it > 0)) {
           converged <- TRUE
         }

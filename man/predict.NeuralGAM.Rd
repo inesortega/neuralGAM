@@ -4,7 +4,7 @@
 \alias{predict.neuralGAM}
 \title{Produces predictions from a fitted \code{neuralGAM} object}
 \usage{
-\method{predict}{neuralGAM}(object, newdata = NULL, type = "link", terms = NULL, ...)
+\method{predict}{neuralGAM}(object, newdata = NULL, type = "link", terms = NULL, verbose = 1, ...)
 }
 \arguments{
 \item{object}{a fitted `neuralGAM` object}
@@ -20,6 +20,8 @@ predictor is returned separately on each column of a \code{data.frame}. When
 
 \item{terms}{If \code{type="terms"}, then only results for the terms named
 in this list will be returned. If \code{NULL} then no terms are excluded (default).}
+
+\item{verbose}{Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.}
 
 \item{\ldots}{Other options.}
 }

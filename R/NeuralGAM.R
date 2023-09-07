@@ -38,7 +38,7 @@
 #' @param w_train Optional sample weights
 #' @param seed A positive integer which specifies the random number generator
 #' seed for algorithms dependent on randomization.
-#' @param verbose Verbosity mode (0 = silent, 1 = print messages).
+#' @param verbose Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.
 #' @param \ldots Additional parameters for the Adam optimizer (see ?keras::optimizer_adam)
 #' @importFrom keras fit
 #' @importFrom keras compile

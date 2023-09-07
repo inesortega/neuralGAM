@@ -62,6 +62,7 @@ local scoring Algorithm. Defaults to \code{10}.}
     \item{\code{w_train}}{Optional sample weights}
     \item{\code{seed}}{A positive integer which specifies the random number generator
 seed for algorithms dependent on randomization.}
+    \item{\code{verbose}}{Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.}
   }}
 }
 \value{

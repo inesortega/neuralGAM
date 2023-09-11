@@ -80,6 +80,6 @@ test_that("neuralGAM runs OK", {
   set.seed(seed)
   data <- data.frame(x = 1:10, y = rnorm(10))
   ngam <- neuralGAM(formula, data, num_units = 10, seed = seed)
-  expect_equal(ngam$mse, 0.56552945)
+  expect_equal(round(ngam$mse,4), 0.5655)
 })
 

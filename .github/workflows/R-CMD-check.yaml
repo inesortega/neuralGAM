@@ -48,10 +48,14 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
+      - name: install venv
+        shell:
+        - if: runner.os == 'ubuntu-latest'
+          run: sudo apt-get install python3-venv
+
       - name: setup reticulate
         shell: Rscript {0}
         run: |
-
           library(reticulate)
           reticulate::virtualenv_create("r-tensorflow", python = install_python(), packages = c("numpy", "tensorflow", "keras"))
 

@@ -401,4 +401,8 @@ neuralGAM <-
 
 .onLoad <- function(libname, pkgname) {
   reticulate::configure_environment(pkgname)
+  if(!reticulate::py_available(TRUE)){
+    packageStartupMessage("Python is not available... please install Python and re-load the package before using it")
+  }
+
 }

@@ -21,6 +21,13 @@ install.packages("reticulate")
 library(reticulate)
 reticulate::install_python()
 reticulate::py_config()
+reticulate::use_virtualenv("r-tensorflow")
+```
+
+If you want, you can also install manually tensorflow and keras and have the environment ready to go: 
+
+```
+reticulate::py_install("r-tensorflow", packages = c("tensorflow", "keras"))
 ```
 
 When installing/loading the `neuralGAM`, the package will automatically generate a working virtual environment with Keras and Tensorflow installed. 

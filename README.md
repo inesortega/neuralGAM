@@ -19,9 +19,8 @@ neuralGAM is based on Deep Neural Networks, and depends on Tensorflow and Keras 
 ```
 install.packages("reticulate")
 library(reticulate)
-reticulate::install_python()
-reticulate::py_config()
-reticulate::use_virtualenv("r-tensorflow")
+reticulate::py_install(envname = "r-tensorflow", packages = "numpy")
+library(neuralGAM)
 ```
 
 If you want, you can also install manually tensorflow and keras and have the environment ready to go: 
@@ -30,7 +29,7 @@ If you want, you can also install manually tensorflow and keras and have the env
 reticulate::py_install("r-tensorflow", packages = c("tensorflow", "keras"))
 ```
 
-When installing/loading the `neuralGAM`, the package will automatically generate a working virtual environment with Keras and Tensorflow installed. 
+When installing/loading the `neuralGAM`, the package will automatically install in the virtual environment Keras and Tensorflow. 
 
 ## Sample usage
 

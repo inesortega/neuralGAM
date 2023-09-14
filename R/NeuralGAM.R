@@ -44,7 +44,7 @@
 #' @importFrom keras compile
 #' @importFrom tensorflow set_random_seed
 #' @importFrom stats predict lm
-#' @importFrom reticulate configure_environment
+#' @importFrom reticulate configure_environment py_config
 #' @importFrom magrittr %>%
 #' @importFrom formula.tools lhs rhs
 #' @export
@@ -399,6 +399,8 @@ neuralGAM <-
     return(res)
   }
 
-.onLoad <- function(libname, pkgname) {
-  reticulate::configure_environment(pkgname)
+
+.onAttach <- function(libname, pkgname) {
+  reticulate::configure_environment(pkgname, force = TRUE)
+  print(reticulate::py_config())
 }

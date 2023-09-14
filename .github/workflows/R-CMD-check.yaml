@@ -39,22 +39,22 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - name: Install Miniconda
-        run: |
-          Rscript -e "install.packages('reticulate')"
-          Rscript -e "reticulate::install_miniconda()"
-
-      - if: runner.os == 'macOS'
-        run: echo "options(reticulate.conda_binary = reticulate:::miniconda_conda())" >> .Rprofile
-
-      - name: Setup Environment
-        run: |
-          Rscript -e "reticulate::py_install(envname = "r-tensorflow", packages = "numpy")"
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck
           needs: check
+
+      - name: setup reticulate
+        shell: Rscript {0}
+        run: |
+
+          library(reticulate)
+
+          reticulate::py_install(envname = "r-tensorflow", packages = c("numpy", "tensorflow", "keras"))
 
       - uses: r-lib/actions/check-r-package@v2
         with:

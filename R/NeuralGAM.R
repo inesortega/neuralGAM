@@ -402,5 +402,4 @@ neuralGAM <-
 
 .onAttach <- function(libname, pkgname) {
   reticulate::configure_environment(pkgname, force = TRUE)
-  print(reticulate::py_config())
 }

@@ -53,8 +53,7 @@ jobs:
         run: |
 
           library(reticulate)
-
-          reticulate::py_install(envname = "r-tensorflow", packages = c("numpy", "tensorflow", "keras"))
+          reticulate::virtualenv_create("r-tensorflow", python = install_python(), packages = c("numpy", "tensorflow", "keras"))
 
       - uses: r-lib/actions/check-r-package@v2
         with:

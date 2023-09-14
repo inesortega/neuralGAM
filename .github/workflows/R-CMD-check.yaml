@@ -49,7 +49,6 @@ jobs:
           needs: check
 
       - name: install venv
-        shell:
         - if: runner.os == 'ubuntu-latest'
           run: sudo apt-get install python3-venv
 

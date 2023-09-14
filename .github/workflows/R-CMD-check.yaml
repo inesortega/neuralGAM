@@ -41,7 +41,7 @@ jobs:
 
       - name: Install Miniconda
         run: |
-          Rscript -e "remotes::install_github('rstudio/reticulate')"
+          Rscript -e "install.packages('reticulate')"
           Rscript -e "reticulate::install_miniconda()"
 
       - if: runner.os == 'macOS'
@@ -49,7 +49,7 @@ jobs:
 
       - name: Setup Environment
         run: |
-          Rscript -e "rreticulate::py_install(envname = "r-tensorflow", packages = "numpy")"
+          Rscript -e "reticulate::py_install(envname = "r-tensorflow", packages = "numpy")"
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:

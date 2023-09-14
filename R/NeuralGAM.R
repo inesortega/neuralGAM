@@ -44,7 +44,7 @@
 #' @importFrom keras compile
 #' @importFrom tensorflow set_random_seed
 #' @importFrom stats predict lm
-#' @importFrom reticulate conda_list use_condaenv
+#' @importFrom reticulate configure_environment
 #' @importFrom magrittr %>%
 #' @importFrom formula.tools lhs rhs
 #' @export
@@ -399,32 +399,6 @@ neuralGAM <-
     return(res)
   }
 
-.onAttach <- function(libname, pkgname) {
-  # set conda environment for tensorflow and keras
-  if (!.isConda()) {
-    .installConda()
-    installneuralGAMDeps()
-  }
-  packageStartupMessage("Setting up environment....")
-  envs <- reticulate::conda_list()
-  if (is.element("neuralGAM-env", envs$name)) {
-    packageStartupMessage("Loading conda environment...")
-    i <- which(envs$name == "neuralGAM-env")
-    Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
-    Sys.setenv(RETICULATE_PYTHON = envs$python[i])
-    tryCatch(
-      expr = reticulate::use_condaenv("neuralGAM-env", required = TRUE),
-      error = function(e)
-        NULL
-    )
-  }
-  else{
-    packageStartupMessage("Setting conda environment...")
-    installneuralGAMDeps()
-    envs <- reticulate::conda_list()
-    i <- which(envs$name == "neuralGAM-env")
-    Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
-    Sys.setenv(RETICULATE_PYTHON = envs$python[i])
-  }
-
+.onLoad <- function(libname, pkgname) {
+  reticulate::configure_environment(pkgname)
 }

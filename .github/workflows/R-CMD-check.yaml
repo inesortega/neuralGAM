@@ -48,9 +48,10 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
-      - name: install venv
-        - if: runner.os == 'ubuntu-latest'
-          run: sudo apt-get install python3-venv
+      - if: runner.os == 'ubuntu-latest'
+        name: setup python3-venv
+        run: |
+          sudo apt-get install -y python3-pip python3-venv
 
       - name: setup reticulate
         shell: Rscript {0}

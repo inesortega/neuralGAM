@@ -34,6 +34,25 @@ jobs:
         with:
           extra-packages: any::pkgdown, local::.
           needs: website
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - if: runner.os == 'ubuntu-latest'
+        name: setup python3-venv
+        run: |
+          sudo apt-get install -y python3-pip python3-venv
+
+      - name: setup reticulate
+        shell: Rscript {0}
+        run: |
+          library(reticulate)
+          reticulate::virtualenv_create("r-tensorflow", python = "3.9", packages = c("tensorflow", "keras", "numpy"))
 
       - name: Build site
         run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)

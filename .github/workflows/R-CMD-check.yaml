@@ -56,10 +56,10 @@ jobs:
       - name: setup reticulate
         shell: Rscript {0}
         run: |
-          library(reticulate)
-          reticulate::virtualenv_create("r-tensorflow", python = install_python(), packages = c("numpy", "tensorflow", "keras"))
+          library(neuralGAM)
+          install_neuralGAM()
 
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
-          args: 'c("--no-manual", "--as-cran")'
+          args: 'c("--no-manual", "--as-cran", "--run-donttest")'

@@ -1,6 +1,5 @@
 library(testthat)
 library(neuralGAM)
-library(reticulate)
 
 # Test if function throws error for missing smooth terms
 test_that("neuralGAM throws an error for missing smooth terms", {
@@ -74,8 +73,8 @@ test_that("neuralGAM throws an error for invalid bias_initializer", {
 })
 
 skip_if_no_keras <- function() {
+
   have_keras <- reticulate::py_module_available("keras")
-  print(reticulate::py_discover_config())
   if (!have_keras)
     skip("keras not available for testing")
 }

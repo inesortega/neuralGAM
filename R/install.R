@@ -5,8 +5,9 @@
 #' @importFrom reticulate virtualenv_create install_python
 #' @importFrom tensorflow install_tensorflow
 #' @importFrom keras install_keras
-#' @examples
+#' @examples \donttest{
 #' install_neuralGAM()
+#' }
 install_neuralGAM <-
   function(envname = "r-tensorflow") {
     if(!reticulate::py_available()){

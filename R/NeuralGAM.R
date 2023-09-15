@@ -174,13 +174,6 @@ neuralGAM <-
       stop("Error: 'loss' argument should be a character string.")
     }
 
-
-
-    print(reticulate::py_config())
-
-
-
-
     if (!is.null(seed)) {
       tensorflow::set_random_seed(seed)
     }
@@ -408,11 +401,17 @@ neuralGAM <-
 
 .onAttach <- function(libname, pkgname) {
   reticulate::configure_environment(pkgname, force = TRUE)
-  if (!"r-tensorflow" %in% reticulate::virtualenv_list()){
+
+  envname <- "r-tensorflow"
+
+  if (!(envname %in% reticulate::virtualenv_list())){
     packageStartupMessage("NOTE: No virtualenv configured... run 'install_neuralGAM()' and load library again...")
   }
   else{
     packageStartupMessage("Loadin python environment...")
+    python <- reticulate::virtualenv_python(envname)
+    Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
+    Sys.setenv(RETICULATE_PYTHON = python)
     reticulate::use_virtualenv("r-tensorflow", required = TRUE)
   }
 

@@ -12,8 +12,3 @@ install_neuralGAM(envname = "r-tensorflow")
 \description{
 Install neuralGAM python requirements
 }
-\examples{
-\donttest{
-install_neuralGAM()
-}
-}

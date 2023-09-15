@@ -21,8 +21,6 @@ library(neuralGAM)
 install_neuralGAM()
 ```
 
-The package will try to automatically install the requirements using `reticulate`. If the installation does not work, use the provided `install_neuralGAM()` function. 
-
 ## Sample usage
 
 In the following example, we use synthetic data to showcase the performance of neuralGAM by fitting a model with a single layer with 1024 units.  

@@ -399,8 +399,8 @@ neuralGAM <-
   }
 
 
-.onAttach <- function(libname, pkgname) {
-  reticulate::configure_environment(pkgname, force = TRUE)
+.onLoad <- function(libname, pkgname) {
+  reticulate::configure_environment(pkgname, force = FALSE)
 
   envname <- "r-tensorflow"
 
@@ -412,7 +412,7 @@ neuralGAM <-
     python <- reticulate::virtualenv_python(envname)
     Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
     Sys.setenv(RETICULATE_PYTHON = python)
-    reticulate::use_virtualenv("r-tensorflow", required = TRUE)
   }
+  reticulate::use_virtualenv(envname, required = FALSE)
 
 }

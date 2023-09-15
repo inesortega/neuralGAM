@@ -30,11 +30,4 @@ Suggests:
     fs,
     withr
 Config/testthat/edition: 3
-Config/reticulate:
-  list(
-    packages = list(
-      list(package = "tensorflow"),
-      list(package = "keras")
-    )
-  )
 URL: https://inesortega.github.io/neuralGAM/

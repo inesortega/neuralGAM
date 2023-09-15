@@ -57,7 +57,7 @@ jobs:
         shell: Rscript {0}
         run: |
           library(reticulate)
-          reticulate::virtualenv_create(envname, python = "3.9", packages = c("tensorflow", "keras", "numpy"))
+          reticulate::virtualenv_create("r-tensorflow", python = "3.9", packages = c("tensorflow", "keras", "numpy"))
 
       - uses: r-lib/actions/check-r-package@v2
         with:

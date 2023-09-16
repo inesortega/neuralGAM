@@ -14,7 +14,9 @@ The resultant Neural Network is a highly accurate and interpretable deep learnin
             
 ## Requirements
 
-neuralGAM is based on Deep Neural Networks, and depends on Tensorflow and Keras packages. Therefore, a working Python>3.9 installation is required. If you don't have Python installed, you can get a working python installation from RStudio using our helper function `install_neuralGAM`: 
+neuralGAM is based on Deep Neural Networks, and depends on Tensorflow and Keras packages. Therefore, a working Python>3.9 installation with those packages installed is required. 
+
+We provide a helper function to get a working python installation from RStudio, which creates a miniconda environment with all the required packages.   
 
 ```
 library(neuralGAM)

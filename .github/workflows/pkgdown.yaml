@@ -48,11 +48,23 @@ jobs:
         run: |
           sudo apt-get install -y python3-pip python3-venv
 
-      - name: setup reticulate
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: "3.9"
+
+      - name: Set up conda environment
+        run: |
+          conda create --name r-tensorflow
+
+      - name: Set up python requirements
         shell: Rscript {0}
         run: |
-          library(reticulate)
-          reticulate::virtualenv_create(""neuralGAM-env"", python = "3.9", packages = c("tensorflow", "keras", "numpy"))
+          library(tensorflow)
+          tensorflow::install_tensorflow(version = "default",method = "conda", envname = "r-tensorflow")
+          library(keras)
+          keras::install_keras(version = "default",method = "conda", envname = "r-tensorflow")
 
       - name: Build site
         run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)

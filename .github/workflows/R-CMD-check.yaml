@@ -60,13 +60,15 @@ jobs:
 
       - name: Set up conda environment
         run: |
-          conda create --name neuralGAM-env
+          conda create --name r-tensorflow
 
       - name: Set up python requirements
         shell: Rscript {0}
         run: |
+          library(tensorflow)
+          tensorflow::install_tensorflow(version = "default",method = "conda", envname = "r-tensorflow")
           library(keras)
-          keras::install_keras(version = "default",method = "conda", envname = "neuralGAM-env")
+          keras::install_keras(version = "default",method = "conda", envname = "r-tensorflow")
 
       - uses: r-lib/actions/check-r-package@v2
         with:

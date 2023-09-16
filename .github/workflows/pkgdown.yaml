@@ -52,7 +52,7 @@ jobs:
         shell: Rscript {0}
         run: |
           library(reticulate)
-          reticulate::virtualenv_create("r-tensorflow", python = "3.9", packages = c("tensorflow", "keras", "numpy"))
+          reticulate::virtualenv_create(""neuralGAM-env"", python = "3.9", packages = c("tensorflow", "keras", "numpy"))
 
       - name: Build site
         run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)

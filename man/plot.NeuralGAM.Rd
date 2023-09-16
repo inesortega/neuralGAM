@@ -25,7 +25,7 @@ Returns the partial effects plot.
 Visualization of \code{neuralGAM} object. Plots the learned partial effects by the neuralGAM object.
 }
 \examples{
-\donttest{
+\dontrun{
 
 n <- 24500
 

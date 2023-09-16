@@ -16,7 +16,7 @@
 #'}
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @export
-#' @examples \donttest{
+#' @examples \dontrun{
 #'
 #' n <- 24500
 #'

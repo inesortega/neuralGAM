@@ -26,7 +26,7 @@ to manipulate the plot.
 Advanced \code{neuralGAM} visualization with ggplot2 library
 }
 \examples{
-\donttest{
+\dontrun{
 n <- 24500
 
 seed <- 42

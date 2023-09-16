@@ -16,7 +16,7 @@
 #' @return Predicted values according to \code{type} parameter.
 #' @importFrom stats predict
 #' @export
-#' @examples \donttest{
+#' @examples \dontrun{
 #'
 #' n <- 24500
 #'

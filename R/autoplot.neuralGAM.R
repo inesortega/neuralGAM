@@ -15,7 +15,7 @@ ggplot2::autoplot
 #' @importFrom ggplot2 ggplot labs aes geom_line
 #' @importFrom ggplot2 guide_axis scale_x_discrete geom_boxplot
 #' @importFrom gridExtra grid.arrange
-#' @examples \donttest{
+#' @examples \dontrun{
 #' n <- 24500
 #'
 #' seed <- 42

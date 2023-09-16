@@ -25,7 +25,7 @@ The printed output of the object:
 Default print statement for a neuralGAM object.
 }
 \examples{
-\donttest{
+\dontrun{
 
 n <- 24500
 

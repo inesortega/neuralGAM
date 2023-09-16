@@ -1,22 +1,17 @@
-#' Install neuralGAM python requirements
-#' @description
-#' Creates a conda environment (installing miniconda if required) and set ups the
-#' Python requirements to run neuralGAM (Tensorflow and Keras).
+#' Installs a custom conda environment with tensorflow and keras
+#' @description Installs a custom conda environment with tensorflow and keras
 #'
-#' Miniconda and related environments are generated in the user's cache directory
-#' given by tools::R_user_dir('neuralGAM', 'cache').
-#' @return NULL
-#' @export
-#' @importFrom reticulate py_module_available conda_binary install_miniconda use_condaenv conda_list
-#' @importFrom tensorflow install_tensorflow
+#' @importFrom reticulate install_miniconda conda_create
+#' py_install conda_binary py_module_available
 #' @importFrom keras install_keras
-install_neuralGAM <- function() {
-
-  conda <- .getConda()
-
-  if(is.null(conda)){
-    .installConda()
-    conda <- .getConda()
+#' @importFrom tensorflow install_tensorflow
+#' @keywords internal
+installneuralGAMDeps <- function(conda) {
+  if (.isMac()) {
+    channels <- "apple"
+    packageStartupMessage("Adding APPLE channel to conda...")
+  } else {
+    channel <- NULL
   }
 
   packageStartupMessage("Installing tensorflow...")
@@ -25,7 +20,7 @@ install_neuralGAM <- function() {
       version = "default",
       method = "conda",
       conda = conda,
-      envname = "neuralGAM-env",
+      envname = "r-reticulate"
     ),
     error = function(e) {
       packageStartupMessage(e)
@@ -43,7 +38,7 @@ install_neuralGAM <- function() {
       version = "default",
       method = "conda",
       conda = conda,
-      envname = "neuralGAM-env"
+      envname = "r-reticulate"
     ),
     error = function(e) {
       packageStartupMessage(e)
@@ -56,28 +51,9 @@ install_neuralGAM <- function() {
          call. = FALSE)
   }
 
-  packageStartupMessage("Installation completed! Restarting R session...")
-
+  packageStartupMessage("Installation completed!")
 }
 
-.setupConda <- function(conda) {
-  if(is.null(conda)){
-    packageStartupMessage("NOTE: conda environment not found... run 'install_neuralGAM()' and load library again...")
-  }
-  else{
-    envs <- reticulate::conda_list(conda)
-    if("neuralGAM-env" %in% envs$name){
-      i <- which(envs$name == "neuralGAM-env")
-      Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
-      Sys.setenv(RETICULATE_PYTHON = envs$python[i])
-      reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
-    }
-    else{
-      packageStartupMessage("NOTE: conda environment not found... run 'install_neuralGAM()' and load library again...")
-    }
-  }
-
-}
 .installConda <- function() {
   packageStartupMessage("=== No miniconda detected, installing it using reticulate R package")
   dir <- tools::R_user_dir("neuralGAM", "cache")
@@ -99,7 +75,7 @@ install_neuralGAM <- function() {
 }
 
 .getCondaDir <- function() {
-  user_dir <- tools::R_user_dir("neuralGAM", "cache")
+  user_dir <- normalizePath(tools::R_user_dir("neuralGAM", "cache"), winslash = "\\", mustWork = NA)
   # set up conda_dir according to platform:
   if (.isWindows()) {
     conda_dir <- paste0(user_dir, "/condabin/conda.bat")
@@ -111,21 +87,12 @@ install_neuralGAM <- function() {
 }
 
 .getConda <- function() {
-  # Try to find custom conda installation:
   conda_dir <- .getCondaDir()
   conda <- tryCatch(
     reticulate::conda_binary(conda_dir),
     error = function(e)
       NULL
   )
-  if(is.null(conda)){
-    # Try to obtain default conda installation
-    conda <- tryCatch(
-      reticulate::conda_binary("auto"),
-      error = function(e)
-        NULL
-    )
-  }
   return(conda)
 }
 

@@ -33,7 +33,7 @@ Takes a fitted \code{neuralGAM} object produced by
 \code{neuralGAM()} and produces predictions given a new set of values for the model covariates.
 }
 \examples{
-\donttest{
+\dontrun{
 
 n <- 24500
 

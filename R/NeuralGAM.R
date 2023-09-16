@@ -51,7 +51,7 @@
 #' @references
 #' Hastie, T., & Tibshirani, R. (1990). Generalized Additive Models. London: Chapman and Hall, 1931(11), 683–741.
 #' @return A trained \code{neuralGAM} object. Use \code{summary(ngam)} to see details.
-#' @examples \donttest{
+#' @examples \dontrun{
 #' n <- 24500
 #'
 #' seed <- 42
@@ -399,20 +399,6 @@ neuralGAM <-
   }
 
 
-.onLoad <- function(libname, pkgname) {
-  reticulate::configure_environment(pkgname, force = FALSE)
-
-  envname <- "r-tensorflow"
-
-  if (!(envname %in% reticulate::virtualenv_list())){
-    packageStartupMessage("NOTE: No virtualenv configured... run 'install_neuralGAM()' and load library again...")
-  }
-  else{
-    packageStartupMessage("Loadin python environment...")
-    python <- reticulate::virtualenv_python(envname)
-    Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
-    Sys.setenv(RETICULATE_PYTHON = python)
-  }
-  reticulate::use_virtualenv(envname, required = FALSE)
-
+.onAttach <- function(libname, pkgname) {
+  .setupConda(.getConda())
 }

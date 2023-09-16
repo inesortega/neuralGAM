@@ -29,7 +29,7 @@ the distribution family, model formula, intercept value, sample size,
 as well as neural network architecture and training history.
 }
 \examples{
-\donttest{
+\dontrun{
 
 n <- 24500
 

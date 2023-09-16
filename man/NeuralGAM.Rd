@@ -93,7 +93,7 @@ dependent variable and the weights is determined by the distribution of the
 response \code{y}, adjusted by the \code{family} parameter.
 }
 \examples{
-\donttest{
+\dontrun{
 n <- 24500
 
 seed <- 42

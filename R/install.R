@@ -71,7 +71,7 @@ install_neuralGAM <- function() {
       Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
       reticulate::use_condaenv("r-tensorflow", conda = conda, required = TRUE)
-      print(paste("Using ", envs$python[i]))
+      packageStartupMessage(paste("Using environment", envs$python[i]))
     }
     else{
       packageStartupMessage("NOTE: conda environment not found... run 'install_neuralGAM()' and load library again...")
@@ -114,6 +114,7 @@ install_neuralGAM <- function() {
 .getConda <- function() {
   # Try to find custom conda installation:
   conda_dir <- .getCondaDir()
+
   conda <- tryCatch(
     reticulate::conda_binary(conda_dir),
     error = function(e)
@@ -127,6 +128,7 @@ install_neuralGAM <- function() {
         NULL
     )
   }
+
   return(conda)
 }
 

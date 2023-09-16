@@ -61,7 +61,6 @@ jobs:
       - name: Set up conda environment
         run: |
           conda create --name neuralGAM-env
-          conda activate neuralGAM-env
 
       - name: Set up python requirements
         shell: Rscript {0}

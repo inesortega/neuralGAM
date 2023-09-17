@@ -400,5 +400,6 @@ neuralGAM <-
 
 
 .onAttach <- function(libname, pkgname) {
-  .setupConda(.getConda())
+  conda <- .getConda()
+  .setupConda(conda)
 }

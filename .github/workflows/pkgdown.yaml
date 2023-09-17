@@ -56,15 +56,15 @@ jobs:
 
       - name: Set up conda environment
         run: |
-          conda create --name r-tensorflow
+          conda create --name neuralGAM-env
 
       - name: Set up python requirements
         shell: Rscript {0}
         run: |
           library(tensorflow)
-          tensorflow::install_tensorflow(version = "default",method = "conda", envname = "r-tensorflow")
+          tensorflow::install_tensorflow(version = "default",method = "conda", envname = "neuralGAM-env")
           library(keras)
-          keras::install_keras(version = "default",method = "conda", envname = "r-tensorflow")
+          keras::install_keras(version = "default",method = "conda", envname = "neuralGAM-env")
 
       - name: Build site
         run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)

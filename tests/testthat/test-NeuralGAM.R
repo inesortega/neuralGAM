@@ -73,11 +73,11 @@ test_that("neuralGAM throws an error for invalid bias_initializer", {
 })
 
 skip_if_no_keras <- function() {
-  if(!reticulate::py_available()){
+  if(!reticulate::py_available(initialize = TRUE)){
     skip("Python not available for testing")
   }
   else{
-    reticulate::py_module_available("keras")
+    have_keras <- reticulate::py_module_available("keras")
     if (!have_keras)
       skip("keras not available for testing")
   }

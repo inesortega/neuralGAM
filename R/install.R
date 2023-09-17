@@ -2,10 +2,8 @@
 #' @description
 #' Creates a conda environment (installing miniconda if required) and set ups the
 #' Python requirements to run `neuralGAM` (Tensorflow and Keras).
-#'
-#' Miniconda and related environments are generated in the user's cache directory
-#' given by `tools::R_user_dir('neuralGAM', 'cache')`.
 #' @return NULL
+#' @param force Whether to force the installation of miniconda and dependencies. Deafults to FALSE
 #' @examples
 #' \dontrun{
 #' library(neuralGAM)
@@ -15,12 +13,12 @@
 #' @importFrom reticulate py_module_available conda_binary install_miniconda use_condaenv conda_list conda_create
 #' @importFrom tensorflow install_tensorflow tf
 #' @importFrom keras install_keras
-install_neuralGAM <- function() {
+install_neuralGAM <- function(force = FALSE) {
 
   conda <- .getConda()
 
   if(is.null(conda)){
-    .installConda()
+    .installConda(force)
     conda <- .getConda()
   }
 
@@ -32,7 +30,8 @@ install_neuralGAM <- function() {
   reticulate::conda_create(envname = "neuralGAM-env",
                            channel = channel,
                            conda = conda,
-                           python_version = "3.9")
+                           python_version = "3.9",
+                           force = force)
 
   packageStartupMessage("Installing tensorflow...")
   status4 <- tryCatch(
@@ -42,7 +41,7 @@ install_neuralGAM <- function() {
       conda = conda,
       envname = "neuralGAM-env",
       restart_session = FALSE,
-      force = TRUE
+      force = force
     ),
     error = function(e) {
       packageStartupMessage(e)
@@ -61,8 +60,7 @@ install_neuralGAM <- function() {
       method = "conda",
       conda = conda,
       envname = "neuralGAM-env",
-      force = TRUE,
-
+      force = force
     ),
     error = function(e) {
       packageStartupMessage(e)
@@ -83,17 +81,17 @@ install_neuralGAM <- function() {
 
   if(is.null(conda)){
     Sys.setenv(RETICULATE_PYTHON = Sys.which("python"))
-    Sys.setenv(RETICULATE_OK = FALSE)
+    Sys.setenv(RETICULATE_OK = "FALSE")
     packageStartupMessage("NOTE: conda installation not found... run 'install_neuralGAM()' and load library again...")
   }
   else{
-    envs <- reticulate::conda_list(conda)
+    envs <- reticulate::conda_list()
     if("neuralGAM-env" %in% envs$name){
       i <- which(envs$name == "neuralGAM-env")
       Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
+      Sys.setenv(RETICULATE_OK = "TRUE")
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
-      reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
-      library(reticulate)
+      reticulate::use_condaenv("neuralGAM-env", required = TRUE)
     }
     else{
       packageStartupMessage("NOTE: conda environment not found... run 'install_neuralGAM()' and load library again...")
@@ -101,13 +99,10 @@ install_neuralGAM <- function() {
   }
 
 }
-.installConda <- function() {
-  packageStartupMessage("Installing miniconda using reticulate R package")
-  dir <- tools::R_user_dir("neuralGAM", "cache")
-  user_dir <- normalizePath(dir, winslash = "\\", mustWork = NA)
 
+.installConda <- function(force) {
   status <- tryCatch(
-    reticulate::install_miniconda(path = user_dir),
+    reticulate::install_miniconda(force = force),
     error = function(e) {
       return(TRUE)
     }
@@ -119,38 +114,14 @@ install_neuralGAM <- function() {
   return(.getConda())
 }
 
-.getCondaDir <- function() {
-  user_dir <- tools::R_user_dir("neuralGAM", "cache")
-  # set up conda_dir according to platform:
-  if (.isWindows()) {
-    conda_dir <- paste0(user_dir, "/condabin/conda.bat")
-  }
-  else {
-    conda_dir <- paste0(user_dir, "/bin/conda")
-  }
-  return(conda_dir)
-}
-
 .getConda <- function() {
-  # Try to find custom conda installation:
-  conda_dir <- .getCondaDir()
-
+  # Try to obtain default conda installation
   conda <- tryCatch(
-    reticulate::conda_binary(conda_dir),
+    reticulate::conda_binary("auto"),
     error = function(e){
       return(NULL)
     }
-
   )
-  if(is.null(conda)){
-    # Try to obtain default conda installation
-    conda <- tryCatch(
-      reticulate::conda_binary("auto"),
-      error = function(e){
-        return(NULL)
-      }
-    )
-  }
   return(conda)
 }
 

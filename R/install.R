@@ -80,8 +80,6 @@ install_neuralGAM <- function(force = FALSE) {
 .setupConda <- function(conda) {
 
   if(is.null(conda)){
-    Sys.setenv(RETICULATE_PYTHON = Sys.which("python"))
-    Sys.setenv(RETICULATE_OK = "FALSE")
     packageStartupMessage("NOTE: conda installation not found... run 'install_neuralGAM()' and load library again...")
   }
   else{
@@ -89,7 +87,6 @@ install_neuralGAM <- function(force = FALSE) {
     if("neuralGAM-env" %in% envs$name){
       i <- which(envs$name == "neuralGAM-env")
       Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
-      Sys.setenv(RETICULATE_OK = "TRUE")
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
       reticulate::use_condaenv("neuralGAM-env", required = TRUE)
     }

@@ -4,14 +4,14 @@
 \alias{install_neuralGAM}
 \title{Install `neuralGAM` python requirements}
 \usage{
-install_neuralGAM()
+install_neuralGAM(force = FALSE)
+}
+\arguments{
+\item{force}{Whether to force the installation of miniconda and dependencies. Deafults to FALSE}
 }
 \description{
 Creates a conda environment (installing miniconda if required) and set ups the
 Python requirements to run `neuralGAM` (Tensorflow and Keras).
-
-Miniconda and related environments are generated in the user's cache directory
-given by `tools::R_user_dir('neuralGAM', 'cache')`.
 }
 \examples{
 \dontrun{

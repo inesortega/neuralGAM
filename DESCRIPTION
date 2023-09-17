@@ -30,4 +30,4 @@ Suggests:
     fs,
     withr
 Config/testthat/edition: 3
-URL: https://inesortega.github.io/neuralGAM/
+URL: https://inesortega.github.io/neuralGAM/, https://github.com/inesortega/neuralGAM

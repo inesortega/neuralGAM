@@ -1,10 +1,10 @@
-#' Install neuralGAM python requirements
+#' Install `neuralGAM` python requirements
 #' @description
 #' Creates a conda environment (installing miniconda if required) and set ups the
-#' Python requirements to run neuralGAM (Tensorflow and Keras).
+#' Python requirements to run `neuralGAM` (Tensorflow and Keras).
 #'
 #' Miniconda and related environments are generated in the user's cache directory
-#' given by tools::R_user_dir('neuralGAM', 'cache').
+#' given by `tools::R_user_dir('neuralGAM', 'cache')`.
 #' @return NULL
 #' @export
 #' @importFrom reticulate py_module_available conda_binary install_miniconda use_condaenv conda_list conda_create
@@ -77,6 +77,7 @@ install_neuralGAM <- function() {
 .setupConda <- function(conda) {
 
   if(is.null(conda)){
+    Sys.setenv(RETICULATE_PYTHON = Sys.which("python"))
     packageStartupMessage("NOTE: conda installation not found... run 'install_neuralGAM()' and load library again...")
   }
   else{

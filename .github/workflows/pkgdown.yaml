@@ -9,7 +9,7 @@ on:
     types: [published]
   workflow_dispatch:
 
-name: pkgdown
+name: Build WebSite
 
 jobs:
   pkgdown:
@@ -34,6 +34,7 @@ jobs:
         with:
           extra-packages: any::pkgdown, local::.
           needs: website
+
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
@@ -67,7 +68,7 @@ jobs:
           keras::install_keras(version = "2.13", method = "conda", envname = "neuralGAM-env")
 
       - name: Build site
-        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
+        run: pkgdown::build_site_github_pages(run_dont_run = TRUE)
         shell: Rscript {0}
 
       - name: Deploy to GitHub pages 🚀
@@ -75,5 +76,5 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4.4.1
         with:
           clean: false
-          branch: gh-pages
+          branch: main
           folder: docs

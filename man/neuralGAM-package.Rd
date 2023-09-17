@@ -12,6 +12,7 @@ Neural network framework based on Generalized Additive Models from Hastie & Tibs
 Useful links:
 \itemize{
   \item \url{https://inesortega.github.io/neuralGAM/}
+  \item \url{https://github.com/inesortega/neuralGAM}
   \item Report bugs at \url{https://github.com/inesortega/neuralGAM/issues}
 }
 

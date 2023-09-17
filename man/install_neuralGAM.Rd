@@ -13,3 +13,9 @@ Python requirements to run `neuralGAM` (Tensorflow and Keras).
 Miniconda and related environments are generated in the user's cache directory
 given by `tools::R_user_dir('neuralGAM', 'cache')`.
 }
+\examples{
+\dontrun{
+library(neuralGAM)
+install_neuralGAM()
+}
+}

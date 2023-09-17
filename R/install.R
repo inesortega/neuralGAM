@@ -6,6 +6,11 @@
 #' Miniconda and related environments are generated in the user's cache directory
 #' given by `tools::R_user_dir('neuralGAM', 'cache')`.
 #' @return NULL
+#' @examples
+#' \dontrun{
+#' library(neuralGAM)
+#' install_neuralGAM()
+#' }
 #' @export
 #' @importFrom reticulate py_module_available conda_binary install_miniconda use_condaenv conda_list conda_create
 #' @importFrom tensorflow install_tensorflow tf
@@ -78,6 +83,7 @@ install_neuralGAM <- function() {
 
   if(is.null(conda)){
     Sys.setenv(RETICULATE_PYTHON = Sys.which("python"))
+    Sys.setenv(RETICULATE_OK = FALSE)
     packageStartupMessage("NOTE: conda installation not found... run 'install_neuralGAM()' and load library again...")
   }
   else{
@@ -87,6 +93,7 @@ install_neuralGAM <- function() {
       Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
       reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
+      library(reticulate)
     }
     else{
       packageStartupMessage("NOTE: conda environment not found... run 'install_neuralGAM()' and load library again...")

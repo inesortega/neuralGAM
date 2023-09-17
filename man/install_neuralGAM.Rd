@@ -4,10 +4,12 @@
 \alias{install_neuralGAM}
 \title{Install `neuralGAM` python requirements}
 \usage{
-install_neuralGAM(force = FALSE)
+install_neuralGAM(force = FALSE, skip = FALSE)
 }
 \arguments{
-\item{force}{Whether to force the installation of miniconda and dependencies. Deafults to FALSE}
+\item{force}{Whether to force the installation of miniconda and dependencies. Defaults to FALSE.}
+
+\item{skip}{Skip installation. Defaults to FALSE.}
 }
 \description{
 Creates a conda environment (installing miniconda if required) and set ups the
@@ -16,6 +18,6 @@ Python requirements to run `neuralGAM` (Tensorflow and Keras).
 \examples{
 \dontrun{
 library(neuralGAM)
-install_neuralGAM()
+install_neuralGAM(skip = TRUE)
 }
 }

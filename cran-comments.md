@@ -2,10 +2,9 @@
 
 This version fixes a policy violation regarding writing the package Python dependencies to a non-standard location without the user's consent. 
 
-This version includes a new function `install_neuralGAM()` which helps the user set up a working 
-Python environment using miniconda. 
+In this version, the package is loaded without performing the Python dependencies installation, warning the user using a package start-up message that required dependencies are not found. To assist the user with Python dependencies installation, we have included a new function `install_neuralGAM()` which helps the user set up a working Python environment using `miniconda`. 
 
-In this version, the package can be loaded without performing the Python dependencies installation, warning the user using a package startup message that required dependencies are not found. 
+We have included a `skip_on_cran()` instruction on the main test since a Python installation with the required dependencies is not guaranteed on CRAN machines.
 
 ## Local R CMD check results
 

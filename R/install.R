@@ -3,18 +3,23 @@
 #' Creates a conda environment (installing miniconda if required) and set ups the
 #' Python requirements to run `neuralGAM` (Tensorflow and Keras).
 #' @return NULL
-#' @param force Whether to force the installation of miniconda and dependencies. Deafults to FALSE
+#' @param force Whether to force the installation of miniconda and dependencies. Defaults to FALSE.
+#' @param skip Skip installation. Defaults to FALSE.
 #' @examples
 #' \dontrun{
 #' library(neuralGAM)
-#' install_neuralGAM()
+#' install_neuralGAM(skip = TRUE)
 #' }
 #' @export
 #' @importFrom reticulate py_module_available conda_binary install_miniconda use_condaenv conda_list conda_create
 #' @importFrom tensorflow install_tensorflow tf
 #' @importFrom keras install_keras
-install_neuralGAM <- function(force = FALSE) {
+install_neuralGAM <- function(force = FALSE, skip = FALSE) {
 
+  if(skip){
+    packageStartupMessage("skipping install...")
+    return()
+  }
   conda <- .getConda()
 
   if(is.null(conda)){
@@ -40,7 +45,6 @@ install_neuralGAM <- function(force = FALSE) {
       method = "conda",
       conda = conda,
       envname = "neuralGAM-env",
-      restart_session = FALSE,
       force = force
     ),
     error = function(e) {
@@ -113,6 +117,9 @@ install_neuralGAM <- function(force = FALSE) {
 
 .getConda <- function() {
   # Try to obtain default conda installation
+  if(is.null(reticulate::py_version())){
+    return(NULL)
+  }
   conda <- tryCatch(
     reticulate::conda_binary("auto"),
     error = function(e){

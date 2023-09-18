@@ -399,14 +399,5 @@ neuralGAM <-
 }
 
 .onAttach <- function(libname, pkgname) {
-
-  python <- tryCatch(
-    expr = reticulate::py_available(initialize = TRUE),
-    error = function(e) FALSE
-  )
-  print(paste("PYTHON AVAILABLE: ", python))
-
-  if((python)){
-    .setupConda(.getConda())
-  }
+  .setupConda(.getConda())
 }

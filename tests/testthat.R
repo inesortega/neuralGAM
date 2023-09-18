@@ -7,7 +7,7 @@
 # * https://testthat.r-lib.org/reference/test_package.html#special-files
 options(testthat.progress.max_fails = 100)
 library(testthat)
-library(neuralGAM)
 
 if (identical(Sys.getenv("NOT_CRAN"), "true"))
-  test_check("tensorflow")
+  library(neuralGAM)
+  test_check("neuralGAM")

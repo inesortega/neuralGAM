@@ -3,12 +3,20 @@ library(reticulate)
 
 skip_if_no_keras <- function() {
 
-  if(!findpython::can_find_python_cmd(minimum_version = "3.8")){
-    skip("Python not found on system...")
-  }
+  conda <- tryCatch(
+    neuralGAM:::.getConda(),
+    error = function(e) {
+      print(e)
+      return(NULL)
+    }
+  )
+  if(is.null(conda)) skip("Conda environment not available...")
 
-  if (!reticulate::py_module_available("keras"))
-    skip("keras not available for testing")
+  if (!tryCatch(
+    reticulate::py_module_available("keras"),
+    error = function(e) return(FALSE)
+    )
+  ) skip("keras not available for testing...")
 }
 
 # Test if function throws error for missing smooth terms

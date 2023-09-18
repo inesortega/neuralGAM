@@ -127,11 +127,6 @@ install_neuralGAM <- function() {
 
 .getConda <- function() {
 
-  if(!findpython::can_find_python_cmd(minimum_version = "3.8")){
-    packageStartupMessage("Python not found on system...")
-    return(NULL)
-  }
-
   # Try to find custom conda installation:
   conda_dir <- .getCondaDir()
   conda <- tryCatch(

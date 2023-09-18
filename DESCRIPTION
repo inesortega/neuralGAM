@@ -23,7 +23,7 @@ Imports:
   formula.tools,
   gridExtra,
   findpython
-SystemRequirements: Python (>= 3.9)
+SystemRequirements: python3
 RoxygenNote: 7.2.3
 Suggests: 
     covr,

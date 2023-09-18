@@ -399,9 +399,6 @@ neuralGAM <-
 }
 
 .onAttach <- function(libname, pkgname) {
-  keras <<- reticulate::import("keras", delay_load = TRUE)
-  tensorflow <<- reticulate::import("tensorflow", delay_load = TRUE)
-
   Sys.unsetenv("RETICULATE_PYTHON")
   .setupConda(.getConda())
 }

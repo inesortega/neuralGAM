@@ -9,4 +9,5 @@ options(testthat.progress.max_fails = 100)
 library(testthat)
 library(neuralGAM)
 
-test_check("neuralGAM")
+if (identical(Sys.getenv("NOT_CRAN"), "true"))
+  test_check("tensorflow")

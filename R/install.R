@@ -7,10 +7,9 @@
 #' given by tools::R_user_dir('neuralGAM', 'cache').
 #' @return NULL
 #' @export
-#' @importFrom reticulate py_module_available conda_binary py_available install_miniconda py_config use_condaenv conda_list conda_create
+#' @importFrom reticulate py_module_available conda_binary install_miniconda py_config use_condaenv conda_list conda_create
 #' @importFrom tensorflow install_tensorflow
 #' @importFrom keras install_keras
-#' @importFrom findpython find_python_cmd
 install_neuralGAM <- function() {
 
   conda <- .getConda()
@@ -77,7 +76,7 @@ install_neuralGAM <- function() {
 .setupConda <- function(conda) {
 
   if(is.null(conda)){
-    packageStartupMessage("NOTE: conda environment not found... run 'install_neuralGAM()' and load library again...")
+    packageStartupMessage("NOTE: conda not found... run 'install_neuralGAM()' and load library again...")
   }
   else{
     envs <- reticulate::conda_list(conda)

@@ -21,9 +21,8 @@ Imports:
   magrittr,
   reticulate,
   formula.tools,
-  gridExtra,
-  findpython
-SystemRequirements: python3
+  gridExtra
+SystemRequirements: python (>= 3.8), keras, tensorflow
 RoxygenNote: 7.2.3
 Suggests: 
     covr,

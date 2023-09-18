@@ -3,15 +3,6 @@ library(reticulate)
 
 skip_if_no_keras <- function() {
 
-  conda <- tryCatch(
-    neuralGAM:::.getConda(),
-    error = function(e) {
-      print(e)
-      return(NULL)
-    }
-  )
-  if(is.null(conda)) skip("Conda environment not available...")
-
   if (!tryCatch(
     reticulate::py_module_available("keras"),
     error = function(e) return(FALSE)

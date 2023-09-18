@@ -4,7 +4,7 @@ This version fixes a policy violation regarding writing the package Python depen
 
 In this version, the package is loaded without performing the Python dependencies installation, warning the user using a package start-up message that required dependencies are not found. To assist the user with Python dependencies installation, we have included a new function `install_neuralGAM()` which helps the user set up a working Python environment using `miniconda`. 
 
-We have included a `skip_on_cran()` instruction on the main test since a Python installation with the required dependencies is not guaranteed on CRAN machines.
+We have included a instruction on the tests to skip them on CRAN since a working Python installation with the required dependencies is not guaranteed on CRAN machines.
 
 ## Local R CMD check results
 
@@ -15,8 +15,8 @@ We have included a `skip_on_cran()` instruction on the main test since a Python 
 Run on the following environments:
 
 * Windows Server 2022, R-devel, 64 bit
+* Ubuntu Linux 20.04.1 LTS, R-release, GCC
 * Fedora Linux, R-devel, clang, gfortran
-* 
 
 There were no errors/warnings.
 

@@ -3,40 +3,18 @@
 #' Creates a conda environment (installing miniconda if required) and set ups the
 #' Python requirements to run `neuralGAM` (Tensorflow and Keras).
 #' @return NULL
-#' @param force Whether to force the installation of miniconda and dependencies. Defaults to FALSE.
-#' @param skip Skip installation. Defaults to FALSE.
-#' @examples
-#' \dontrun{
-#' library(neuralGAM)
-#' install_neuralGAM(skip = TRUE)
-#' }
 #' @export
-#' @importFrom reticulate py_module_available conda_binary install_miniconda use_condaenv conda_list conda_create
+#' @importFrom reticulate py_available py_module_available conda_binary install_miniconda use_condaenv conda_list conda_create
 #' @importFrom tensorflow install_tensorflow tf
 #' @importFrom keras install_keras
-install_neuralGAM <- function(force = FALSE, skip = FALSE) {
+install_neuralGAM <- function() {
 
-  if(skip){
-    packageStartupMessage("skipping install...")
-    return()
-  }
   conda <- .getConda()
 
   if(is.null(conda)){
     .installConda(force)
     conda <- .getConda()
   }
-
-  channel <- NULL
-  if(.isMac()){
-    channel <- "apple"
-  }
-
-  reticulate::conda_create(envname = "neuralGAM-env",
-                           channel = channel,
-                           conda = conda,
-                           python_version = "3.9",
-                           force = force)
 
   packageStartupMessage("Installing tensorflow...")
   status4 <- tryCatch(
@@ -45,7 +23,7 @@ install_neuralGAM <- function(force = FALSE, skip = FALSE) {
       method = "conda",
       conda = conda,
       envname = "neuralGAM-env",
-      force = force
+      force = TRUE
     ),
     error = function(e) {
       packageStartupMessage(e)
@@ -64,7 +42,7 @@ install_neuralGAM <- function(force = FALSE, skip = FALSE) {
       method = "conda",
       conda = conda,
       envname = "neuralGAM-env",
-      force = force
+      force = TRUE
     ),
     error = function(e) {
       packageStartupMessage(e)
@@ -83,10 +61,7 @@ install_neuralGAM <- function(force = FALSE, skip = FALSE) {
 
 .setupConda <- function(conda) {
 
-  if(is.null(conda)){
-    packageStartupMessage("NOTE: conda installation not found... run 'install_neuralGAM()' and load library again...")
-  }
-  else{
+  if(!is.null(conda)){
     envs <- reticulate::conda_list()
     if("neuralGAM-env" %in% envs$name){
       i <- which(envs$name == "neuralGAM-env")
@@ -94,11 +69,10 @@ install_neuralGAM <- function(force = FALSE, skip = FALSE) {
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
       reticulate::use_condaenv("neuralGAM-env", required = TRUE)
     }
-    else{
-      packageStartupMessage("NOTE: conda environment not found... run 'install_neuralGAM()' and load library again...")
-    }
   }
-
+  else{
+    packageStartupMessage("Conda environment not ready... please run 'install_neuarlGAM()' and reload library")
+  }
 }
 
 .installConda <- function(force) {
@@ -117,9 +91,15 @@ install_neuralGAM <- function(force = FALSE, skip = FALSE) {
 
 .getConda <- function() {
   # Try to obtain default conda installation
-  if(is.null(reticulate::py_version())){
+
+  python <- tryCatch(
+    expr = reticulate::py_available(initialize = TRUE),
+    error = function(e) FALSE
+  )
+  if(!python){
     return(NULL)
   }
+
   conda <- tryCatch(
     reticulate::conda_binary("auto"),
     error = function(e){
@@ -129,8 +109,18 @@ install_neuralGAM <- function(force = FALSE, skip = FALSE) {
   return(conda)
 }
 
+.python_available <- function() {
+  tryCatch(
+    expr = reticulate::py_available(initialize = TRUE),
+    error = function(e) FALSE
+  )
+}
+
 .isTensorFlow <- function() {
-  tfAvailable <- reticulate::py_module_available("tensorflow")
+  tfAvailable <- tryCatch(
+    expr = reticulate::py_module_available("tensorflow"),
+    error = function(e) FALSE
+  )
   if (tfAvailable) {
     tfVersion <- tensorflow::tf$`__version__`
     tfAvailable <- utils::compareVersion("2.2", tfVersion) <= 0
@@ -139,8 +129,10 @@ install_neuralGAM <- function(force = FALSE, skip = FALSE) {
 }
 
 .isKeras <- function(){
-  kerasAvailable <- reticulate::py_module_available("keras")
-  return(kerasAvailable)
+  return(tryCatch(
+    expr = reticulate::py_module_available("keras"),
+    error = function(e) FALSE
+  ))
 }
 
 .isMac <- function() {

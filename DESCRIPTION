@@ -22,7 +22,7 @@ Imports:
   reticulate,
   formula.tools,
   gridExtra
-SystemRequirements: Python (>= 3.9), TensorFlow (https://www.tensorflow.org/)
+SystemRequirements: Python (>= 3.9)
 RoxygenNote: 7.2.3
 Suggests: 
     covr,

@@ -44,7 +44,7 @@
 #' @importFrom keras compile
 #' @importFrom tensorflow set_random_seed
 #' @importFrom stats predict lm
-#' @importFrom reticulate configure_environment py_config
+#' @importFrom reticulate py_available
 #' @importFrom magrittr %>%
 #' @importFrom formula.tools lhs rhs
 #' @export
@@ -396,11 +396,17 @@ neuralGAM <-
       )
     class(res) <- "neuralGAM"
     return(res)
-  }
-
+}
 
 .onAttach <- function(libname, pkgname) {
-  keras <- reticulate::import("keras", delay_load = TRUE)
-  tensorflow <- reticulate::import("tensorflow", delay_load = TRUE)
-  .setupConda(.getConda())
+
+  python <- tryCatch(
+    expr = reticulate::py_available(initialize = TRUE),
+    error = function(e) FALSE
+  )
+  print(paste("PYTHON AVAILABLE: ", python))
+
+  if((python)){
+    .setupConda(.getConda())
+  }
 }

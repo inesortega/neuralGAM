@@ -21,7 +21,8 @@ Imports:
   magrittr,
   reticulate,
   formula.tools,
-  gridExtra
+  gridExtra,
+  findpython
 SystemRequirements: Python (>= 3.9)
 RoxygenNote: 7.2.3
 Suggests: 

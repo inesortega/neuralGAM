@@ -30,4 +30,11 @@ rm_files <- function(location){
   fs::file_delete(tmp_py_files)
 
 }
+
+setHook("reticulate.onPyInit", function() {
+  cat("\n---\n")
+  print(reticulate::py_config())
+  cat("\n---\n")
+})
+
 withr::defer(clean_environment(), testthat::teardown_env())

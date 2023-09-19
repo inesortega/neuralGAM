@@ -33,7 +33,7 @@ build_feature_NN <-
       stop("Argument \"num_units\" is missing, with no default")
     }
 
-    if (!is.numeric(num_units) & !(is.vector(num_units))) {
+    if (!is.numeric(num_units)) {
       stop("Argument \"num_units\" must be an integer or a vector of integers")
     }
 

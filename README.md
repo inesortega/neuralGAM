@@ -25,7 +25,7 @@ install_neuralGAM()
 
 ## Sample usage
 
-In the following example, we use synthetic data to showcase the performance of neuralGAM by fitting a model with a single layer with 1024 units.  
+In the following example, we use synthetic data to showcase the performance of neuralGAM by fitting a model with a single layer with 1024 units.  The complete documentation is available on the [project's webpage]([url](https://inesortega.github.io/neuralGAM/))
 
 ```
 n <- 24500

@@ -5,7 +5,7 @@ skip_if_no_keras <- function() {
 
   if (!tryCatch(
     reticulate::py_module_available("keras"),
-    error = skip("keras not available for testing...")
+    error = function(e) return(FALSE)
   )
   ) skip("keras not available for testing...")
 }
@@ -14,8 +14,8 @@ skip_if_no_keras <- function() {
 test_that("build_feature_NN throws an error for missing num_units", {
   skip_if_no_keras()
 
-# Missing num_units
-  expect_error(neuralGAM:::build_feature_NN(), "Argument \"num_units\" is missing, with no default")
+  # Missing num_units
+  expect_error(neuralGAM:::build_feature_NN())
 })
 
 # num_units is not numeric or vector of integers

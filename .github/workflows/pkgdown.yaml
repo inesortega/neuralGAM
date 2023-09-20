@@ -9,7 +9,7 @@ on:
     types: [published]
   workflow_dispatch:
 
-name: pkgdown
+name: Build Web Site
 
 jobs:
   pkgdown:
@@ -62,7 +62,7 @@ jobs:
         shell: Rscript {0}
         run: |
           library(tensorflow)
-          tensorflow::install_tensorflow(version = "default", method = "conda", envname = "neuralGAM-env")
+          tensorflow::install_tensorflow(version = "2.13", method = "conda", envname = "neuralGAM-env")
           library(keras)
           keras::install_keras(version = "2.13", method = "conda", envname = "neuralGAM-env")
 

@@ -4,7 +4,23 @@ This version fixes a policy violation regarding writing the package Python depen
 
 In this version, the package is loaded without performing the Python dependencies installation, warning the user using a package start-up message that required dependencies are not found. To assist the user with Python dependencies installation, we have included a new function `install_neuralGAM()` which helps the user set up a working Python environment using `miniconda`. 
 
-We have included a instruction on the tests to skip them on CRAN since a working Python installation with the required dependencies is not guaranteed on CRAN machines.
+We have included a instruction on the tests and examples to skip them on CRAN since a working Python installation with the required dependencies is not guaranteed on CRAN machines.
+
+## CRAN comments after initial submission
+
+> Please add \value to .Rd files regarding exported methods and explain the functions results in the documentation. Please write about the structure of the output (class) and also what the output means. (If a function does not return a value, please document that too, e.g. \value{No return value, called for side effects} or similar)
+>Missing Rd-tags:
+>     install_neuralGAM.Rd: \value
+
+Added return value to install_neuralGAM.Rd
+
+>\dontrun{} should only be used if the example really cannot be executed (e.g. because of missing additional software, missing API keys, ...) by the user. That's why wrapping examples in \dontrun{} adds the comment ("# Not run:") as a warning for the user. Does not seem necessary. Please replace \dontrun with \donttest.
+
+\dontrun is needed since the library needs additional software (Python dependencies which can be installed using `install_neuralGAM()`), following a similar strategy as other R packages with Python dependencies such as (Keras)[https://github.com/rstudio/keras] and (Tensorflow)[https://github.com/rstudio/tensorflow]. 
+
+> Please unwrap the examples if they are executable in < 5 sec, or replace dontrun{} with \donttest{}.
+
+As in the previous case, examples cannot be unwrapped since additional software is needed to run the tests. 
 
 ## Local R CMD check results
 

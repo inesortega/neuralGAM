@@ -44,7 +44,6 @@
 #' @importFrom keras compile
 #' @importFrom tensorflow set_random_seed
 #' @importFrom stats predict lm
-#' @importFrom reticulate py_available
 #' @importFrom magrittr %>%
 #' @importFrom formula.tools lhs rhs
 #' @export

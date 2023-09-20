@@ -4,7 +4,7 @@ This version fixes a policy violation regarding writing the package Python depen
 
 In this version, the package is loaded without performing the Python dependencies installation, warning the user using a package start-up message that required dependencies are not found. To assist the user with Python dependencies installation, we have included a new function `install_neuralGAM()` which helps the user set up a working Python environment using `miniconda`. 
 
-We have included a instruction on the tests and examples to skip them on CRAN since a working Python installation with the required dependencies is not guaranteed on CRAN machines.
+We have included a instruction on the tests and examples to skip them on CRAN since a working Python installation with the required dependencies is not guaranteed on CRAN machines. Tests have been included for all the functions of the library. 
 
 ## CRAN comments after initial submission
 
@@ -21,6 +21,21 @@ Added return value to install_neuralGAM.Rd
 > Please unwrap the examples if they are executable in < 5 sec, or replace dontrun{} with \donttest{}.
 
 As in the previous case, examples cannot be unwrapped since additional software is needed to run the tests. 
+
+## Local test execution results
+
+ℹ Testing neuralGAM
+✔ | F W S  OK | Context
+✔ |         7 | build_feature_NN [14.4s]  
+✔ |         6 | dev                       
+✔ |         6 | diriv                     
+✔ |        35 | formula                   
+✔ |         5 | inv_link                  
+✔ |         7 | link                      
+✔ |        11 | NeuralGAM [6.9s]          
+✔ |         7 | weight
+
+[ FAIL 0 | WARN 0 | SKIP 0 | PASS 84 ]
 
 ## Local R CMD check results
 

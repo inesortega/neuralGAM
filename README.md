@@ -2,6 +2,7 @@
 [![R-CMD-check](https://github.com/inesortega/NeuralGAM/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/inesortega/NeuralGAM/actions/workflows/R-CMD-check.yaml)
 [![test-coverage](https://github.com/inesortega/NeuralGAM/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/inesortega/NeuralGAM/actions/workflows/test-coverage.yaml)
 [![Codecov test coverage](https://codecov.io/gh/inesortega/neuralGAM/branch/main/graph/badge.svg)](https://app.codecov.io/gh/inesortega/neuralGAM?branch=main)
+[![CRAN Downloads](https://cranlogs.r-pkg.org/badges/grand-total/neuralGAM)]([https://app.codecov.io/gh/inesortega/neuralGAM?branch=main](https://cranlogs.r-pkg.org/badges/grand-total/neuralGAM))
 <!-- badges: end -->
 
 # neuralGAM

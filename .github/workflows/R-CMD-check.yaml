@@ -66,9 +66,9 @@ jobs:
         shell: Rscript {0}
         run: |
           library(tensorflow)
-          tensorflow::install_tensorflow(version = "2.16", method = "conda", envname = "neuralGAM-env")
+          tensorflow::install_tensorflow(version = "2.13", method = "conda", envname = "neuralGAM-env", restart_session = FALSE, force = TRUE)
           library(keras)
-          keras::install_keras(version = "2.16", method = "conda", envname = "neuralGAM-env")
+          keras::install_keras(version = "2.13", method = "conda", envname = "neuralGAM-env", restart_session = FALSE, force = TRUE)
 
       - uses: r-lib/actions/check-r-package@v2
         with:

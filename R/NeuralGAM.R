@@ -44,6 +44,7 @@
 #' @importFrom keras compile
 #' @importFrom tensorflow set_random_seed
 #' @importFrom stats predict lm
+#' @importFrom reticulate py_available
 #' @importFrom magrittr %>%
 #' @importFrom formula.tools lhs rhs
 #' @export
@@ -305,7 +306,8 @@ neuralGAM <-
               model[[term]] %>% fit(x_np[[term]],
                                     residuals,
                                     epochs = 1,
-                                    sample_weight = list(W))
+                                    sample_weight = list(W),
+                                    verbose = verbose)
           }
 
           epochs <- c(epochs, it_back)
@@ -395,7 +397,7 @@ neuralGAM <-
       )
     class(res) <- "neuralGAM"
     return(res)
-}
+  }
 
 .onAttach <- function(libname, pkgname) {
   Sys.unsetenv("RETICULATE_PYTHON")

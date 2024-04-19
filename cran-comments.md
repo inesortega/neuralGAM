@@ -1,3 +1,9 @@
+# neuralGAM 1.1.1
+
+This version fixes a minor issue, regarding the verbosity of the package outputs. Now verbose is considered in all the required function calls.
+
+In this version, the package is loaded without performing the Python dependencies installation, warning the user using a package start-up message that required dependencies are not found. If the required dependencies are found, the Tensorflow library version is checked, so all the dependencies are loaded and the first call to `neuralGAM()` is faster than before. 
+
 # neuralGAM 1.1.0
 
 This version fixes a policy violation regarding writing the package Python dependencies to a non-standard location without the user's consent. 

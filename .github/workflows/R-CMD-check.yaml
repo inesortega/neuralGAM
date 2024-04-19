@@ -56,26 +56,19 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
-          python-version: "3.9"
+          python-version: "3.10"
+
+      - name: Set up conda environment
+        run: |
+          conda create --name neuralGAM-env python=3.10
 
       - name: Set up python requirements
         shell: Rscript {0}
         run: |
-          channel <- NULL
-          sys_info <- Sys.info()
-
-          if(sys_info[["sysname"]] == "Darwin"){
-            channel <- "apple"
-          }
-
-          reticulate::conda_create(envname = "neuralGAM-env",
-                                   conda = conda,
-                                   python_version = "3.9",
-                                   channel = channel)
           library(tensorflow)
-          tensorflow::install_tensorflow(version = "2.13", method = "conda", envname = "neuralGAM-env", restart_session = FALSE, force = TRUE)
+          tensorflow::install_tensorflow(version = "2.13", method = "conda", envname = "neuralGAM-env")
           library(keras)
-          keras::install_keras(version = "2.13", method = "conda", envname = "neuralGAM-env", restart_session = FALSE, force = TRUE)
+          keras::install_keras(version = "2.13", method = "conda", envname = "neuralGAM-env")
 
       - uses: r-lib/actions/check-r-package@v2
         with:

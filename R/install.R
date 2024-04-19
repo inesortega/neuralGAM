@@ -29,7 +29,7 @@ install_neuralGAM <- function() {
 
   reticulate::conda_create(envname = "neuralGAM-env",
                            conda = conda,
-                           python_version = "3.9",
+                           python_version = "3.10",
                            channel = channel)
 
   packageStartupMessage("Installing tensorflow...")

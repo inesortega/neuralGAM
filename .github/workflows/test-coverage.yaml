@@ -40,20 +40,24 @@ jobs:
           auto-update-conda: true
           python-version: "3.9"
 
-      - name: Set up conda environment
-        run: |
-          conda create --name neuralGAM-env
-
       - name: Set up python requirements
         shell: Rscript {0}
         run: |
+          channel <- NULL
+          if(.isMac()){
+            channel <- "apple"
+          }
+
+          reticulate::conda_create(envname = "neuralGAM-env",
+                                   conda = conda,
+                                   python_version = "3.9",
+                                   channel = channel)
           library(tensorflow)
-          tensorflow::install_tensorflow(version = "2.13", method = "conda", envname = "neuralGAM-env")
+          tensorflow::install_tensorflow(version = "2.13", method = "conda", envname = "neuralGAM-env", restart_session = FALSE, force = TRUE)
           library(keras)
-          keras::install_keras(version = "2.13", method = "conda", envname = "neuralGAM-env")
+          keras::install_keras(version = "2.13", method = "conda", envname = "neuralGAM-env", restart_session = FALSE, force = TRUE)
 
-
-      - name: Test coverage
+    - name: Test coverage
         run: |
           covr::codecov(
             quiet = FALSE,

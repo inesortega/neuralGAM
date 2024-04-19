@@ -58,19 +58,24 @@ jobs:
           auto-update-conda: true
           python-version: "3.9"
 
-      - name: Set up conda environment
-        run: |
-          conda create --name neuralGAM-env
-
-      - name: Set up python requirements
+            - name: Set up python requirements
         shell: Rscript {0}
         run: |
-          library(tensorflow)
-          tensorflow::install_tensorflow(version = "2.13", method = "conda", envname = "neuralGAM-env")
-          library(keras)
-          keras::install_keras(version = "2.13", method = "conda", envname = "neuralGAM-env")
+          channel <- NULL
+          if(.isMac()){
+            channel <- "apple"
+          }
 
-      - uses: r-lib/actions/check-r-package@v2
+          reticulate::conda_create(envname = "neuralGAM-env",
+                                   conda = conda,
+                                   python_version = "3.9",
+                                   channel = channel)
+          library(tensorflow)
+          tensorflow::install_tensorflow(version = "2.13", method = "conda", envname = "neuralGAM-env", restart_session = FALSE, force = TRUE)
+          library(keras)
+          keras::install_keras(version = "2.13", method = "conda", envname = "neuralGAM-env", restart_session = FALSE, force = TRUE)
+
+    - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
           args: 'c("--no-manual", "--as-cran", "--run-dontrun")'

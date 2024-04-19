@@ -87,7 +87,6 @@ install_neuralGAM <- function() {
       i <- which(envs$name == "neuralGAM-env")
       Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
-      Sys.setenv(TF_USE_LEGACY_KERAS = 1)
       reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
       reticulate::py_config() # ensure python is initialized
       tfVersion <- tensorflow::tf$`__version__`

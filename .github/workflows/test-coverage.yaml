@@ -44,7 +44,9 @@ jobs:
         shell: Rscript {0}
         run: |
           channel <- NULL
-          if(.isMac()){
+          sys_info <- Sys.info()
+
+          if(sys_info[["sysname"]] == "Darwin"){
             channel <- "apple"
           }
 

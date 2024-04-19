@@ -35,7 +35,7 @@ install_neuralGAM <- function() {
   packageStartupMessage("Installing tensorflow...")
   status4 <- tryCatch(
     tensorflow::install_tensorflow(
-      version = "2.13",
+      version = "2.16",
       method = "conda",
       conda = conda,
       envname = "neuralGAM-env",
@@ -55,7 +55,7 @@ install_neuralGAM <- function() {
   packageStartupMessage("Installing keras...")
   status3 <- tryCatch(
     keras::install_keras(
-      version = "2.13",
+      version = "2.16",
       method = "conda",
       conda = conda,
       envname = "neuralGAM-env",

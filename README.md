@@ -7,12 +7,14 @@
 
 # neuralGAM
 
-neuralGAM is a neural network framework based on Generalized Additive Models, which trains a different neural network to estimate the contribution of each feature to the response variable. 
+neuralGAM is a fully explainable Deep Learning framework based on Generalized Additive Models, which trains a different neural network to estimate the contribution of each feature to the response variable. 
 
-The networks are trained independently leveraging the local scoring and backfitting algorithms to ensure that the Generalized Additive Model converges and it is additive. 
+The networks are trained independently leveraging the local scoring and backfitting algorithms to ensure that the Generalized Additive Model converges and it is additive. The resultant Neural Network is a highly accurate and interpretable deep learning model, which can be used for high-risk AI practices where decision-making should be based on accountable and interpretable algorithms. 
 
-The resultant Neural Network is a highly accurate and interpretable deep learning model, which can be used for high-risk AI practices where decision-making should be based on accountable and interpretable algorithms. 
-            
+The full methodology of the method to train Generalized Additive Models using Deep Neural Networks is published in the following paper: 
+
+> Ortega-Fernandez, I., Sestelo, M. & Villanueva, N.M. _Explainable generalized additive neural networks with independent neural network training_. Statistics & Computing 34, 6 (2024). https://doi.org/10.1007/s11222-023-10320-5
+  
 ## Requirements
 
 neuralGAM is based on Deep Neural Networks, and depends on Tensorflow and Keras packages. Therefore, a working Python>3.9 installation with those packages installed is required. 
@@ -94,4 +96,25 @@ terms <- predict(ngam, test, type = "terms")
 # Obtain only certain terms: 
 terms <- predict(ngam, test, type = "terms", terms = c("x1", "x2"))
 ```
+
+## Citation
+
+If you use neuralGAM in your research, please cite the following paper:
+
+> Ortega-Fernandez, I., Sestelo, M. & Villanueva, N.M. _Explainable generalized additive neural networks with independent neural network training_. Statistics & Computing 34, 6 (2024). https://doi.org/10.1007/s11222-023-10320-5
+
+```
+@article{ortega2024explainable,
+author = {Ortega-Fernandez, Ines and Sestelo, Marta and Villanueva, Nora M},
+doi = {10.1007/s11222-023-10320-5},
+issn = {1573-1375},
+journal = {Statistics and Computing},
+number = {1},
+pages = {6},
+title = {{Explainable generalized additive neural networks with independent neural network training}},
+url = {https://doi.org/10.1007/s11222-023-10320-5},
+volume = {34},
+year = {2023}
+}
+```          
 

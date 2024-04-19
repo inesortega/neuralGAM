@@ -70,9 +70,12 @@
 <div class="section level1">
 <div class="page-header"><h1 id="neuralgam">neuralGAM<a class="anchor" aria-label="anchor" href="#neuralgam"></a>
 </h1></div>
-<p>neuralGAM is a neural network framework based on Generalized Additive Models, which trains a different neural network to estimate the contribution of each feature to the response variable.</p>
-<p>The networks are trained independently leveraging the local scoring and backfitting algorithms to ensure that the Generalized Additive Model converges and it is additive.</p>
-<p>The resultant Neural Network is a highly accurate and interpretable deep learning model, which can be used for high-risk AI practices where decision-making should be based on accountable and interpretable algorithms.</p>
+<p>neuralGAM is a fully explainable Deep Learning framework based on Generalized Additive Models, which trains a different neural network to estimate the contribution of each feature to the response variable.</p>
+<p>The networks are trained independently leveraging the local scoring and backfitting algorithms to ensure that the Generalized Additive Model converges and it is additive. The resultant Neural Network is a highly accurate and interpretable deep learning model, which can be used for high-risk AI practices where decision-making should be based on accountable and interpretable algorithms.</p>
+<p>The full methodology of the method to train Generalized Additive Models using Deep Neural Networks is published in the following paper:</p>
+<blockquote>
+<p>Ortega-Fernandez, I., Sestelo, M. &amp; Villanueva, N.M. <em>Explainable generalized additive neural networks with independent neural network training</em>. Statistics &amp; Computing 34, 6 (2024). <a href="https://doi.org/10.1007/s11222-023-10320-5" class="external-link uri">https://doi.org/10.1007/s11222-023-10320-5</a></p>
+</blockquote>
 <div class="section level2">
 <h2 id="requirements">Requirements<a class="anchor" aria-label="anchor" href="#requirements"></a>
 </h2>
@@ -139,6 +142,26 @@
 <span></span>
 <span><span class="co"># Obtain only certain terms: </span></span>
 <span><span class="va">terms</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">ngam</span>, <span class="va">test</span>, type <span class="op">=</span> <span class="st">"terms"</span>, terms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x1"</span>, <span class="st">"x2"</span><span class="op">)</span><span class="op">)</span></span></code></pre>
+</div>
+<div class="section level2">
+<h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
+</h2>
+<p>If you use neuralGAM in your research, please cite the following paper:</p>
+<blockquote>
+<p>Ortega-Fernandez, I., Sestelo, M. &amp; Villanueva, N.M. <em>Explainable generalized additive neural networks with independent neural network training</em>. Statistics &amp; Computing 34, 6 (2024). <a href="https://doi.org/10.1007/s11222-023-10320-5" class="external-link uri">https://doi.org/10.1007/s11222-023-10320-5</a></p>
+</blockquote>
+<pre><code>@article{ortega2024explainable,
+author = {Ortega-Fernandez, Ines and Sestelo, Marta and Villanueva, Nora M},
+doi = {10.1007/s11222-023-10320-5},
+issn = {1573-1375},
+journal = {Statistics and Computing},
+number = {1},
+pages = {6},
+title = {{Explainable generalized additive neural networks with independent neural network training}},
+url = {https://doi.org/10.1007/s11222-023-10320-5},
+volume = {34},
+year = {2023}
+}</code></pre>
 </div>
 </div>
 

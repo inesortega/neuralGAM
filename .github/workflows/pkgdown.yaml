@@ -71,7 +71,7 @@ jobs:
           library(keras)
           keras::install_keras(version = "2.13", method = "conda", envname = "neuralGAM-env", restart_session = FALSE, force = TRUE)
 
-    - name: Build site
+      - name: Build site
         run: pkgdown::build_site_github_pages(new_process = FALSE, install = TRUE, run_dont_run = TRUE)
         shell: Rscript {0}
 

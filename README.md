@@ -14,6 +14,8 @@ The networks are trained independently leveraging the local scoring and backfitt
 The full methodology of the method to train Generalized Additive Models using Deep Neural Networks is published in the following paper: 
 
 > Ortega-Fernandez, I., Sestelo, M. & Villanueva, N.M. _Explainable generalized additive neural networks with independent neural network training_. Statistics & Computing 34, 6 (2024). https://doi.org/10.1007/s11222-023-10320-5
+
+and is also available in Python at the following [Github repository](https://github.com/inesortega/pyNeuralGAM/).
   
 ## Requirements
 

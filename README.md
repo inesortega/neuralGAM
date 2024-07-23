@@ -5,7 +5,7 @@
 [![CRAN Downloads](https://cranlogs.r-pkg.org/badges/grand-total/neuralGAM)](https://app.codecov.io/gh/inesortega/neuralGAM?branch=main)
 <!-- badges: end -->
 
-# neuralGAM
+# neuralGAM: Interpretable Neural Network Based on Generalized Additive Models
 
 neuralGAM is a fully explainable Deep Learning framework based on Generalized Additive Models, which trains a different neural network to estimate the contribution of each feature to the response variable. 
 

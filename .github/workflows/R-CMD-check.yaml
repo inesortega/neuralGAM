@@ -1,3 +1,5 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
 on:
   push:
     branches: [main, master]
@@ -37,14 +39,17 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - name: Set up Python (only for Windows and macOS)
-        if: runner.os != 'ubuntu-latest'
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Install Python dependencies (only for Ubuntu)
-        if: runner.os == 'ubuntu-latest'
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - if: runner.os == 'ubuntu-latest'
+        name: setup python3-venv
         run: |
           sudo apt-get install -y python3-pip python3-venv
 
@@ -54,21 +59,23 @@ jobs:
           python-version: "3.10"
           miniconda-version: "latest"
 
-      - name: Set up Conda environment
+      - name: Set up conda environment (mac)
+        if: runner.os == 'macos-latest'
+        run: |
+          conda create --name neuralGAM-env python=3.10 --architecture=arm64
+      
+      - name: Set up conda environment (other OS)
+        if: runner.os != 'macos-latest'
         run: |
           conda create --name neuralGAM-env python=3.10
-
-      - name: Set up Python and R dependencies
+      
+      - name: Set up python requirements
         shell: Rscript {0}
         run: |
           library(tensorflow)
           tensorflow::install_tensorflow(version = "2.13", method = "conda", envname = "neuralGAM-env")
           library(keras)
           keras::install_keras(version = "2.13", method = "conda", envname = "neuralGAM-env")
-
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rcmdcheck
 
       - uses: r-lib/actions/check-r-package@v2
         with:

@@ -1,6 +1,26 @@
 Mozilla Public License Version 2.0
 ==================================
 
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+## Software: neuralGAM: Interpretable Neural Network Based on Generalized Additive Models
+## Author: Inés Ortega Fernández, Marta Sestelo
+## Copyright (c) 2023 Inés Ortega Fernández
+
+neuralGAM is distributed under the Mozilla Public License 2.0 (MPL 2.0). Under this license:
+- You are free to use, modify, and distribute this software.
+- Any modifications to the original source code must be made available under MPL 2.0.
+- If you distribute this software in executable form, you must also make the source code available under the same license terms.
+- The original license, copyright notice, and a link to the MPL must be retained in any copies or substantial portions of the software.
+
+For any additional terms or permissions beyond what is granted under MPL 2.0, you must obtain explicit permission from the author.
+
+This license does not grant you rights to the name, trademark, or branding of neuralGAM. You may not use the neuralGAM name or logo for promotional or commercial purposes without prior consent from the author.
+
+Disclaimer: This software is provided "as-is," without warranty of any kind, express or implied. The author is not liable for any damages arising from the use of this software.
+
+For more information about the Mozilla Public License, please refer to the official documentation: https://mozilla.org/MPL/2.0/.
+
 1. Definitions
 --------------
 

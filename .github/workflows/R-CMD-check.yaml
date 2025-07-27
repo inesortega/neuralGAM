@@ -53,15 +53,13 @@ jobs:
         run: |
           sudo apt-get install -y python3-pip python3-venv
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
-          auto-update-conda: true
           python-version: "3.10"
-
-      - name: Set up conda environment
-        run: |
-          conda create --name neuralGAM-env python=3.10
-
+          miniconda-version: "latest"
+          activate-environment: neuralGAM-env
+          auto-activate-base: false
+          
       - name: Set up python requirements
         shell: Rscript {0}
         run: |

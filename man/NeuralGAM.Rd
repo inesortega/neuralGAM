@@ -2,7 +2,7 @@
 % Please edit documentation in R/NeuralGAM.R
 \name{neuralGAM}
 \alias{neuralGAM}
-\title{Fit a neuralGAM model}
+\title{Fit a \code{neuralGAM} model}
 \usage{
 neuralGAM(
   formula,
@@ -91,8 +91,7 @@ A trained `neuralGAM` object with:
 }
 }
 \description{
-Fits a Generalized Additive Neural Network model by training a separate neural network
-for each covariate using the backfitting and local scoring algorithms.
+Fits a \code{neuralGAM} model by building a neural network to attend to each covariate.
 }
 \details{
 The function builds one neural network to attend to each feature in `x`,

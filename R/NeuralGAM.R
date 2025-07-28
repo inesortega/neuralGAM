@@ -1,7 +1,5 @@
-#' @title Fit a neuralGAM model
-#' @description Fits a Generalized Additive Neural Network model by training a separate neural network
-#' for each covariate using the backfitting and local scoring algorithms.
-#'
+#' @title Fit a \code{neuralGAM} model
+#' @description Fits a \code{neuralGAM} model by building a neural network to attend to each covariate.
 #' @details
 #' The function builds one neural network to attend to each feature in `x`,
 #' using the backfitting and local scoring algorithms to fit a weighted additive model
@@ -128,7 +126,9 @@ neuralGAM <-
     }
 
     if (!family %in% c("gaussian", "binomial", "poisson")) {
-      stop("Unsupported distribution family. Supported values are \"gaussian\", \"binomial\", and \"poisson\"")
+      stop(
+        "Unsupported distribution family. Supported values are \"gaussian\", \"binomial\", and \"poisson\""
+      )
     }
     if (!is.null(w_train) && !is.numeric(w_train)) {
       stop("w_train should be a numeric vector")
@@ -210,7 +210,7 @@ neuralGAM <-
     if (family == "gaussian")
       max_iter_ls <- 1
 
-    if(verbose == 1) {
+    if (verbose == 1) {
       print("Initializing neuralGAM...")
     }
     model <- list()
@@ -245,7 +245,7 @@ neuralGAM <-
         Z <- y
         W <- w
       } else {
-        if (verbose == 1){
+        if (verbose == 1) {
           print(paste("ITER LOCAL SCORING", it))
         }
         der <- diriv(family, muhat)
@@ -293,8 +293,13 @@ neuralGAM <-
           if (family == "gaussian") {
             t <- Sys.time()
             history <-
-              model[[term]] %>% fit(x_np[[term]], residuals, epochs = 1,
-                                    validation_split = validation_split, verbose = verbose)
+              model[[term]] %>% fit(
+                x_np[[term]],
+                residuals,
+                epochs = 1,
+                validation_split = validation_split,
+                verbose = verbose
+              )
 
           } else {
             model[[term]] %>% compile(
@@ -304,12 +309,14 @@ neuralGAM <-
             )
             t <- Sys.time()
             history <-
-              model[[term]] %>% fit(x_np[[term]],
-                                    residuals,
-                                    epochs = 1,
-                                    sample_weight = list(W),
-                                    verbose = verbose,
-                                    validation_split = validation_split)
+              model[[term]] %>% fit(
+                x_np[[term]],
+                residuals,
+                epochs = 1,
+                sample_weight = list(W),
+                verbose = verbose,
+                validation_split = validation_split
+              )
           }
 
           epochs <- c(epochs, it_back)
@@ -335,7 +342,7 @@ neuralGAM <-
         # compute the differences in the predictor at each iteration
         err <- sum((eta - eta_prev) ** 2) / sum(eta_prev ** 2)
         eta_prev <- eta
-        if(verbose == 1) {
+        if (verbose == 1) {
           print(
             paste(
               "BACKFITTING Iteration",
@@ -359,7 +366,7 @@ neuralGAM <-
 
       dev_delta <- abs((dev_old - dev_new) / dev_old)
       if (family == "binomial") {
-        if (verbose == 1){
+        if (verbose == 1) {
           print(
             paste(
               "Current delta ",
@@ -397,7 +404,7 @@ neuralGAM <-
         eta0 = eta0,
         family = family,
         stats = stats,
-        mse = mean((y - muhat) ^ 2),
+        mse = mean((y - muhat)^2),
         formula = formula,
         history = model_history
       )

@@ -3,7 +3,8 @@
 #' Builds and compiles a `keras` neural network for a single smooth term in a `neuralGAM` model.
 #' The architecture (number of units, layers, activation, regularization, etc.) is configured
 #' through the parameters inherited from `neuralGAM`.
-#'
+#' @param name Neural Network name.
+#' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @inheritParams neuralGAM
 #' @param name Character string. Name assigned to the neural network corresponding to the smooth term.
 #' @param ... Additional parameters passed to `keras::optimizer_adam()`.
@@ -17,7 +18,6 @@
 #' @importFrom keras optimizer_adam
 #' @importFrom keras fit compile
 #' @importFrom magrittr %>%
-#'
 #' @references
 #' Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
 #' arXiv preprint arXiv:1412.6980.

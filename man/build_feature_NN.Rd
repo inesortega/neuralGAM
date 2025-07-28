@@ -56,4 +56,7 @@ through the parameters inherited from `neuralGAM`.
 Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
 arXiv preprint arXiv:1412.6980.
 }
+\author{
+Ines Ortega-Fernandez, Marta Sestelo.
+}
 \keyword{internal}

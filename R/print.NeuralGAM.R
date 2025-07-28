@@ -1,21 +1,26 @@
-#' Short \code{neuralGAM} summary
-#' @description Default print statement for a neuralGAM object.
-#' @param x \code{neuralGAM} object.
-#' @param ... Other arguments.
-#' @return The printed output of the object:
-#'  \describe{
-#'  \item Distribution family
-#'  \item Formula
-#'  \item Intercept value
-#'  \item Mean Squared Error (MSE)
-#'  \item Training sample size
-#'}
+#' @title Short \code{neuralGAM} summary
+#' @description
+#' Default print method for a \code{neuralGAM} object.
+#'
+#' @param x A \code{neuralGAM} object.
+#' @param ... Additional arguments (currently unused).
+#'
+#' @return
+#' Prints a brief summary of the fitted model including:
+#' \describe{
+#'   \item{Distribution family}{The distribution family used (\code{"gaussian"}, \code{"binomial"}, or \code{"poisson"}).}
+#'   \item{Formula}{The model formula.}
+#'   \item{Intercept value}{The fitted intercept (\eqn{\eta_0}).}
+#'   \item{Mean Squared Error (MSE)}{The training MSE of the model.}
+#'   \item{Training sample size}{The number of observations used to train the model.}
+#' }
+#'
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @export
-#' @examples \dontrun{
 #'
+#' @examples
+#' \dontrun{
 #' n <- 24500
-#'
 #' seed <- 42
 #' set.seed(seed)
 #'
@@ -23,8 +28,8 @@
 #' x2 <- runif(n, -2.5, 2.5)
 #' x3 <- runif(n, -2.5, 2.5)
 #'
-#' f1 <-x1**2
-#' f2 <- 2*x2
+#' f1 <- x1**2
+#' f2 <- 2 * x2
 #' f3 <- sin(x3)
 #' f1 <- f1 - mean(f1)
 #' f2 <- f2 - mean(f2)
@@ -36,16 +41,20 @@
 #' train <- data.frame(x1, x2, x3, y)
 #'
 #' library(neuralGAM)
-#' ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
-#'                  num_units = 1024, family = "gaussian",
-#'                  activation = "relu",
-#'                  learning_rate = 0.001, bf_threshold = 0.001,
-#'                  max_iter_backfitting = 10, max_iter_ls = 10,
-#'                  seed = seed
-#'                  )
+#' ngam <- neuralGAM(
+#'   y ~ s(x1) + x2 + s(x3),
+#'   data = train,
+#'   num_units = 1024,
+#'   family = "gaussian",
+#'   activation = "relu",
+#'   learning_rate = 0.001,
+#'   bf_threshold = 0.001,
+#'   max_iter_backfitting = 10,
+#'   max_iter_ls = 10,
+#'   seed = seed
+#' )
 #' print(ngam)
 #' }
-
 print.neuralGAM <- function(x, ...) {
   if (inherits(x, "neuralGAM")) {
     # Print the class name

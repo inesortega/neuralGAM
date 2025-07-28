@@ -1,21 +1,26 @@
-#' Build and compile a single Neural Network
-#' @description Builds and compiles a neural network using the keras library.
-#' The architecture of the neural network is configurable using the
-#' @param name Neural Network name.
-#' @author Ines Ortega-Fernandez, Marta Sestelo.
+#' @title Build and compile a neural network feature model
+#' @description
+#' Builds and compiles a `keras` neural network for a single smooth term in a `neuralGAM` model.
+#' The architecture (number of units, layers, activation, regularization, etc.) is configured
+#' through the parameters inherited from `neuralGAM`.
+#'
 #' @inheritParams neuralGAM
-#' @inheritDotParams neuralGAM
-#' @return compiled Neural Network
+#' @param name Character string. Name assigned to the neural network corresponding to the smooth term.
+#' @param ... Additional parameters passed to `keras::optimizer_adam()`.
+#'
+#' @return A compiled `keras_model` object ready for training.
+#'
+#' @keywords internal
+#'
 #' @importFrom keras keras_model_sequential
 #' @importFrom keras layer_dense
 #' @importFrom keras optimizer_adam
+#' @importFrom keras fit compile
 #' @importFrom magrittr %>%
-#' @importFrom keras fit
-#' @importFrom keras compile
-#' @keywords internal
+#'
 #' @references
-#' Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980.
-
+#' Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
+#' arXiv preprint arXiv:1412.6980.
 build_feature_NN <-
   function(num_units,
            learning_rate = 0.001,

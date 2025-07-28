@@ -2,7 +2,7 @@
 % Please edit documentation in R/build_feature_NN.R
 \name{build_feature_NN}
 \alias{build_feature_NN}
-\title{Build and compile a single Neural Network}
+\title{Build and compile a neural network feature model}
 \usage{
 build_feature_NN(
   num_units,
@@ -20,63 +20,40 @@ build_feature_NN(
 }
 \arguments{
 \item{num_units}{Defines the architecture of each neural network.
-If a scalar value is provided, a single hidden layer neural network with that number of units is used.
-If a vector of values is provided, a multi-layer neural network with each element of the vector defining
-the number of hidden units on each hidden layer is used.}
+If a scalar value is provided, a single hidden layer with that number of units is used.
+If a vector of values is provided, each element defines the number of units in a hidden layer.}
 
 \item{learning_rate}{Learning rate for the neural network optimizer.}
 
-\item{activation}{Activation function of the neural network. Defaults to \code{relu}}
+\item{activation}{Activation function for the hidden layers. Defaults to `"relu"`.}
 
 \item{kernel_initializer}{Kernel initializer for the Dense layers.
-Defaults to Xavier Initializer (\code{glorot_normal}).}
+Defaults to Xavier Initializer (`"glorot_normal"`).}
 
-\item{kernel_regularizer}{Optional regularizer function applied to the kernel weights matrix.}
+\item{kernel_regularizer}{Optional regularizer function applied to the kernel weights.}
 
-\item{bias_regularizer}{Optional regularizer function applied to the bias vector.}
+\item{bias_regularizer}{Optional regularizer function applied to the bias.}
 
 \item{bias_initializer}{Optional initializer for the bias vector.}
 
-\item{activity_regularizer}{Optional regularizer function applied to the output of the layer}
+\item{activity_regularizer}{Optional regularizer function applied to the output of the layer.}
 
-\item{loss}{Loss function to use during neural network training. Defaults to the mean squared error.}
+\item{loss}{Loss function to use during training. Defaults to `"mse"`.}
 
-\item{name}{Neural Network name.}
+\item{name}{Character string. Name assigned to the neural network corresponding to the smooth term.}
 
-\item{...}{
-  Arguments passed on to \code{\link[=neuralGAM]{neuralGAM}}
-  \describe{
-    \item{\code{formula}}{An object of class "formula": a description of the model to be fitted. You can add smooth terms using \code{s()}.}
-    \item{\code{data}}{A data frame containing the model response variable and covariates
-required by the formula. Additional terms not present in the formula will be ignored.}
-    \item{\code{family}}{This is a family object specifying the distribution and link to use for fitting.
-By default, it is \code{"gaussian"} but also works to \code{"binomial"} and \code{"poisson"}.}
-    \item{\code{validation_split}}{Optional portion of the training dataset to be used for evaluating validation loss and metrics at the end of each epoch. It takes the last x% samples of the arrays received by the fit() call, before any shuffling}
-    \item{\code{bf_threshold}}{Convergence criterion of the backfitting algorithm.
-Defaults to \code{0.001}}
-    \item{\code{ls_threshold}}{Convergence criterion of the local scoring algorithm.
-Defaults to \code{0.1}}
-    \item{\code{max_iter_backfitting}}{An integer with the maximum number of iterations
-of the backfitting algorithm. Defaults to \code{10}.}
-    \item{\code{max_iter_ls}}{An integer with the maximum number of iterations of the
-local scoring Algorithm. Defaults to \code{10}.}
-    \item{\code{w_train}}{Optional sample weights}
-    \item{\code{seed}}{A positive integer which specifies the random number generator
-seed for algorithms dependent on randomization.}
-    \item{\code{verbose}}{Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.}
-  }}
+\item{...}{Additional parameters passed to `keras::optimizer_adam()`.}
 }
 \value{
-compiled Neural Network
+A compiled `keras_model` object ready for training.
 }
 \description{
-Builds and compiles a neural network using the keras library.
-The architecture of the neural network is configurable using the
+Builds and compiles a `keras` neural network for a single smooth term in a `neuralGAM` model.
+The architecture (number of units, layers, activation, regularization, etc.) is configured
+through the parameters inherited from `neuralGAM`.
 }
 \references{
-Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980.
-}
-\author{
-Ines Ortega-Fernandez, Marta Sestelo.
+Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
+arXiv preprint arXiv:1412.6980.
 }
 \keyword{internal}

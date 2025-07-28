@@ -9,11 +9,11 @@
 \arguments{
 \item{x}{\code{neuralGAM} object.}
 
-\item{\ldots}{Other arguments.}
+\item{...}{Other arguments.}
 }
 \value{
 The printed output of the object:
- \itemize{
+ \describe{
  \item Distribution family
  \item Formula
  \item Intercept value

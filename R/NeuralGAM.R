@@ -1,91 +1,85 @@
-#' Fit a \code{neuralGAM} model
-#' @description Fits a \code{neuralGAM} model by building a neural network to attend to each covariate.
+#' @title Fit a neuralGAM model
+#' @description Fits a Generalized Additive Neural Network model by training a separate neural network
+#' for each covariate using the backfitting and local scoring algorithms.
+#'
 #' @details
-#' The function builds one neural network to attend to each feature in x,
+#' The function builds one neural network to attend to each feature in `x`,
 #' using the backfitting and local scoring algorithms to fit a weighted additive model
-#' using neural networks as function approximators. The adjustment of the
-#' dependent variable and the weights is determined by the distribution of the
-#' response \code{y}, adjusted by the \code{family} parameter.
-#' @author Ines Ortega-Fernandez, Marta Sestelo.
-#' @param formula An object of class "formula": a description of the model to be fitted. You can add smooth terms using \code{s()}.
-#' @param data A data frame containing the model response variable and covariates
-#' required by the formula. Additional terms not present in the formula will be ignored.
+#' with neural networks as function approximators.
+#' The adjustment of the dependent variable and the weights is determined by the distribution of
+#' the response `y`, adjusted by the `family` parameter.
+#'
+#' @author Ines Ortega-Fernandez, Marta Sestelo
+#'
+#' @param formula An object of class "formula": a description of the model to be fitted.
+#' Smooth terms can be added using `s()`.
+#' @param data A data frame containing the response variable and covariates required by the formula.
+#' Additional terms not present in the formula will be ignored.
 #' @param num_units Defines the architecture of each neural network.
-#' If a scalar value is provided, a single hidden layer neural network with that number of units is used.
-#' If a vector of values is provided, a multi-layer neural network with each element of the vector defining
-#' the number of hidden units on each hidden layer is used.
-#' @param family This is a family object specifying the distribution and link to use for fitting.
-#' By default, it is \code{"gaussian"} but also works to \code{"binomial"} and \code{"poisson"}.
+#' If a scalar value is provided, a single hidden layer with that number of units is used.
+#' If a vector of values is provided, each element defines the number of units in a hidden layer.
+#' @param family Distribution family to use for fitting. Options are `"gaussian"`, `"binomial"`, `"poisson"`.
 #' @param learning_rate Learning rate for the neural network optimizer.
+#' @param activation Activation function for the hidden layers. Defaults to `"relu"`.
 #' @param kernel_initializer Kernel initializer for the Dense layers.
-#' Defaults to Xavier Initializer (\code{glorot_normal}).
-#' @param activation Activation function of the neural network. Defaults to \code{relu}
-#' @param kernel_initializer Kernel initializer for the Dense layers.
-#' Defaults to Xavier Initializer (\code{glorot_normal}).
-#' @param kernel_regularizer Optional regularizer function applied to the kernel weights matrix.
-#' @param bias_regularizer Optional regularizer function applied to the bias vector.
+#' Defaults to Xavier Initializer (`"glorot_normal"`).
+#' @param kernel_regularizer Optional regularizer function applied to the kernel weights.
+#' @param bias_regularizer Optional regularizer function applied to the bias.
 #' @param bias_initializer Optional initializer for the bias vector.
-#' @param activity_regularizer Optional regularizer function applied to the output of the layer
-#' @param loss  Loss function to use during neural network training. Defaults to the mean squared error.
-#' @param validation_split Optional portion of the training dataset to be used for evaluating validation loss and metrics at the end of each epoch. It takes the last x% samples of the arrays received by the fit() call, before any shuffling
-#' @param bf_threshold Convergence criterion of the backfitting algorithm.
-#' Defaults to \code{0.001}
-#' @param ls_threshold Convergence criterion of the local scoring algorithm.
-#' Defaults to \code{0.1}
-#' @param max_iter_backfitting An integer with the maximum number of iterations
-#' of the backfitting algorithm. Defaults to \code{10}.
-#' @param max_iter_ls An integer with the maximum number of iterations of the
-#' local scoring Algorithm. Defaults to \code{10}.
-#' @param w_train Optional sample weights
-#' @param seed A positive integer which specifies the random number generator
-#' seed for algorithms dependent on randomization.
-#' @param verbose Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.
-#' @param \ldots Additional parameters for the Adam optimizer (see ?keras::optimizer_adam)
-#' @importFrom keras fit
-#' @importFrom keras compile
+#' @param activity_regularizer Optional regularizer function applied to the output of the layer.
+#' @param loss Loss function to use during training. Defaults to `"mse"`.
+#' @param validation_split Numeric between 0 and 1. Fraction of training data to use for validation.
+#' @param w_train Optional numeric vector of sample weights. If `NULL`, all weights are set to 1.
+#' @param bf_threshold Numeric convergence threshold for the backfitting algorithm. Default is `0.001`.
+#' @param ls_threshold Numeric convergence threshold for the local scoring algorithm. Default is `0.1`.
+#' @param max_iter_backfitting Integer, maximum backfitting iterations. Default is 10.
+#' @param max_iter_ls Integer, maximum local scoring iterations. Default is 10.
+#' @param seed Optional integer seed for reproducibility.
+#' @param verbose Verbosity mode (0 = silent, 1 = print messages). Default is 1.
+#' @param ... Additional parameters passed to `keras::optimizer_adam`.
+#'
+#' @return A trained `neuralGAM` object with:
+#' \describe{
+#'   \item{muhat}{Predicted response values.}
+#'   \item{partial}{Data frame of partial effects.}
+#'   \item{y}{Observed response values.}
+#'   \item{eta}{Linear predictor values.}
+#'   \item{x}{Model covariates.}
+#'   \item{model}{List of trained neural networks for each term.}
+#'   \item{history}{Training history for each term's model.}
+#'   \item{stats}{Training statistics including loss values.}
+#'   \item{mse}{Mean squared error.}
+#' }
+#'
+#' @references
+#' Hastie, T., & Tibshirani, R. (1990). Generalized Additive Models. London: Chapman and Hall.
+#'
+#' @examples
+#' \dontrun{
+#' set.seed(42)
+#' n <- 1000
+#' x1 <- runif(n, -2.5, 2.5)
+#' x2 <- runif(n, -2.5, 2.5)
+#' y <- 2 + x1^2 + sin(x2) + rnorm(n, 0.25)
+#' train <- data.frame(x1, x2, y)
+#'
+#' ngam <- neuralGAM(y ~ s(x1) + s(x2), data = train,
+#'                  num_units = 64, family = "gaussian",
+#'                  activation = "relu",
+#'                  learning_rate = 0.001, bf_threshold = 0.001,
+#'                  max_iter_backfitting = 5, max_iter_ls = 5,
+#'                  seed = 42)
+#' summary(ngam)
+#' }
+#'
+#' @importFrom keras fit compile
 #' @importFrom tensorflow set_random_seed
 #' @importFrom stats predict lm
 #' @importFrom reticulate py_available
 #' @importFrom magrittr %>%
 #' @importFrom formula.tools lhs rhs
+#' @importFrom utils tail
 #' @export
-#' @references
-#' Hastie, T., & Tibshirani, R. (1990). Generalized Additive Models. London: Chapman and Hall, 1931(11), 683–741.
-#' @return A trained \code{neuralGAM} object. Use \code{summary(ngam)} to see details.
-#' @examples \dontrun{
-#' n <- 24500
-#'
-#' seed <- 42
-#' set.seed(seed)
-#'
-#' x1 <- runif(n, -2.5, 2.5)
-#' x2 <- runif(n, -2.5, 2.5)
-#' x3 <- runif(n, -2.5, 2.5)
-#'
-#' f1 <- x1 ** 2
-#' f2 <- 2 * x2
-#' f3 <- sin(x3)
-#' f1 <- f1 - mean(f1)
-#' f2 <- f2 - mean(f2)
-#' f3 <- f3 - mean(f3)
-#'
-#' eta0 <- 2 + f1 + f2 + f3
-#' epsilon <- rnorm(n, 0.25)
-#' y <- eta0 + epsilon
-#' train <- data.frame(x1, x2, x3, y)
-#'
-#' library(neuralGAM)
-#' ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
-#'                  num_units = 1024, family = "gaussian",
-#'                  activation = "relu",
-#'                  learning_rate = 0.001, bf_threshold = 0.001,
-#'                  max_iter_backfitting = 10, max_iter_ls = 10,
-#'                  seed = seed
-#'                  )
-#'
-#' ngam
-#' }
-
 neuralGAM <-
   function(formula,
            data,

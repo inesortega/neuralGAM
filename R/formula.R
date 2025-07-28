@@ -6,7 +6,7 @@
 #' @param formula A formula object
 #'
 #' @return A list with the following elements:
-#' \itemize{
+#' \describe{
 #' \item y: The response variable
 #' \item terms: A character vector with all model terms
 #' \item np_terms: A character vector with non-parametric terms

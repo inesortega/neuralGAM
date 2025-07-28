@@ -16,7 +16,7 @@ select="X0"}
 
 \item{ylab}{if supplied, this value will be used as the \code{y} label for all plots}
 
-\item{\ldots}{other graphics parameters to pass on to plotting commands.}
+\item{...}{other graphics parameters to pass on to plotting commands.}
 }
 \value{
 Returns the partial effects plot.

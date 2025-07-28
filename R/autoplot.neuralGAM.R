@@ -7,7 +7,7 @@ ggplot2::autoplot
 #' @param select selects the term to be plotted.
 #' @param xlab A title for the \code{x} axis.
 #' @param ylab A title for the \code{y} axis.
-#' @param \ldots other graphics parameters to pass on to plotting commands.
+#' @param ... other graphics parameters to pass on to plotting commands.
 #' See details for ggplot2::geom_line options
 #' @return  A ggplot object, so you can use common features from the ggplot2 package
 #' to manipulate the plot.

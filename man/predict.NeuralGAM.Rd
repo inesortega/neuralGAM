@@ -23,7 +23,7 @@ in this list will be returned. If \code{NULL} then no terms are excluded (defaul
 
 \item{verbose}{Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.}
 
-\item{\ldots}{Other options.}
+\item{...}{Other options.}
 }
 \value{
 Predicted values according to \code{type} parameter.

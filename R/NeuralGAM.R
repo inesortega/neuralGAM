@@ -1,4 +1,4 @@
-#' Fit a \code{neuralGAM} model
+#' @title Fit a \code{neuralGAM} model
 #' @description Fits a \code{neuralGAM} model by building a neural network to attend to each covariate.
 #' @details
 #' The function builds one neural network to attend to each feature in x,
@@ -10,15 +10,9 @@
 #' @param formula An object of class "formula": a description of the model to be fitted. You can add smooth terms using \code{s()}.
 #' @param data A data frame containing the model response variable and covariates
 #' required by the formula. Additional terms not present in the formula will be ignored.
-#' @param num_units Defines the architecture of each neural network.
-#' If a scalar value is provided, a single hidden layer neural network with that number of units is used.
-#' If a vector of values is provided, a multi-layer neural network with each element of the vector defining
-#' the number of hidden units on each hidden layer is used.
-#' @param family This is a family object specifying the distribution and link to use for fitting.
-#' By default, it is \code{"gaussian"} but also works to \code{"binomial"} and \code{"poisson"}.
+#' @param num_units Defines the architecture of each neural network. If a scalar value is provided, a single hidden layer neural network with that number of units is used. If a vector of values is provided, a multi-layer neural network with each element of the vector defining the number of hidden units on each hidden layer is used.
+#' @param family This is a family object specifying the distribution and link to use for fitting. By default, it is \code{"gaussian"} but also works to \code{"binomial"} and \code{"poisson"}.
 #' @param learning_rate Learning rate for the neural network optimizer.
-#' @param kernel_initializer Kernel initializer for the Dense layers.
-#' Defaults to Xavier Initializer (\code{glorot_normal}).
 #' @param activation Activation function of the neural network. Defaults to \code{relu}
 #' @param kernel_initializer Kernel initializer for the Dense layers.
 #' Defaults to Xavier Initializer (\code{glorot_normal}).
@@ -28,19 +22,14 @@
 #' @param activity_regularizer Optional regularizer function applied to the output of the layer
 #' @param loss  Loss function to use during neural network training. Defaults to the mean squared error.
 #' @param validation_split Optional portion of the training dataset to be used for evaluating validation loss and metrics at the end of each epoch. It takes the last x% samples of the arrays received by the fit() call, before any shuffling
-#' @param bf_threshold Convergence criterion of the backfitting algorithm.
-#' Defaults to \code{0.001}
-#' @param ls_threshold Convergence criterion of the local scoring algorithm.
-#' Defaults to \code{0.1}
-#' @param max_iter_backfitting An integer with the maximum number of iterations
-#' of the backfitting algorithm. Defaults to \code{10}.
-#' @param max_iter_ls An integer with the maximum number of iterations of the
-#' local scoring Algorithm. Defaults to \code{10}.
-#' @param w_train Optional sample weights
-#' @param seed A positive integer which specifies the random number generator
-#' seed for algorithms dependent on randomization.
+#' @param bf_threshold Convergence criterion of the backfitting algorithm. Defaults to \code{0.001}
+#' @param ls_threshold Convergence criterion of the local scoring algorithm. Defaults to \code{0.1}
+#' @param max_iter_backfitting An integer with the maximum number of iterations of the backfitting algorithm. Defaults to \code{10}.
+#' @param max_iter_ls An integer with the maximum number of iterations of the local scoring Algorithm. Defaults to \code{10}.
+#' @param w_train Optional sample weights. If NULL, all weights are set to 1.
+#' @param seed A positive integer which specifies the random number generator seed for algorithms dependent on randomization.
 #' @param verbose Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.
-#' @param \ldots Additional parameters for the Adam optimizer (see ?keras::optimizer_adam)
+#' @param ... Additional parameters for the Adam optimizer (see \code{\link[keras]{optimizer_adam}}).
 #' @importFrom keras fit
 #' @importFrom keras compile
 #' @importFrom tensorflow set_random_seed

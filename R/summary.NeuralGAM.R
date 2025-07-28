@@ -1,11 +1,9 @@
-#' \code{neuralGAM} summary
-#' @description Summary of a fitted \code{neuralGAM} object. Prints
-#' the distribution family, model formula, intercept value, sample size,
-#' as well as neural network architecture and training history.
+#' @title \code{neuralGAM} summary
+#' @description Summary of a fitted \code{neuralGAM} object. Prints the distribution family, model formula, intercept value, sample size, as well as neural network architecture and training history.
 #' @param object \code{neuralGAM} object.
-#' @param \ldots Other options.
+#' @param ... Other options.
 #' @return The summary of the object:
-#'  \itemize{
+#'  \describe{
 #'  \item Distribution family
 #'  \item Formula
 #'  \item Intercept value

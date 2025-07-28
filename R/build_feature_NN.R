@@ -1,6 +1,5 @@
-#' Build and compile a single Neural Network
-#' @description Builds and compiles a neural network using the keras library.
-#' The architecture of the neural network is configurable using the
+#' @title build_feature_NN
+#' @description Builds and compiles a neural network using the keras library. The architecture of the neural network is configurable using the parameters inherited from `neuralGAM`.
 #' @param name Neural Network name.
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @inheritParams neuralGAM
@@ -13,6 +12,7 @@
 #' @importFrom keras fit
 #' @importFrom keras compile
 #' @keywords internal
+#' @return A compiled \code{keras_model} object.
 #' @references
 #' Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980.
 

@@ -6,7 +6,7 @@
 #' select="X0"
 #' @param xlab if supplied, this value will be used as the \code{x} label for all plots
 #' @param ylab if supplied, this value will be used as the \code{y} label for all plots
-#' @param \ldots other graphics parameters to pass on to plotting commands.
+#' @param ... other graphics parameters to pass on to plotting commands.
 #' @return Returns the partial effects plot.
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @export

@@ -15,7 +15,7 @@
 
 \item{ylab}{A title for the \code{y} axis.}
 
-\item{\ldots}{other graphics parameters to pass on to plotting commands.
+\item{...}{other graphics parameters to pass on to plotting commands.
 See details for ggplot2::geom_line options}
 }
 \value{

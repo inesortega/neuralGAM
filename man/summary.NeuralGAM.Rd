@@ -9,11 +9,11 @@
 \arguments{
 \item{object}{\code{neuralGAM} object.}
 
-\item{\ldots}{Other options.}
+\item{...}{Other options.}
 }
 \value{
 The summary of the object:
- \itemize{
+ \describe{
  \item Distribution family
  \item Formula
  \item Intercept value
@@ -24,9 +24,7 @@ The summary of the object:
 }
 }
 \description{
-Summary of a fitted \code{neuralGAM} object. Prints
-the distribution family, model formula, intercept value, sample size,
-as well as neural network architecture and training history.
+Summary of a fitted \code{neuralGAM} object. Prints the distribution family, model formula, intercept value, sample size, as well as neural network architecture and training history.
 }
 \examples{
 \dontrun{

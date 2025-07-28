@@ -34,13 +34,9 @@ neuralGAM(
 \item{data}{A data frame containing the model response variable and covariates
 required by the formula. Additional terms not present in the formula will be ignored.}
 
-\item{num_units}{Defines the architecture of each neural network.
-If a scalar value is provided, a single hidden layer neural network with that number of units is used.
-If a vector of values is provided, a multi-layer neural network with each element of the vector defining
-the number of hidden units on each hidden layer is used.}
+\item{num_units}{Defines the architecture of each neural network. If a scalar value is provided, a single hidden layer neural network with that number of units is used. If a vector of values is provided, a multi-layer neural network with each element of the vector defining the number of hidden units on each hidden layer is used.}
 
-\item{family}{This is a family object specifying the distribution and link to use for fitting.
-By default, it is \code{"gaussian"} but also works to \code{"binomial"} and \code{"poisson"}.}
+\item{family}{This is a family object specifying the distribution and link to use for fitting. By default, it is \code{"gaussian"} but also works to \code{"binomial"} and \code{"poisson"}.}
 
 \item{learning_rate}{Learning rate for the neural network optimizer.}
 
@@ -61,26 +57,21 @@ Defaults to Xavier Initializer (\code{glorot_normal}).}
 
 \item{validation_split}{Optional portion of the training dataset to be used for evaluating validation loss and metrics at the end of each epoch. It takes the last x% samples of the arrays received by the fit() call, before any shuffling}
 
-\item{w_train}{Optional sample weights}
+\item{w_train}{Optional sample weights. If NULL, all weights are set to 1.}
 
-\item{bf_threshold}{Convergence criterion of the backfitting algorithm.
-Defaults to \code{0.001}}
+\item{bf_threshold}{Convergence criterion of the backfitting algorithm. Defaults to \code{0.001}}
 
-\item{ls_threshold}{Convergence criterion of the local scoring algorithm.
-Defaults to \code{0.1}}
+\item{ls_threshold}{Convergence criterion of the local scoring algorithm. Defaults to \code{0.1}}
 
-\item{max_iter_backfitting}{An integer with the maximum number of iterations
-of the backfitting algorithm. Defaults to \code{10}.}
+\item{max_iter_backfitting}{An integer with the maximum number of iterations of the backfitting algorithm. Defaults to \code{10}.}
 
-\item{max_iter_ls}{An integer with the maximum number of iterations of the
-local scoring Algorithm. Defaults to \code{10}.}
+\item{max_iter_ls}{An integer with the maximum number of iterations of the local scoring Algorithm. Defaults to \code{10}.}
 
-\item{seed}{A positive integer which specifies the random number generator
-seed for algorithms dependent on randomization.}
+\item{seed}{A positive integer which specifies the random number generator seed for algorithms dependent on randomization.}
 
 \item{verbose}{Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.}
 
-\item{\ldots}{Additional parameters for the Adam optimizer (see ?keras::optimizer_adam)}
+\item{...}{Additional parameters for the Adam optimizer (see \code{\link[keras]{optimizer_adam}}).}
 }
 \value{
 A trained \code{neuralGAM} object. Use \code{summary(ngam)} to see details.

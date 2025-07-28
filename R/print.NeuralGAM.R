@@ -1,9 +1,9 @@
 #' Short \code{neuralGAM} summary
 #' @description Default print statement for a neuralGAM object.
 #' @param x \code{neuralGAM} object.
-#' @param \ldots Other arguments.
+#' @param ... Other arguments.
 #' @return The printed output of the object:
-#'  \itemize{
+#'  \describe{
 #'  \item Distribution family
 #'  \item Formula
 #'  \item Intercept value

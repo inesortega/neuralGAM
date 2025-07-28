@@ -12,7 +12,7 @@
 #' @param terms If \code{type="terms"}, then only results for the terms named
 #' in this list will be returned. If \code{NULL} then no terms are excluded (default).
 #' @param verbose Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.
-#' @param \ldots Other options.
+#' @param ... Other options.
 #' @return Predicted values according to \code{type} parameter.
 #' @importFrom stats predict
 #' @export

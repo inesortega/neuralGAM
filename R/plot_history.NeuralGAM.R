@@ -82,17 +82,17 @@ plot_history <- function(history, select = NULL, metric = c("loss", "val_loss"))
 
   # Start plotting
   library(ggplot2)
-  plt <- ggplot(df, aes(x = Iteration)) +
+  plt <- ggplot(df, aes(x = .data$Iteration)) +
     facet_wrap(~ Term, scales = "free_y")
 
   if ("Loss" %in% names(df)) {
-    plt <- plt + geom_line(aes(y = Loss, color = "Train Loss")) +
-      geom_point(aes(y = Loss, color = "Train Loss"))
+    plt <- plt + geom_line(aes(y = .data$Loss, color = "Train Loss")) +
+      geom_point(aes(y = .data$Loss, color = "Train Loss"))
   }
 
   if ("ValLoss" %in% names(df)) {
-    plt <- plt + geom_line(aes(y = ValLoss, color = "Validation Loss")) +
-      geom_point(aes(y = ValLoss, color = "Validation Loss"))
+    plt <- plt + geom_line(aes(y = .data$ValLoss, color = "Validation Loss")) +
+      geom_point(aes(y = .data$ValLoss, color = "Validation Loss"))
   }
 
   plt + labs(title = "Loss per Backfitting Iteration",

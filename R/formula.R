@@ -1,20 +1,23 @@
-#' Extract formula elements
+#' @title Extract formula elements
 #'
+#' @description
 #' This function separates the model terms of a given formula into response,
-#' all_terms, non-parametric terms and parametric terms.
+#' all terms, non-parametric terms, and parametric terms.
 #'
-#' @param formula A formula object
+#' @param formula A formula object.
 #'
-#' @return A list with the following elements:
+#' @return
+#' A list with the following elements:
 #' \describe{
-#' \item y: The response variable
-#' \item terms: A character vector with all model terms
-#' \item np_terms: A character vector with non-parametric terms
-#' \item p_terms: A character vector with parametric terms
-#' \item np_formula: The formula for the non-parametric terms
-#' \item p_formula: The formula for the parametric terms
-#' \item formula: The original formula object
+#'   \item{y}{The response variable.}
+#'   \item{terms}{A character vector with all model terms.}
+#'   \item{np_terms}{A character vector with non-parametric terms.}
+#'   \item{p_terms}{A character vector with parametric terms.}
+#'   \item{np_formula}{The formula for the non-parametric terms.}
+#'   \item{p_formula}{The formula for the parametric terms.}
+#'   \item{formula}{The original formula object.}
 #' }
+#'
 #' @importFrom formula.tools lhs rhs
 #' @importFrom stats as.formula
 #' @keywords internal

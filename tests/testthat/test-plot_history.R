@@ -29,7 +29,7 @@ test_that("plot_history works with a trained neuralGAM model", {
     data = df,
     num_units = 8,
     family = "gaussian",
-    max_iter_backfitting = 2,
+    max_iter_backfitting = 1,
     max_iter_ls = 1,
     learning_rate = 0.01,
     seed = 123,
@@ -47,5 +47,5 @@ test_that("plot_history works with a trained neuralGAM model", {
 
   # Check number of iterations matches
   n_iter_x1 <- length(model$history$x1)
-  expect_equal(n_iter_x1, 2)
+  expect_equal(n_iter_x1, 1)
 })

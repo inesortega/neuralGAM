@@ -5,11 +5,12 @@
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @param muhat current estimation of the response variable
 #' @param y response variable
+#' @param w weight assigned to each observation. Defaults to 1.
 #' @param family A description of the link function used in the model:
-#' \code{"gaussian"} or \code{"binomial"}
+#' \code{"gaussian"}, \code{"poisson"}, or \code{"binomial"}
 #' @return the deviance of the model
 #' @keywords internal
-dev <- function(muhat, y, family) {
+dev <- function(muhat, y, w, family) {
 
   if (missing(muhat)) {
     stop("Argument \"muhat\" is missing, with no default")
@@ -23,8 +24,8 @@ dev <- function(muhat, y, family) {
     stop("Argument \"family\" is missing, with no default")
   }
 
-  if (family != "gaussian" & family != "binomial") {
-    stop("Unsupported distribution family. Supported values are \"gaussian\" and \"binomial\"")
+  if (!family %in% c("gaussian", "binomial", "poisson")) {
+    stop("Unsupported distribution family. Supported values are \"gaussian\", \"binomial\", and \"poisson\"")
   }
 
   if (family == "gaussian") {
@@ -45,6 +46,18 @@ dev <- function(muhat, y, family) {
     }
     entadd <- 2 * (y * log(muhat)) + ((1 - y) * log(1 - muhat))
     dev <- sum(entrop - entadd, na.rm = TRUE)
+  }
+
+  if(family == "poisson"){
+    # Clamp fitted values to avoid log(0)
+    tempf <- pmax(muhat, 1e-4)
+    # Initialize deviance
+    dev <- 2 * w * (-y * log(tempf) - (y - muhat))
+
+    # Add y * log(y) term where y > 0
+    idx <- y > 0
+    dev[idx] <- dev[idx] + 2 * w[idx] * y[idx] * log(y[idx])
+    dev <- sum(dev)
   }
   return(dev)
 }

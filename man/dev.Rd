@@ -4,15 +4,17 @@
 \alias{dev}
 \title{Deviance of the model}
 \usage{
-dev(muhat, y, family)
+dev(muhat, y, w, family)
 }
 \arguments{
 \item{muhat}{current estimation of the response variable}
 
 \item{y}{response variable}
 
+\item{w}{weight assigned to each observation. Defaults to 1.}
+
 \item{family}{A description of the link function used in the model:
-\code{"gaussian"} or \code{"binomial"}}
+\code{"gaussian"}, \code{"poisson"}, or \code{"binomial"}}
 }
 \value{
 the deviance of the model

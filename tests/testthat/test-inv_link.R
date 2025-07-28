@@ -48,7 +48,7 @@ test_that("Function should throw an error for missing 'family' argument", {
 test_that("Function should throw an error for unsupported 'family'", {
   skip_if_no_keras()
 
-  family <- "poisson"
+  family <- "unknown"
   muhat <- c(0.1, 0.5, 0.9)
   expect_error(inv_link(family, muhat))
 })

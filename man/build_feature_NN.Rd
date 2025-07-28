@@ -50,7 +50,7 @@ Defaults to Xavier Initializer (\code{glorot_normal}).}
     \item{\code{data}}{A data frame containing the model response variable and covariates
 required by the formula. Additional terms not present in the formula will be ignored.}
     \item{\code{family}}{This is a family object specifying the distribution and link to use for fitting.
-By default, it is \code{"gaussian"} but also works to \code{"binomial"} for logistic regression.}
+By default, it is \code{"gaussian"} but also works to \code{"binomial"} and \code{"poisson"}.}
     \item{\code{bf_threshold}}{Convergence criterion of the backfitting algorithm.
 Defaults to \code{0.001}}
     \item{\code{ls_threshold}}{Convergence criterion of the local scoring algorithm.

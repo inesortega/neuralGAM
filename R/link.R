@@ -4,7 +4,7 @@
 #' specified in the \code{"family"} parameter.
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #' @param family A description of the link function used in the model:
-#' \code{"gaussian"} or \code{"binomial"}
+#' \code{"gaussian"}, \code{"poisson"}, or \code{"binomial"}
 #' @param muhat fitted values
 #' @return the link function specified by the \code{"family"} distribution
 #' for the given fitted values
@@ -20,18 +20,23 @@ link <- function(family, muhat) {
     stop("Argument \"family\" is missing, with no default")
   }
 
-  if (family != "gaussian" & family != "binomial") {
-    stop("Unsupported distribution family. Supported values are \"gaussian\" and \"binomial\"")
+  if (!family %in% c("gaussian", "binomial", "poisson")) {
+    stop("Unsupported distribution family. Supported values are \"gaussian\", \"binomial\", and \"poisson\"")
   }
-
 
   if (family == "gaussian") {
     out <- muhat
   }
+
   if (family == "binomial") {
-    muhat[muhat > 10] <- 10
-    muhat[muhat < -10] <- -10
-    out <- exp(muhat) / (1 + exp(muhat))
+    eta_clamped <- pmin(pmax(muhat, -300), 300)
+    exp_eta <- exp(eta_clamped)
+    out <- exp_eta / (1 + exp_eta)
   }
+
+  if (family == "poisson") {
+    out <- ifelse(muhat <= 88, exp(muhat), exp(88))
+  }
+
   return(out)
 }

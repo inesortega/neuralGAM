@@ -39,7 +39,7 @@ If a vector of values is provided, a multi-layer neural network with each elemen
 the number of hidden units on each hidden layer is used.}
 
 \item{family}{This is a family object specifying the distribution and link to use for fitting.
-By default, it is \code{"gaussian"} but also works to \code{"binomial"} for logistic regression.}
+By default, it is \code{"gaussian"} but also works to \code{"binomial"} and \code{"poisson"}.}
 
 \item{learning_rate}{Learning rate for the neural network optimizer.}
 

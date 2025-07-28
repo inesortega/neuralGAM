@@ -1,4 +1,8 @@
 
+# neuralGAM 2.0
+
+* Additional distribution families. In particuar, the `poisson` and `multinomial` families are now supported. 
+
 # neuralGAM 1.1.1
 
 * `verbose` parameter is now used along all the required functions.

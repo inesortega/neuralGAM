@@ -15,7 +15,7 @@
 #' If a vector of values is provided, a multi-layer neural network with each element of the vector defining
 #' the number of hidden units on each hidden layer is used.
 #' @param family This is a family object specifying the distribution and link to use for fitting.
-#' By default, it is \code{"gaussian"} but also works to \code{"binomial"} for logistic regression.
+#' By default, it is \code{"gaussian"} but also works to \code{"binomial"} and \code{"poisson"}.
 #' @param learning_rate Learning rate for the neural network optimizer.
 #' @param kernel_initializer Kernel initializer for the Dense layers.
 #' Defaults to Xavier Initializer (\code{glorot_normal}).
@@ -131,9 +131,9 @@ neuralGAM <-
       stop("learning_rate should be a numeric value")
     }
 
-    if (family != "gaussian" && family != "binomial")
-      stop("family must be 'gaussian' or 'binomial'")
-
+    if (!family %in% c("gaussian", "binomial", "poisson")) {
+      stop("Unsupported distribution family. Supported values are \"gaussian\", \"binomial\", and \"poisson\"")
+    }
     if (!is.null(w_train) && !is.numeric(w_train)) {
       stop("w_train should be a numeric vector")
     }
@@ -207,6 +207,9 @@ neuralGAM <-
 
     if (is.null(w_train))
       w <- rep(1, length(y))
+    else{
+      w <- w_train
+    }
     if (family == "gaussian")
       max_iter_ls <- 1
 
@@ -233,11 +236,10 @@ neuralGAM <-
     }
 
     muhat <- mean(y)
-    eta <-
-      inv_link(family, muhat) #initially estimate eta as the mean of y
+    eta <- inv_link(family, muhat) #initially estimate eta as the mean of y
 
     eta_prev <- eta
-    dev_new <- dev(muhat, y, family)
+    dev_new <- dev(muhat, y, w, family)
 
     # Start local scoring algorithm
     while (!converged & (it <= max_iter_ls)) {
@@ -350,7 +352,7 @@ neuralGAM <-
 
       muhat <- link(family, eta)
       dev_old <- dev_new
-      dev_new <- dev(muhat, y, family)
+      dev_new <- dev(muhat, y, w, family)
 
       dev_delta <- abs((dev_old - dev_new) / dev_old)
       if (family == "binomial") {

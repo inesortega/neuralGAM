@@ -153,3 +153,24 @@ test_that("neuralGAM runs OK with binomial response", {
   expect_equal(round(ngam$mse,4), 0.221)
 })
 
+test_that("neuralGAM runs OK with poisson response", {
+  skip_if_no_keras()
+
+  n <- 10
+  formula <- y ~ s(x)
+  seed <- 10
+  set.seed(seed)
+  lambda <- runif(n, 1, 5)
+  eta0 <- rpois(n, lambda)
+
+  data <- data.frame(x = 1:10, y = eta0)
+
+  ngam <- neuralGAM(formula,
+                    data,
+                    num_units = 10,
+                    seed = seed,
+                    family = "poisson", max_iter_backfitting = 1,
+                    max_iter_ls = 1)
+
+  expect_equal(round(ngam$mse,4), 2.3316)
+})

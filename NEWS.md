@@ -1,7 +1,8 @@
 
 # neuralGAM 2.0
 
-* Additional distribution families. In particuar, the `poisson` and `multinomial` families are now supported. 
+* Additional distribution families. In particular, the `poisson` and `multinomial` families are now supported. 
+* Added support for cross validation using the `validation_split` parameter. Moreover, we provide the `plot_history()` function to visualize the training and validation losses at the end of each backfitting iteration. 
 
 # neuralGAM 1.1.1
 

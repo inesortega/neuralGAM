@@ -14,7 +14,8 @@
 #' @return A `ggplot` object showing the loss curves by backfitting iteration, with facets per term.
 #' @export
 #'
-#' @import ggplot2
+#' @importFrom ggplot2 ggplot labs aes geom_line geom_point facet_wrap
+#' @importFrom rlang .data
 #'
 #' @examples
 #' if (requireNamespace("neuralGAM", quietly = TRUE)) {
@@ -80,21 +81,19 @@ plot_history <- function(history, select = NULL, metric = c("loss", "val_loss"))
 
   df <- do.call(rbind, lapply(df_list, as.data.frame))
 
-  # Start plotting
-  library(ggplot2)
-  plt <- ggplot(df, aes(x = .data$Iteration)) +
-    facet_wrap(~ Term, scales = "free_y")
+  plt <- ggplot2::ggplot(df, ggplot2::aes(x = .data$Iteration)) +
+    ggplot2::facet_wrap(~ Term, scales = "free_y")
 
   if ("Loss" %in% names(df)) {
-    plt <- plt + geom_line(aes(y = .data$Loss, color = "Train Loss")) +
-      geom_point(aes(y = .data$Loss, color = "Train Loss"))
+    plt <- plt + ggplot2::geom_line(ggplot2::aes(y = .data$Loss, color = "Train Loss")) +
+      ggplot2::geom_point(ggplot2::aes(y = .data$Loss, color = "Train Loss"))
   }
 
   if ("ValLoss" %in% names(df)) {
-    plt <- plt + geom_line(aes(y = .data$ValLoss, color = "Validation Loss")) +
-      geom_point(aes(y = .data$ValLoss, color = "Validation Loss"))
+    plt <- plt + ggplot2::geom_line(aes(y = .data$ValLoss, color = "Validation Loss")) +
+      ggplot2::geom_point(ggplot2::aes(y = .data$ValLoss, color = "Validation Loss"))
   }
 
-  plt + labs(title = "Loss per Backfitting Iteration",
+  plt + ggplot2::labs(title = "Loss per Backfitting Iteration",
              y = "Loss", color = "Metric")
 }

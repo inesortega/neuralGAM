@@ -97,7 +97,30 @@ terms <- predict(ngam, test, type = "terms")
 
 # Obtain only certain terms: 
 terms <- predict(ngam, test, type = "terms", terms = c("x1", "x2"))
+
 ```
+
+### Cross-validation and Training History
+
+You can monitor the validation loss during training using the `validation_split` parameter. You can then visualize the backfitting loss history using the `plot_history()` function. 
+The function `plot_history()` will produce faceted loss curves for each neural network (one per non-parametric term), showing how the training and validation loss evolve over backfitting iterations.
+
+```
+ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3),
+                  data = train,
+                  num_units = 1024, family = "gaussian",
+                  activation = "relu",
+                  learning_rate = 0.001, bf_threshold = 0.001,
+                  max_iter_backfitting = 10, max_iter_ls = 10,
+                  validation_split = 0.2,
+                  seed = seed)
+
+# Plot loss per backfitting iteration
+plot_history(ngam$history)
+plot_history(ngam$history, select = "x1")       # Plot just x1
+plot_history(model$history, metric = "val_loss") # Plot only validation loss
+```
+
 
 ## Citation
 

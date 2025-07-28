@@ -17,6 +17,7 @@ neuralGAM(
   bias_initializer = "zeros",
   activity_regularizer = NULL,
   loss = "mse",
+  validation_split = NULL,
   w_train = NULL,
   bf_threshold = 0.001,
   ls_threshold = 0.1,
@@ -57,6 +58,8 @@ Defaults to Xavier Initializer (\code{glorot_normal}).}
 \item{activity_regularizer}{Optional regularizer function applied to the output of the layer}
 
 \item{loss}{Loss function to use during neural network training. Defaults to the mean squared error.}
+
+\item{validation_split}{Optional portion of the training dataset to be used for evaluating validation loss and metrics at the end of each epoch. It takes the last x% samples of the arrays received by the fit() call, before any shuffling}
 
 \item{w_train}{Optional sample weights}
 

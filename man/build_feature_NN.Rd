@@ -51,6 +51,7 @@ Defaults to Xavier Initializer (\code{glorot_normal}).}
 required by the formula. Additional terms not present in the formula will be ignored.}
     \item{\code{family}}{This is a family object specifying the distribution and link to use for fitting.
 By default, it is \code{"gaussian"} but also works to \code{"binomial"} and \code{"poisson"}.}
+    \item{\code{validation_split}}{Optional portion of the training dataset to be used for evaluating validation loss and metrics at the end of each epoch. It takes the last x% samples of the arrays received by the fit() call, before any shuffling}
     \item{\code{bf_threshold}}{Convergence criterion of the backfitting algorithm.
 Defaults to \code{0.001}}
     \item{\code{ls_threshold}}{Convergence criterion of the local scoring algorithm.

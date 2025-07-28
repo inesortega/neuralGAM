@@ -27,6 +27,7 @@
 #' @param bias_initializer Optional initializer for the bias vector.
 #' @param activity_regularizer Optional regularizer function applied to the output of the layer
 #' @param loss  Loss function to use during neural network training. Defaults to the mean squared error.
+#' @param validation_split Optional portion of the training dataset to be used for evaluating validation loss and metrics at the end of each epoch. It takes the last x% samples of the arrays received by the fit() call, before any shuffling
 #' @param bf_threshold Convergence criterion of the backfitting algorithm.
 #' Defaults to \code{0.001}
 #' @param ls_threshold Convergence criterion of the local scoring algorithm.
@@ -98,6 +99,7 @@ neuralGAM <-
            bias_initializer = 'zeros',
            activity_regularizer = NULL,
            loss = "mse",
+           validation_split = NULL,
            w_train = NULL,
            bf_threshold = 0.001,
            ls_threshold = 0.1,
@@ -199,6 +201,7 @@ neuralGAM <-
     loss_metric <- c()
     timestamp <- c()
     model_i <- c()
+    model_history <- list()
 
     if (dim(f)[2] == 0)
       stop("No terms available")
@@ -233,6 +236,7 @@ neuralGAM <-
           ...
         )
       }
+      model_history[[term]] <- list()
     }
 
     muhat <- mean(y)
@@ -295,7 +299,8 @@ neuralGAM <-
           if (family == "gaussian") {
             t <- Sys.time()
             history <-
-              model[[term]] %>% fit(x_np[[term]], residuals, epochs = 1, verbose = verbose)
+              model[[term]] %>% fit(x_np[[term]], residuals, epochs = 1,
+                                    validation_split = validation_split, verbose = verbose)
 
           } else {
             model[[term]] %>% compile(
@@ -309,12 +314,16 @@ neuralGAM <-
                                     residuals,
                                     epochs = 1,
                                     sample_weight = list(W),
-                                    verbose = verbose)
+                                    verbose = verbose,
+                                    validation_split = validation_split)
           }
 
           epochs <- c(epochs, it_back)
           loss_metric <-
             c(loss_metric, round(history$metrics$loss, 4))
+
+          model_history[[term]][[it_back]] <- history
+
           timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
           model_i <- c(model_i, term)
 
@@ -395,7 +404,8 @@ neuralGAM <-
         family = family,
         stats = stats,
         mse = mean((y - muhat) ^ 2),
-        formula = formula
+        formula = formula,
+        history = model_history
       )
     class(res) <- "neuralGAM"
     return(res)

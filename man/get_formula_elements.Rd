@@ -78,18 +78,4 @@ any per‑term overrides while falling back to global defaults for unspecified k
 }
 }
 
-\examples{
-\dontrun{
-  fml <- y ~ s(x1, num_units = c(256,128),
-                   activation = "relu",
-                   kernel_regularizer = keras::regularizer_l2(1e-4)) +
-              x2 +
-              s(x3, num_units = 512,
-                   bias_initializer = keras::initializer_zeros())
-  parts <- get_formula_elements(fml)
-  str(parts$np_terms)         # "x1" "x3"
-  str(parts$np_architecture$x1)
-}
-
-}
 \keyword{internal}

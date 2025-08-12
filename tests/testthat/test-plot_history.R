@@ -16,7 +16,8 @@ test_that("plot_history works with a trained neuralGAM model", {
   skip_if_not_installed("neuralGAM")
 
   # Simulated data
-  set.seed(123)
+  seed <- 123
+  set.seed(seed)
   n <- 200
   x1 <- runif(n, -2, 2)
   x2 <- runif(n, -2, 2)
@@ -32,8 +33,9 @@ test_that("plot_history works with a trained neuralGAM model", {
     max_iter_backfitting = 1,
     max_iter_ls = 1,
     learning_rate = 0.01,
-    seed = 123,
-    verbose = 0
+    seed = seed,
+    validation_split = 0.1,
+    verbose = 1
   )
 
   # Plot for all terms
@@ -46,6 +48,6 @@ test_that("plot_history works with a trained neuralGAM model", {
   expect_true(all(p_x1$data$Term == "x1"))
 
   # Check number of iterations matches
-  n_iter_x1 <- length(model$x1)
+  n_iter_x1 <- length(model$history$x1)
   expect_equal(n_iter_x1, 1)
 })

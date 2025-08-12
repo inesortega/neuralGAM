@@ -12,21 +12,13 @@
 \item{...}{Additional arguments (currently unused).}
 }
 \value{
-A printed summary of the fitted model with the following components:
-\describe{
-  \item{Distribution family}{The family of the fitted model (\code{"gaussian"}, \code{"binomial"}, or \code{"poisson"}).}
-  \item{Formula}{The formula used for the model.}
-  \item{Intercept value}{The fitted intercept (\eqn{\eta_0}).}
-  \item{Mean Squared Error (MSE)}{The training mean squared error.}
-  \item{Training sample size}{The number of training observations.}
-  \item{Training history}{Summary of training/validation losses per backfitting iteration.}
-  \item{Model architecture}{Description of the architecture of each neural network term.}
-}
+Invisibly returns \code{object}. Prints a human‑readable summary.
 }
 \description{
-Summarizes a fitted \code{neuralGAM} object. Prints the distribution family, model formula,
-intercept value, training sample size, mean squared error, as well as neural network architecture
-and training history.
+Summarizes a fitted \code{neuralGAM} object: family, formula, sample size,
+intercept, training MSE, per‑term neural net settings, per‑term NN layer
+configuration, and training history. If a linear component is present, its
+coefficients are also reported.
 }
 \examples{
 \dontrun{
@@ -65,7 +57,4 @@ ngam <- neuralGAM(
 )
 summary(ngam)
 }
-}
-\author{
-Ines Ortega-Fernandez, Marta Sestelo.
 }

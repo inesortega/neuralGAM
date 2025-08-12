@@ -13,50 +13,118 @@ build_feature_NN(
   bias_regularizer = NULL,
   bias_initializer = "zeros",
   activity_regularizer = NULL,
-  loss = "mean_squared_error",
+  loss = "mse",
   name = NULL,
+  n_train = NULL,
+  alpha = 0.95,
+  build_pi = FALSE,
   ...
 )
 }
 \arguments{
-\item{num_units}{Defines the architecture of each neural network.
-If a scalar value is provided, a single hidden layer with that number of units is used.
-If a vector of values is provided, each element defines the number of units in a hidden layer.}
+\item{num_units}{Integer or vector of integers. Number of units in the hidden
+layer(s). If a vector is provided, multiple dense layers are added
+sequentially.}
 
-\item{learning_rate}{Learning rate for the neural network optimizer.}
+\item{learning_rate}{Numeric. Learning rate for the Adam optimizer.}
 
-\item{activation}{Activation function for the hidden layers. Defaults to `"relu"`.}
+\item{activation}{Character string. Activation function to use in hidden layers.}
 
-\item{kernel_initializer}{Kernel initializer for the Dense layers.
-Defaults to Xavier Initializer (`"glorot_normal"`).}
+\item{kernel_initializer}{Keras initializer object or string. Kernel initializer
+for dense layers.}
 
-\item{kernel_regularizer}{Optional regularizer function applied to the kernel weights.}
+\item{kernel_regularizer}{Optional Keras regularizer for kernel weights.}
 
-\item{bias_regularizer}{Optional regularizer function applied to the bias.}
+\item{bias_regularizer}{Optional Keras regularizer for bias terms.}
 
-\item{bias_initializer}{Optional initializer for the bias vector.}
+\item{bias_initializer}{Keras initializer object or string. Initializer for
+bias terms.}
 
-\item{activity_regularizer}{Optional regularizer function applied to the output of the layer.}
+\item{activity_regularizer}{Optional Keras regularizer for layer activations.}
 
-\item{loss}{Loss function to use during training. Defaults to `"mse"`.}
+\item{loss}{Loss function to use.
+\itemize{
+\item When \code{build_pi = TRUE}, this is passed as the mean prediction loss inside
+\code{make_quantile_loss()} (choose from \code{"mse"}, \code{"mae"}).
+\item When \code{build_pi = FALSE}, this is used directly in \code{compile()}. Can be any
+\code{keras} built-in loss or custom function.
+}}
 
-\item{name}{Character string. Name assigned to the neural network corresponding to the smooth term.}
+\item{name}{Optional character string. Name assigned to the model.}
 
-\item{...}{Additional parameters passed to `keras::optimizer_adam()`.}
+\item{n_train}{Optional integer. Number of training samples (currently unused
+in quantile loss but kept for compatibility).}
+
+\item{alpha}{Numeric. Desired coverage level for prediction intervals when
+\code{build_pi = TRUE}. Defaults to 0.95 (i.e., 95\\% PI using 2.5\\% and 97.5\\%
+quantiles).}
+
+\item{build_pi}{Logical. If \code{TRUE}, builds a model with prediction intervals
+(lower bound, upper bound, mean prediction) using quantile loss. If \code{FALSE},
+builds a single-output model with the specified loss.}
+
+\item{...}{
+  Arguments passed on to \code{\link[=neuralGAM]{neuralGAM}}
+  \describe{
+    \item{\code{formula}}{Model formula. Smooth terms must be wrapped in \code{s(...)}.
+You can specify per-term network settings, e.g.:
+\code{y ~ s(x1, num_units = 1024) + s(x3, num_units = c(1024, 512))}.}
+    \item{\code{data}}{Data frame containing the variables.}
+    \item{\code{family}}{Response distribution: \code{"gaussian"}, \code{"binomial"}, \code{"poisson"}.}
+    \item{\code{kernel_initializer,bias_initializer}}{Initializers for weights and biases.}
+    \item{\code{kernel_regularizer,bias_regularizer,activity_regularizer}}{Optional Keras regularizers.}
+    \item{\code{validation_split}}{Fraction of training data used for validation.}
+    \item{\code{w_train}}{Optional training weights.}
+    \item{\code{bf_threshold,ls_threshold}}{Convergence thresholds for backfitting and local scoring.}
+    \item{\code{max_iter_backfitting,max_iter_ls}}{Maximum iterations for backfitting and local scoring.}
+    \item{\code{seed}}{Random seed.}
+    \item{\code{verbose}}{Verbosity: \code{0} silent, \code{1} progress messages.}
+  }}
 }
 \value{
-A compiled `keras_model` object ready for training.
+A compiled \code{keras_model} object ready for training. When \code{build_pi = TRUE}, the
+model has three outputs; otherwise, it has one output.
 }
 \description{
-Builds and compiles a `keras` neural network for a single smooth term in a `neuralGAM` model.
-The architecture (number of units, layers, activation, regularization, etc.) is configured
-through the parameters inherited from `neuralGAM`.
+Builds and compiles a \code{keras} neural network for a single smooth term in a
+\code{neuralGAM} model.
+The network can optionally be configured to output \strong{prediction intervals}
+(lower bound, upper bound, and mean prediction) using a custom quantile loss
+(\code{make_quantile_loss()}), or a standard single-output point prediction using
+any user-specified loss function.
+
+When \code{build_pi = TRUE}, the model outputs three units corresponding to the
+lower bound, upper bound, and mean prediction, and is compiled with the
+\code{make_quantile_loss()} custom loss.
+When \code{build_pi = FALSE}, the model outputs a single unit (point prediction)
+and uses the loss function provided in \code{loss}.
+}
+\details{
+\strong{Prediction interval mode (\code{build_pi = TRUE})}:
+\itemize{
+\item Output layer has 3 units:
+\itemize{
+\item \code{y_L}: lower bound, \eqn{\tau = \frac{1-\alpha}{2}}
+\item \code{y_U}: upper bound, \eqn{\tau = 1 - \frac{1-\alpha}{2}}
+\item \code{y_hat}: mean prediction
+}
+\item Loss function is \code{make_quantile_loss()} which combines two pinball losses
+(for lower and upper quantiles) with the chosen mean prediction loss.
+}
+
+\strong{Point prediction mode (\code{build_pi = FALSE})}:
+\itemize{
+\item Output layer has 1 unit: point prediction only.
+\item Loss function is the one passed in \code{loss}.
+}
 }
 \references{
 Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
 arXiv preprint arXiv:1412.6980.
+Koenker, R., & Bassett Jr, G. (1978). Regression quantiles. Econometrica:
+journal of the Econometric Society, 33–50. \emph{Econometrica}, 46(1), 33–50.
 }
 \author{
-Ines Ortega-Fernandez, Marta Sestelo.
+Ines Ortega-Fernandez, Marta Sestelo
 }
 \keyword{internal}

@@ -2,28 +2,42 @@
 % Please edit documentation in R/autoplot.neuralGAM.R
 \name{autoplot.neuralGAM}
 \alias{autoplot.neuralGAM}
-\title{Advanced \code{neuralGAM} visualization with ggplot2 library}
+\title{Plot smooth terms from a fitted \code{neuralGAM} model}
 \usage{
 \method{autoplot}{neuralGAM}(object, select, xlab = NULL, ylab = NULL, ...)
 }
 \arguments{
-\item{object}{a fitted \code{neuralGAM} object as produced by \code{neuralGAM()}.}
+\item{object}{A fitted \code{neuralGAM} object.}
 
-\item{select}{selects the term to be plotted.}
+\item{select}{Character string. Name of the smooth term to plot (e.g., \code{"x1"}).
+Must match a smooth term in the model.}
 
-\item{xlab}{A title for the \code{x} axis.}
+\item{...}{Additional arguments passed to \code{\link{predict.neuralGAM}} or \code{ggplot2} layers.}
 
-\item{ylab}{A title for the \code{y} axis.}
-
-\item{...}{other graphics parameters to pass on to plotting commands.
-See details for ggplot2::geom_line options}
+\item{newdata}{Optional \code{data.frame}. Values of covariates at which the smooth term will be evaluated.
+If omitted, predictions are computed for the training data.}
 }
 \value{
-A ggplot object, so you can use common features from the ggplot2 package
-to manipulate the plot.
+A \code{ggplot} object showing:
+\itemize{
+\item The mean prediction for the smooth term (\code{y_hat}) as a line.
+\item If available, a ribbon showing the prediction interval between \code{y_L} and \code{y_U}.
+}
 }
 \description{
-Advanced \code{neuralGAM} visualization with ggplot2 library
+Produces a \code{ggplot} visualization of a smooth term from a fitted \code{neuralGAM} model.
+If the model was trained with prediction intervals (\code{BUILD_PI = TRUE}),
+the plot automatically includes a shaded ribbon showing the prediction interval
+between the lower (\code{y_L}) and upper (\code{y_U}) bounds.
+}
+\details{
+The function automatically detects if prediction intervals are present in the model's output
+(i.e., when \code{BUILD_PI = TRUE}) and adds a ribbon layer to the plot.
+If intervals are not available, only the smooth function is plotted.
+
+The \code{select} argument controls which smooth term is visualized.
+If you want to visualize all smooth terms at once, consider writing a loop or wrapper
+that calls \code{autoplot()} for each term.
 }
 \examples{
 \dontrun{

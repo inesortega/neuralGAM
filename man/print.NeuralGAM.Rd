@@ -14,11 +14,11 @@
 \value{
 Prints a brief summary of the fitted model including:
 \describe{
-  \item{Distribution family}{The distribution family used (\code{"gaussian"}, \code{"binomial"}, or \code{"poisson"}).}
-  \item{Formula}{The model formula.}
-  \item{Intercept value}{The fitted intercept (\eqn{\eta_0}).}
-  \item{Mean Squared Error (MSE)}{The training MSE of the model.}
-  \item{Training sample size}{The number of observations used to train the model.}
+\item{Distribution family}{The distribution family used (\code{"gaussian"}, \code{"binomial"}, or \code{"poisson"}).}
+\item{Formula}{The model formula.}
+\item{Intercept value}{The fitted intercept (\eqn{\eta_0}).}
+\item{Mean Squared Error (MSE)}{The training MSE of the model.}
+\item{Training sample size}{The number of observations used to train the model.}
 }
 }
 \description{

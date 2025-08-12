@@ -1,88 +1,153 @@
-#' @title Fit a \code{neuralGAM} model
-#' @description Fits a \code{neuralGAM} model by building a neural network to attend to each covariate.
+#' @title Fit a neuralGAM model
+#'
+#' @description
+#' Fits a Generalized Additive Model where the smooth terms are modeled using `keras` neural networks.
+#' The model can optionally output **prediction intervals** (lower bound, upper bound, and mean prediction)
+#' using a custom quantile loss (`make_quantile_loss()`), or a standard single-output point prediction
+#' using any user-specified loss function.
+#'
+#' When `build_pi = TRUE`, each smooth term's network outputs three units corresponding to the lower bound,
+#' upper bound, and mean prediction, and is compiled with the `make_quantile_loss()` custom loss.
+#' The `loss` argument in this case is passed to `mean_loss` inside `make_quantile_loss()` and can be
+#' `"mse"`, `"mae"`, or a custom Keras loss function.
+#'
+#' When `build_pi = FALSE`, each smooth term's network outputs a single unit (point prediction)
+#' and uses the `loss` argument directly in `compile()`.
+#'
+#' @param formula Model formula. Smooth terms must be wrapped in `s(...)`.
+#'   You can specify per-term network settings, e.g.:
+#'   `y ~ s(x1, num_units = 1024) + s(x3, num_units = c(1024, 512))`.
+#' @param data Data frame containing the variables.
+#' @param num_units Default hidden layer sizes for smooth terms (integer or vector).
+#'   **Mandatory** unless every `s(...)` specifies its own `num_units`.
+#' @param family Response distribution: `"gaussian"`, `"binomial"`, `"poisson"`.
+#' @param learning_rate Learning rate for Adam optimizer.
+#' @param activation Activation function for hidden layers.
+#' @param kernel_initializer,bias_initializer Initializers for weights and biases.
+#' @param kernel_regularizer,bias_regularizer,activity_regularizer Optional Keras regularizers.
+#' @param loss Loss function.
+#'   - If `build_pi = FALSE`: used directly for training.
+#'   - If `build_pi = TRUE`: must be `"mse"`, `"mae"`, or `"huber"` (applies to mean prediction inside PI loss).
+#' @param build_pi Logical. If `TRUE`, trains networks to predict lower bound, upper bound, and mean.
+#' @param alpha PI coverage (only used if `build_pi = TRUE`), e.g. `0.95` for 95% PI.
+#' @param validation_split Fraction of training data used for validation.
+#' @param w_train Optional training weights.
+#' @param bf_threshold,ls_threshold Convergence thresholds for backfitting and local scoring.
+#' @param max_iter_backfitting,max_iter_ls Maximum iterations for backfitting and local scoring.
+#' @param seed Random seed.
+#' @param verbose Verbosity: `0` silent, `1` progress messages.
+#' @param ... Additional arguments passed to `keras::optimizer_adam()`.
+#'
+#' @return
+#' An object of class `"neuralGAM"`, which is a list containing:
+#' \itemize{
+#'   \item{muhat}{ Numeric vector of fitted mean predictions on the training data.}
+#'   \item{partial}{ List of partial contributions \eqn{g_j(x_j)} for each smooth term.}
+#'   \item{y}{ Observed response values.}
+#'   \item{eta}{ Numeric vector of the linear predictor \eqn{\eta = \eta_0 + \sum_j g_j(x_j)}.}
+#'   \item{y_L}{ Numeric vector of lower prediction interval bounds (if `build_pi = TRUE`), otherwise `NULL`.}
+#'   \item{y_U}{ Numeric vector of upper prediction interval bounds (if `build_pi = TRUE`), otherwise `NULL`.}
+#'   \item{x}{ List of model inputs (covariates) used in training.}
+#'   \item{model}{L ist of fitted Keras models, one per smooth term (plus `"linear"` if a linear component is present).}
+#'   \item{eta0}{ Intercept estimate \eqn{\eta_0}.}
+#'   \item{family}{ Model family (`"gaussian"`, `"binomial"`, `"poisson"`).}
+#'   \item{stats}{ Data frame of training/validation losses per backfitting iteration.}
+#'   \item{mse}{ Training mean squared error.}
+#'   \item{formula}{ The original model formula, as parsed by `get_formula_elements()`.}
+#'   \item{history}{ List of Keras training histories for each fitted term.}
+#'   \item{globals}{ List of global default hyperparameters used for architecture and training.}
+#'   \item{alpha}{ PI coverage level (only relevant if `build_pi = TRUE`).}
+#'   \item{build_pi}{ Logical; whether the model was trained to produce prediction intervals.}
+#' }
+#'
 #' @details
-#' The function builds one neural network to attend to each feature in `x`,
-#' using the backfitting and local scoring algorithms to fit a weighted additive model
-#' with neural networks as function approximators.
-#' The adjustment of the dependent variable and the weights is determined by the distribution of
-#' the response `y`, adjusted by the `family` parameter.
+#' **Defining per-term architectures**
+#' You can pass most Keras architecture/training parameters inside each `s(...)` call:
+#' ```
+#' y ~ s(x1, num_units = 512, activation = "tanh") +
+#'     s(x2, num_units = c(256,128), kernel_regularizer = regularizer_l2(1e-4))
+#' ```
+#' Any term without its own setting will use the global defaults.
 #'
-#' @author Ines Ortega-Fernandez, Marta Sestelo
+#' **Prediction intervals (`build_pi = TRUE`)**
+#' - Output: lower bound, upper bound, mean.
+#' - Loss: combined quantile loss + mean prediction loss.
+#' - `alpha` controls coverage.
 #'
-#' @param formula An object of class "formula": a description of the model to be fitted.
-#' Smooth terms can be added using `s()`.
-#' @param data A data frame containing the response variable and covariates required by the formula.
-#' Additional terms not present in the formula will be ignored.
-#' @param num_units Defines the architecture of each neural network.
-#' If a scalar value is provided, a single hidden layer with that number of units is used.
-#' If a vector of values is provided, each element defines the number of units in a hidden layer.
-#' @param family Distribution family to use for fitting. Options are `"gaussian"`, `"binomial"`, `"poisson"`.
-#' @param learning_rate Learning rate for the neural network optimizer.
-#' @param activation Activation function for the hidden layers. Defaults to `"relu"`.
-#' @param kernel_initializer Kernel initializer for the Dense layers.
-#' Defaults to Xavier Initializer (`"glorot_normal"`).
-#' @param kernel_regularizer Optional regularizer function applied to the kernel weights.
-#' @param bias_regularizer Optional regularizer function applied to the bias.
-#' @param bias_initializer Optional initializer for the bias vector.
-#' @param activity_regularizer Optional regularizer function applied to the output of the layer.
-#' @param loss Loss function to use during training. Defaults to `"mse"`.
-#' @param validation_split Numeric between 0 and 1. Fraction of training data to use for validation.
-#' @param w_train Optional numeric vector of sample weights. If `NULL`, all weights are set to 1.
-#' @param bf_threshold Numeric convergence threshold for the backfitting algorithm. Default is `0.001`.
-#' @param ls_threshold Numeric convergence threshold for the local scoring algorithm. Default is `0.1`.
-#' @param max_iter_backfitting Integer, maximum backfitting iterations. Default is 10.
-#' @param max_iter_ls Integer, maximum local scoring iterations. Default is 10.
-#' @param seed Optional integer seed for reproducibility.
-#' @param verbose Verbosity mode (0 = silent, 1 = print messages). Default is 1.
-#' @param ... Additional parameters passed to `keras::optimizer_adam`.
-#'
-#' @return A trained `neuralGAM` object with:
-#' \describe{
-#'   \item{muhat}{Predicted response values.}
-#'   \item{partial}{Data frame of partial effects.}
-#'   \item{y}{Observed response values.}
-#'   \item{eta}{Linear predictor values.}
-#'   \item{x}{Model covariates.}
-#'   \item{model}{List of trained neural networks for each term.}
-#'   \item{history}{Training history for each term's model.}
-#'   \item{stats}{Training statistics including loss values.}
-#'   \item{mse}{Mean squared error.}
-#' }
-#'
+#' **Point prediction (`build_pi = FALSE`)**
+#' - Output: single value.
+#' - Loss: exactly as given in `loss`.
 #' @references
-#' Hastie, T., & Tibshirani, R. (1990). Generalized Additive Models. London: Chapman and Hall.
+#' Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
+#' arXiv preprint arXiv:1412.6980.
+#' Koenker, R., & Bassett, G. (1978). Regression quantiles.
+#' *Econometrica*, 46(1), 33–50.
 #'
-#' @examples
-#' \dontrun{
-#' set.seed(42)
-#' n <- 1000
-#' x1 <- runif(n, -2.5, 2.5)
-#' x2 <- runif(n, -2.5, 2.5)
-#' y <- 2 + x1^2 + sin(x2) + rnorm(n, 0.25)
-#' train <- data.frame(x1, x2, y)
+#' @author Ines Ortega-Fernandez, Marta Sestelo.
 #'
-#' ngam <- neuralGAM(y ~ s(x1) + s(x2), data = train,
-#'                  num_units = 64, family = "gaussian",
-#'                  activation = "relu",
-#'                  learning_rate = 0.001, bf_threshold = 0.001,
-#'                  max_iter_backfitting = 5, max_iter_ls = 5,
-#'                  seed = 42)
-#' summary(ngam)
-#' }
+#' @keywords internal
 #'
-#' @importFrom keras fit compile
+#' @importFrom keras fit
+#' @importFrom keras compile
 #' @importFrom tensorflow set_random_seed
 #' @importFrom stats predict lm
 #' @importFrom reticulate py_available
 #' @importFrom magrittr %>%
 #' @importFrom formula.tools lhs rhs
-#' @importFrom utils tail
 #' @export
+#' @examples \dontrun{
+#' n <- 24500
+#'
+#' seed <- 42
+#' set.seed(seed)
+#'
+#' x1 <- runif(n, -2.5, 2.5)
+#' x2 <- runif(n, -2.5, 2.5)
+#' x3 <- runif(n, -2.5, 2.5)
+#'
+#' f1 <- x1 ** 2
+#' f2 <- 2 * x2
+#' f3 <- sin(x3)
+#' f1 <- f1 - mean(f1)
+#' f2 <- f2 - mean(f2)
+#' f3 <- f3 - mean(f3)
+#'
+#' eta0 <- 2 + f1 + f2 + f3
+#' epsilon <- rnorm(n, 0.25)
+#' y <- eta0 + epsilon
+#' train <- data.frame(x1, x2, x3, y)
+#'
+#' library(neuralGAM)
+#' # Global architecture
+#' ngam <- neuralGAM(
+#'   y ~ s(x1) + x2,
+#'   data = train,
+#'   num_units = 128
+#' )
+#' ngam
+#' # Per-term architecture
+#' ngam <- neuralGAM(
+#'   y ~ s(x1, num_units = c(128,64), activation = "tanh") +
+#'        s(x2, num_units = 256),
+#'   data = train
+#' )
+#' ngam
+#' # Construct prediction intervals
+#' ngam <- neuralGAM(
+#'   y ~ s(x1, num_units = c(128,64), activation = "tanh") +
+#'        s(x2, num_units = 256),
+#'   data = train
+#'   build_pi = TRUE,
+#'   alpha = 0.95
+#' )
+#' # Visualize point prediction and prediction intervals using autoplot:
+#' autoplot(ngam, "x1")
+#' }
 neuralGAM <-
   function(formula,
            data,
-           num_units,
            family = "gaussian",
+           num_units = 64,
            learning_rate = 0.001,
            activation = "relu",
            kernel_initializer = "glorot_normal",
@@ -91,6 +156,8 @@ neuralGAM <-
            bias_initializer = 'zeros',
            activity_regularizer = NULL,
            loss = "mse",
+           build_pi = FALSE,
+           alpha = 0.95,
            validation_split = NULL,
            w_train = NULL,
            bf_threshold = 0.001,
@@ -100,79 +167,146 @@ neuralGAM <-
            seed = NULL,
            verbose = 1,
            ...) {
-    formula <- get_formula_elements(formula)
 
+    global_defaults <- list(
+      num_units          = num_units,          # still required globally unless every s(...) overrides
+      activation         = activation,
+      learning_rate      = learning_rate,
+      kernel_initializer = kernel_initializer,
+      bias_initializer   = bias_initializer,
+      kernel_regularizer = kernel_regularizer,
+      bias_regularizer   = bias_regularizer,
+      activity_regularizer = activity_regularizer
+    )
+
+    # --- Formula ---
+    if (!inherits(formula, "formula")) {
+      stop("Argument 'formula' must be a valid R formula object.")
+    }
+
+    formula <- get_formula_elements(formula)
     if (is.null(formula$np_terms)) {
       stop("No smooth terms defined in formula. Use s() to define smooth terms.")
     }
 
+    if (missing(num_units) || is.null(num_units)) {
+      # ensure all np_terms provide num_units in formula
+      missing_any <- any(vapply(formula$np_terms, function(t)
+        is.null(formula$np_architecture[[t]]$num_units), logical(1)))
+      if (missing_any) {
+        stop("Provide global `num_units` or specify `num_units` inside each s(…) term.")
+      }
+    } else if (!is.numeric(num_units)) {
+      stop("Argument `num_units` must be numeric (integer or vector).")
+    }
+
+
+    # --- Data ---
     if (!is.data.frame(data)) {
-      stop("data should be a data.frame")
+      stop("Argument 'data' must be a data.frame.")
     }
-    if (is.null(num_units)) {
-      stop("num_units should not be null")
+
+    # --- Family ---
+    if (!family %in% c("gaussian", "binomial", "poisson")) {
+      stop("Unsupported distribution family. Supported values are 'gaussian', 'binomial', and 'poisson'.")
     }
-    if (!is.numeric(num_units) | !is.vector(num_units)) {
-      stop("Argument \"num_units\" must be an integer or a vector of integers")
+
+    # --- Learning rate ---
+    if (!is.numeric(learning_rate) || learning_rate <= 0) {
+      stop("Argument 'learning_rate' must be a positive numeric value.")
     }
-    else{
-      if (any(num_units < 1)) {
-        stop("Argument \"num_units\" must be a positive integer or a list of positive  of integers")
+
+    # --- Activation & Initializers ---
+    if (!is.character(activation) || length(activation) != 1) {
+      stop("Argument 'activation' must be a single character string.")
+    }
+    if (!is.character(kernel_initializer) || length(kernel_initializer) != 1) {
+      stop("Argument 'kernel_initializer' must be a single character string.")
+    }
+    if (!is.character(bias_initializer) || length(bias_initializer) != 1) {
+      stop("Argument 'bias_initializer' must be a single character string.")
+    }
+
+    # --- Regularizers ---
+    valid_regularizer <- function(reg) {
+      is.null(reg) || inherits(reg, "keras.regularizers.Regularizer")
+    }
+    if (!valid_regularizer(kernel_regularizer)) {
+      stop("Argument 'kernel_regularizer' must be NULL or a valid keras regularizer object.")
+    }
+    if (!valid_regularizer(bias_regularizer)) {
+      stop("Argument 'bias_regularizer' must be NULL or a valid keras regularizer object.")
+    }
+    if (!valid_regularizer(activity_regularizer)) {
+      stop("Argument 'activity_regularizer' must be NULL or a valid keras regularizer object.")
+    }
+
+    # --- Loss ---
+    if (!is.character(loss) && !is.function(loss)) {
+      stop("Argument 'loss' must be a character string (keras built-in) or a custom loss function.")
+    }
+    if (build_pi) {
+      if (is.character(loss)) {
+        if (!loss %in% c("mse", "mae", "huber")) {
+          stop("When 'build_pi = TRUE', 'loss' must be 'mse', 'mae', or 'huber' to be used in make_quantile_loss().")
+        }
+      } else {
+        stop("When 'build_pi = TRUE', 'loss' must be a supported character string ('mse', 'mae', 'huber').")
       }
     }
 
-    if (!is.numeric(learning_rate)) {
-      stop("learning_rate should be a numeric value")
+    # --- build_pi ---
+    if (!is.logical(build_pi) || length(build_pi) != 1) {
+      stop("Argument 'build_pi' must be a single logical value (TRUE or FALSE).")
     }
 
-    if (!family %in% c("gaussian", "binomial", "poisson")) {
-      stop(
-        "Unsupported distribution family. Supported values are \"gaussian\", \"binomial\", and \"poisson\""
-      )
+    # --- alpha ---
+    if (!is.numeric(alpha) || alpha <= 0 || alpha >= 1) {
+      stop("Argument 'alpha' must be a numeric value strictly between 0 and 1.")
     }
-    if (!is.null(w_train) && !is.numeric(w_train)) {
-      stop("w_train should be a numeric vector")
-    }
-
-    if (!is.numeric(bf_threshold)) {
-      stop("bf_threshold should be a numeric value")
+    if (build_pi && (alpha < 0.8 || alpha > 0.99)) {
+      warning("Alpha values outside 0.8–0.99 may lead to overly narrow or wide prediction intervals.")
     }
 
-    if (!is.numeric(ls_threshold)) {
-      stop("ls_threshold should be a numeric value")
+    # --- Validation split ---
+    if (!is.null(validation_split) && (!is.numeric(validation_split) || validation_split < 0 || validation_split >= 1)) {
+      stop("Argument 'validation_split' must be NULL or a numeric value in (0, 1).")
     }
 
-    if (!is.numeric(max_iter_backfitting)) {
-      stop("max_iter_backfitting should be a numeric value")
+    # --- Training weights ---
+    if (!is.null(w_train) && (!is.numeric(w_train) || length(w_train) != nrow(data))) {
+      stop("Argument 'w_train' must be NULL or a numeric vector of length equal to number of observations.")
     }
 
-    if (!is.numeric(max_iter_ls)) {
-      stop("max_iter_ls should be a numeric value")
+    # --- Thresholds ---
+    if (!is.numeric(bf_threshold) || bf_threshold <= 0) {
+      stop("Argument 'bf_threshold' must be a positive numeric value.")
+    }
+    if (!is.numeric(ls_threshold) || ls_threshold <= 0) {
+      stop("Argument 'ls_threshold' must be a positive numeric value.")
     }
 
-    if (!is.null(seed) && !is.numeric(seed)) {
-      stop("seed should be a positive integer value")
+    # --- Iterations ---
+    if (!is.numeric(max_iter_backfitting) || max_iter_backfitting < 1) {
+      stop("Argument 'max_iter_backfitting' must be a positive integer.")
+    }
+    if (!is.numeric(max_iter_ls) || max_iter_ls < 1) {
+      stop("Argument 'max_iter_ls' must be a positive integer.")
     }
 
-    if (!is.character(loss)) {
-      stop("Error: 'loss' argument should be a character string.")
+    # --- Seed ---
+    if (!is.null(seed) && (!is.numeric(seed) || seed %% 1 != 0)) {
+      stop("Argument 'seed' must be NULL or an integer.")
     }
-
-    if (!is.character(kernel_initializer)) {
-      stop("Error: 'kernel_initializer' argument should be a character string.")
-    }
-
-    if (!is.character(bias_initializer)) {
-      stop("Error: 'bias_initializer' argument should be a character string.")
-    }
-
-    if (!is.character(loss)) {
-      stop("Error: 'loss' argument should be a character string.")
-    }
-
     if (!is.null(seed)) {
       tensorflow::set_random_seed(seed)
     }
+
+    # --- Verbosity ---
+    if (!is.numeric(verbose) || !verbose %in% c(0, 1)) {
+      stop("Argument 'verbose' must be 0 (silent) or 1 (verbose).")
+    }
+
 
     # Initialization
     converged <- FALSE
@@ -188,8 +322,13 @@ neuralGAM <-
 
     x_np <- data[formula$np_terms]
 
-    f <- g <- data.frame(matrix(0, nrow = nrow(x), ncol = ncol(x)))
-    colnames(f) <- colnames(g) <- colnames(x)
+    f <- y_L <- y_U <- g <- data.frame(matrix(0, nrow = nrow(x), ncol = ncol(x)))
+    colnames(y_L) <- colnames(y_U) <- colnames(f) <- colnames(g) <- colnames(x)
+
+
+    if(build_pi == TRUE){
+      y_L <- y_U <- f
+    }
 
     epochs <- c()
     loss_metric <- c()
@@ -214,22 +353,24 @@ neuralGAM <-
       print("Initializing neuralGAM...")
     }
     model <- list()
-    for (k in 1:ncol(x_np)) {
-      term <- colnames(x_np)[[k]]
-      if (term %in% formula$np_terms) {
-        model[[term]] <- build_feature_NN(
-          num_units = num_units,
-          learning_rate = learning_rate,
-          activation = activation,
-          kernel_initializer = kernel_initializer,
-          kernel_regularizer = kernel_regularizer,
-          bias_regularizer = bias_regularizer,
-          bias_initializer = bias_initializer,
-          activity_regularizer = activity_regularizer,
-          name = term,
-          ...
-        )
-      }
+    for (term in formula$np_terms) {
+      formula$np_architecture[[term]] <- .get_term_config(formula, term, global_defaults, require_num_units_per_term = FALSE)
+
+      model[[term]] <- build_feature_NN(
+        num_units = formula$np_architecture[[term]]$num_units,
+        learning_rate = formula$np_architecture[[term]]$learning_rate,
+        activation = formula$np_architecture[[term]]$activation,
+        kernel_initializer = formula$np_architecture[[term]]$kernel_initializer,
+        kernel_regularizer = formula$np_architecture[[term]]$kernel_regularizer,
+        bias_regularizer = formula$np_architecture[[term]]$bias_regularizer,
+        bias_initializer = formula$np_architecture[[term]]$bias_initializer,
+        activity_regularizer = formula$np_architecture[[term]]$activity_regularizer,
+        name = term,
+        n_train = nrow(data),
+        alpha = alpha,
+        build_pi = build_pi,
+        ...
+      )
       model_history[[term]] <- list()
     }
 
@@ -284,54 +425,46 @@ neuralGAM <-
       while ((err > bf_threshold) &
              (it_back <= max_iter_backfitting)) {
         for (k in 1:ncol(x_np)) {
+
           term <- colnames(x_np)[[k]]
 
-          eta <- eta - f[[term]]
-          residuals <- Z - eta
+          #### Update model and obtain predictions
+          t <- Sys.time()
+          nonparametric_update = .update_nonparametric_component(model, family, term, eta, f, W, Z, x_np, validation_split, verbose, loss, learning_rate, build_pi, loss_weights, alpha, ...)
 
-          # Fit network k with x[k] towards residuals
-          if (family == "gaussian") {
-            t <- Sys.time()
-            history <-
-              model[[term]] %>% fit(
-                x_np[[term]],
-                residuals,
-                epochs = 1,
-                validation_split = validation_split,
-                verbose = verbose
-              )
+          model <- nonparametric_update$model
+          history <- nonparametric_update$history
+          y_hat <- nonparametric_update$y_hat
 
-          } else {
-            model[[term]] %>% compile(
-              loss = loss,
-              optimizer = optimizer_adam(learning_rate = learning_rate, ...),
-              loss_weights = list(W)
-            )
-            t <- Sys.time()
-            history <-
-              model[[term]] %>% fit(
-                x_np[[term]],
-                residuals,
-                epochs = 1,
-                sample_weight = list(W),
-                verbose = verbose,
-                validation_split = validation_split
-              )
+          # Update f with current learned function y_hat for predictor k
+
+          if(build_pi == TRUE){
+            f[[term]] <- y_hat[,3] # y_hat or mean prediction
+            f[[term]] <- f[[term]] - mean(f[[term]])
+            eta <- eta + f[[term]]
+
+            # Update prediction intervals
+            y_L[[term]] <- y_hat[,1]
+            y_U[[term]] <- y_hat[,2]
+          }
+          else{
+            f[[term]] <- y_hat # y_hat or mean prediction
+            f[[term]] <- f[[term]] - mean(f[[term]])
+            eta <- eta + f[[term]]
+
+            # Set prediction intervals to NULL
+            y_L[[term]] <- NULL
+            y_U[[term]] <- NULL
           }
 
+          ## Store training metrics for current backfitting iteration
           epochs <- c(epochs, it_back)
-          loss_metric <-
-            c(loss_metric, round(history$metrics$loss, 4))
+          loss_metric <- c(loss_metric, round(history$metrics$loss, 4))
 
           model_history[[term]][[it_back]] <- history
 
           timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
           model_i <- c(model_i, term)
-
-          # Update f with current learned function for predictor k
-          f[[term]] <- model[[term]] %>% predict(x_np[[term]], verbose = verbose)
-          f[[term]] <- f[[term]] - mean(f[[term]])
-          eta <- eta + f[[term]]
 
         }
 
@@ -399,6 +532,8 @@ neuralGAM <-
         partial = g,
         y = y,
         eta = eta,
+        y_L = y_L,
+        y_U = y_U,
         x = x,
         model = model,
         eta0 = eta0,
@@ -406,11 +541,84 @@ neuralGAM <-
         stats = stats,
         mse = mean((y - muhat)^2),
         formula = formula,
-        history = model_history
+        history = model_history,
+        globals = global_defaults,
+        alpha = alpha,
+        build_pi = build_pi
       )
     class(res) <- "neuralGAM"
     return(res)
   }
+
+.update_nonparametric_component <- function(model, family, term, eta, f, W, Z, x_np, validation_split, verbose, loss, learning_rate, build_pi, loss_weights, alpha, ...){
+# Update one parametric component:
+#  - Remove its current contribution from eta
+#  - Compute the residual
+#  - Train the correponding neural network on that predictor
+
+  eta <- eta - f[[term]]
+  residuals <- Z - eta
+
+  # Fit network k with x[k] towards residuals
+  if (family == "gaussian") {
+    history <-
+      model[[term]] %>% fit(
+        x_np[[term]],
+        residuals,
+        validation_split = validation_split,
+        epochs = 1,
+        verbose = verbose
+      )
+
+  } else {
+    model[[term]] <- set_compile(model[[term]], build_pi, alpha, learning_rate, loss, loss_weights = list(W), ...)
+
+    t <- Sys.time()
+    history <-
+      model[[term]] %>% fit(
+        x_np[[term]],
+        residuals,
+        epochs = 1,
+        sample_weight = list(W),
+        verbose = verbose,
+        validation_split = validation_split
+      )
+  }
+
+  # Update f with current learned function for predictor k
+  y_hat <- model[[term]] %>% predict(x_np[[term]], verbose = verbose)
+
+  res = list("model" = model,
+             "history" = history,
+             "y_hat" = y_hat)
+  return(res)
+}
+
+.merge_term_config <- function(global, per_term) {
+  out <- global
+  if (length(per_term)) for (nm in names(per_term)) out[[nm]] <- per_term[[nm]]
+  out
+}
+
+.get_term_config <- function(formula_parsed, term, global_defaults, require_num_units_per_term = FALSE) {
+  per_term <- formula_parsed$np_architecture[[term]]
+  cfg <- .merge_term_config(global_defaults, per_term)
+
+  if (require_num_units_per_term) {
+    if (is.null(per_term$num_units)) {
+      stop(sprintf("Missing `num_units` in s(%s, ...) — per-term `num_units` is mandatory.", term))
+    }
+  } else {
+    if (is.null(cfg$num_units))
+      stop(sprintf("Provide `num_units` globally or inside s(%s, num_units = ...).", term))
+  }
+
+  cfg$kernel_regularizer   <- .coerce_regularizer(cfg$kernel_regularizer)
+  cfg$bias_regularizer     <- .coerce_regularizer(cfg$bias_regularizer)
+  cfg$activity_regularizer <- .coerce_regularizer(cfg$activity_regularizer)
+
+  cfg
+}
 
 .onAttach <- function(libname, pkgname) {
   Sys.unsetenv("RETICULATE_PYTHON")

@@ -1,19 +1,45 @@
-#' Produces predictions from a fitted \code{neuralGAM} object
-#' @description Takes a fitted \code{neuralGAM} object produced by
-#' \code{neuralGAM()} and produces predictions given a new set of values for the model covariates.
-#' @param object a fitted `neuralGAM` object
-#' @param newdata A data frame or list containing the values of covariates at which
-#' predictions are required. If not provided, the function returns the predictions
-#' for the original training data.
-#' @param type when \code{type="link"} (default), the linear
-#' predictor is returned. When \code{type="terms"} each component of the linear
-#' predictor is returned separately on each column of a \code{data.frame}. When
-#' \code{type="response"} predictions on the scale of the response are returned.
-#' @param terms If \code{type="terms"}, then only results for the terms named
-#' in this list will be returned. If \code{NULL} then no terms are excluded (default).
+#' @title Predictions from a fitted \code{neuralGAM} object
+#'
+#' @description
+#' Generates predictions from a fitted \code{neuralGAM} model for new or training data.
+#' Supports both standard point predictions and prediction intervals if the model was trained
+#' with \code{BUILD_PI = TRUE}.
+#'
+#' @param object A fitted \code{neuralGAM} object.
+#' @param newdata A data frame or list containing covariate values at which predictions
+#' are required. If not provided, predictions are returned for the training data.
+#' @param type Type of prediction:
+#'   \describe{
+#'     \item{"link"}{Returns the linear predictor (default).}
+#'     \item{"terms"}{Returns each model component contribution as separate columns in a \code{data.frame}.}
+#'     \item{"response"}{Returns predictions on the response scale.
+#'       If the model was trained with \code{BUILD_PI = TRUE}, this will return a \code{data.frame} with columns:
+#'         \itemize{
+#'           \item \code{y_L}: Lower bound of prediction interval.
+#'           \item \code{y_U}: Upper bound of prediction interval.
+#'           \item \code{y_hat}: Mean prediction (point estimate).
+#'         }
+#'       Otherwise, a numeric vector of point predictions is returned.
+#'     }
+#'   }
+#' @param terms If \code{type = "terms"}, a character vector of term names to return.
+#'   If \code{NULL} (default), all terms are returned.
 #' @param verbose Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.
-#' @param ... Other options.
-#' @return Predicted values according to \code{type} parameter.
+#' @param ... Additional arguments passed to underlying prediction methods.
+#'
+#' @return
+#' - For \code{type = "link"}: numeric vector of linear predictor values.
+#' - For \code{type = "terms"}: \code{data.frame} of term contributions.
+#' - For \code{type = "response"}:
+#'   \describe{
+#'     \item{If \code{BUILD_PI = FALSE}}{Numeric vector of predicted response values.}
+#'     \item{If \code{BUILD_PI = TRUE}}{\code{data.frame} with columns \code{y_L}, \code{y_U}, \code{y_hat}.}
+#'   }
+#'
+#' @details
+#' When prediction intervals are available (\code{BUILD_PI = TRUE}), the lower and upper bounds
+#' are returned along with the mean prediction. For plotting, these can be passed to
+#' \code{autoplot.neuralGAM()}, which will automatically add ribbons for intervals.
 #' @importFrom stats predict
 #' @export
 #' @examples \dontrun{
@@ -66,91 +92,66 @@
 #' terms <- predict(ngam, test, type = "terms", terms = c("x1", "x2"))
 #' }
 
-predict.neuralGAM <-
-  function(object,
-           newdata = NULL,
-           type = "link",
-           terms = NULL,
-           verbose = 1,
-           ...) {
-    # Check if object is of class "neuralGAM"
-    if (!inherits(object, "neuralGAM")) {
-      stop("The object argument must be a fitted neuralGAM object.")
-    }
+predict.neuralGAM <- function(object,
+                              newdata = NULL,
+                              type = "link",
+                              terms = NULL,
+                              verbose = 1,
+                              ...) {
 
-    # Check if object argument is missing or NULL
-    if (missing(object) || is.null(object)) {
-      stop("Please provide a fitted neuralGAM object as the object argument.")
-    }
+  if (!inherits(object, "neuralGAM")) stop("The object must be a fitted neuralGAM.")
+  ngam <- object
 
-    ngam <- object
+  if (missing(newdata)) {
+    x <- ngam$x
+  } else {
+    x <- newdata
+  }
 
-    # check that all parameters are OK
-    if (missing(newdata)) {
-      x <- ngam$x
-    }
-    else{
-      x <- newdata
-    }
+  valid_types <- c("link", "terms", "response")
+  if (!type %in% valid_types) stop("Invalid type. Choose from link, terms, response.")
 
-    # Check if newdata columns match ngam$model columns
-    if (type != "terms" &&
-        !all(colnames(ngam$x) %in% colnames(x))) {
-      stop("The newdata argument does not have the same columns as the fitted ngam model.")
-    }
+  f <- data.frame(matrix(0, nrow = nrow(x), ncol = ncol(x)))
+  colnames(f) <- colnames(x)
 
-    # Check if type argument is valid
-    valid_types <- c("link", "terms", "response")
-    if (!type %in% valid_types) {
-      stop("The value of the type argument is invalid. Valid options are {link, terms, response}.")
-    }
+  pi_components <- list()
 
-    if (type == "terms" &&
-        !is.null(terms) && !all(terms %in% colnames(x))) {
-      stop(paste(
-        "Invalid terms. Valid options are: ",
-        paste(colnames(x), collapse = ",")
-      ))
-    }
+  for (i in seq_along(colnames(x))) {
+    term <- colnames(x)[i]
+    term_pred <- get_model_predictions(ngam, x, term, verbose)
 
-    f <- data.frame(matrix(0, nrow = nrow(x), ncol = ncol(x)))
-    colnames(f) <- colnames(x)
-
-    for (i in 1:ncol(x)) {
-      term <- colnames(x)[[i]]
-      if (type == "terms" && !is.null(terms)) {
-        # compute only certain terms
-        if (term %in% terms) {
-          f[[term]] <- get_model_predictions(ngam, x, term, verbose)
-        }
-        else{
-          next
-        }
-      }
-      else{
-        f[[term]] <- get_model_predictions(ngam, x, term, verbose)
-      }
-    }
-
-    if (type == "terms") {
-      if (!is.null(terms)) {
-        f <- f[, terms]
-        colnames(f) <- terms
-      }
-      return(f)
-    }
-
-    eta <- rowSums(f) + ngam$eta0
-    if (type == "link") {
-      # Return the linear predictor
-      return(eta)
-    }
-
-    if (type == "response") {
-      y <- link(family = ngam$family, eta)
-      return(y)
+    if (is.data.frame(term_pred) && all(c("y_L","y_U","y_hat") %in% colnames(term_pred))) {
+      # Store PI info separately
+      pi_components[[term]] <- term_pred
+      f[[term]] <- term_pred$y_hat
+    } else {
+      f[[term]] <- term_pred
     }
   }
+
+  if (type == "terms") {
+    if (!is.null(terms)) f <- f[, terms, drop = FALSE]
+    return(f)
+  }
+
+  eta <- rowSums(f) + ngam$eta0
+  if (type == "link"){
+    return(eta)
+  }
+
+  if (type == "response") {
+    y <- link(family = ngam$family, eta)
+
+    # Attach PI if available
+    if (length(pi_components) > 0) {
+      y_L <- rowSums(sapply(pi_components, function(pc) pc$y_L)) + ngam$eta0
+      y_U <- rowSums(sapply(pi_components, function(pc) pc$y_U)) + ngam$eta0
+      return(data.frame(y_L = y_L, y_U = y_U, y_hat = y))
+    }
+
+    return(y)
+  }
+}
 
 get_model_predictions <- function(ngam, x, term, verbose) {
   # Linear term
@@ -159,12 +160,27 @@ get_model_predictions <- function(ngam, x, term, verbose) {
     lm_data <- data.frame(x[ngam$formula$p_terms])
     colnames(lm_data) <- ngam$formula$p_terms
 
-    return(stats::predict(model,newdata = lm_data,
-                          type = "terms",terms = term))
+    return(stats::predict(model, newdata = lm_data,
+                          type = "terms", terms = term))
   }
+
   # Non-Parametric term
   if (term %in% ngam$formula$np_terms) {
     model <- ngam$model[[term]]
-    return(model$predict(x[[term]], verbose = verbose))
+    preds <- model$predict(x[[term]], verbose = verbose)
+
+    # Handle PI vs no PI automatically
+    if (is.matrix(preds) && ncol(preds) == 3) {
+      # Return as data.frame with columns y_L, y_U, y_hat
+      preds_df <- data.frame(
+        y_L = preds[, 1],
+        y_U = preds[, 2],
+        y_hat = preds[, 3]
+      )
+      return(preds_df)
+    } else {
+      # Return mean prediction only
+      return(as.numeric(preds))
+    }
   }
 }

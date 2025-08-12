@@ -37,15 +37,15 @@ test_that("plot_history works with a trained neuralGAM model", {
   )
 
   # Plot for all terms
-  p <- plot_history(model$history)
+  p <- plot_history(model)
   expect_s3_class(p, "ggplot")
 
   # Plot specific term
-  p_x1 <- plot_history(model$history, select = "x1")
+  p_x1 <- plot_history(model, select = "x1")
   expect_s3_class(p_x1, "ggplot")
   expect_true(all(p_x1$data$Term == "x1"))
 
   # Check number of iterations matches
-  n_iter_x1 <- length(model$history$x1)
+  n_iter_x1 <- length(model$x1)
   expect_equal(n_iter_x1, 1)
 })

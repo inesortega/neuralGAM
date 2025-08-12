@@ -39,12 +39,13 @@
 #'     verbose = 0
 #'   )
 #'
-#'   plot_history(model$history)                      # Plot all terms
-#'   plot_history(model$history, select = "x1")       # Plot just x1
-#'   plot_history(model$history, metric = "val_loss") # Plot only validation loss
+#'   plot_history(model)                      # Plot all terms
+#'   plot_history(model, select = "x1")       # Plot just x1
+#'   plot_history(model, metric = "val_loss") # Plot only validation loss
 #' }
-plot_history <- function(history, select = NULL, metric = c("loss", "val_loss")) {
-  metric <- match.arg(metric, several.ok = TRUE)
+plot_history <- function(model, select = NULL, metric = c("loss", "val_loss")) {
+    history <- model$history
+    metric <- match.arg(metric, several.ok = TRUE)
 
   if (!is.null(select)) {
     if (!all(select %in% names(history))) {

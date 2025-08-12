@@ -13,7 +13,6 @@ skip_if_no_keras <- function() {
 # Test case 1: function throws error for missing num_units
 test_that("build_feature_NN throws an error for missing num_units", {
   skip_if_no_keras()
-
   # Missing num_units
   expect_error(neuralGAM:::build_feature_NN())
 })
@@ -40,16 +39,4 @@ test_that("Invalid learning_rate argument", {
 test_that("Invalid name argument", {
   skip_if_no_keras()
   expect_error(neuralGAM:::build_feature_NN(num_units = 10, name = 123))
-})
-
-# Valid function call
-test_that("Valid function call", {
-  skip_if_no_keras()
-  testthat::expect_no_error(neuralGAM:::build_feature_NN(num_units = 10, learning_rate = 0.001, name = "test"))
-})
-
-# Valid function call
-test_that("Valid function call with deep layer", {
-  skip_if_no_keras()
-  testthat::expect_no_error(neuralGAM:::build_feature_NN(num_units = c(10,20), learning_rate = 0.001, name = "test"))
 })

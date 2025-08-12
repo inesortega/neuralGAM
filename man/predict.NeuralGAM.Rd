@@ -2,35 +2,58 @@
 % Please edit documentation in R/predict.NeuralGAM.R
 \name{predict.neuralGAM}
 \alias{predict.neuralGAM}
-\title{Produces predictions from a fitted \code{neuralGAM} object}
+\title{Predictions from a fitted \code{neuralGAM} object}
 \usage{
 \method{predict}{neuralGAM}(object, newdata = NULL, type = "link", terms = NULL, verbose = 1, ...)
 }
 \arguments{
-\item{object}{a fitted `neuralGAM` object}
+\item{object}{A fitted \code{neuralGAM} object.}
 
-\item{newdata}{A data frame or list containing the values of covariates at which
-predictions are required. If not provided, the function returns the predictions
-for the original training data.}
+\item{newdata}{A data frame or list containing covariate values at which predictions
+are required. If not provided, predictions are returned for the training data.}
 
-\item{type}{when \code{type="link"} (default), the linear
-predictor is returned. When \code{type="terms"} each component of the linear
-predictor is returned separately on each column of a \code{data.frame}. When
-\code{type="response"} predictions on the scale of the response are returned.}
+\item{type}{Type of prediction:
+\describe{
+\item{"link"}{Returns the linear predictor (default).}
+\item{"terms"}{Returns each model component contribution as separate columns in a \code{data.frame}.}
+\item{"response"}{Returns predictions on the response scale.
+If the model was trained with \code{BUILD_PI = TRUE}, this will return a \code{data.frame} with columns:
+\itemize{
+\item \code{y_L}: Lower bound of prediction interval.
+\item \code{y_U}: Upper bound of prediction interval.
+\item \code{y_hat}: Mean prediction (point estimate).
+}
+Otherwise, a numeric vector of point predictions is returned.
+}
+}}
 
-\item{terms}{If \code{type="terms"}, then only results for the terms named
-in this list will be returned. If \code{NULL} then no terms are excluded (default).}
+\item{terms}{If \code{type = "terms"}, a character vector of term names to return.
+If \code{NULL} (default), all terms are returned.}
 
 \item{verbose}{Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.}
 
-\item{...}{Other options.}
+\item{...}{Additional arguments passed to underlying prediction methods.}
 }
 \value{
-Predicted values according to \code{type} parameter.
+\itemize{
+\item For \code{type = "link"}: numeric vector of linear predictor values.
+\item For \code{type = "terms"}: \code{data.frame} of term contributions.
+\item For \code{type = "response"}:
+\describe{
+\item{If \code{BUILD_PI = FALSE}}{Numeric vector of predicted response values.}
+\item{If \code{BUILD_PI = TRUE}}{\code{data.frame} with columns \code{y_L}, \code{y_U}, \code{y_hat}.}
+}
+}
 }
 \description{
-Takes a fitted \code{neuralGAM} object produced by
-\code{neuralGAM()} and produces predictions given a new set of values for the model covariates.
+Generates predictions from a fitted \code{neuralGAM} model for new or training data.
+Supports both standard point predictions and prediction intervals if the model was trained
+with \code{BUILD_PI = TRUE}.
+}
+\details{
+When prediction intervals are available (\code{BUILD_PI = TRUE}), the lower and upper bounds
+are returned along with the mean prediction. For plotting, these can be passed to
+\code{autoplot.neuralGAM()}, which will automatically add ribbons for intervals.
 }
 \examples{
 \dontrun{

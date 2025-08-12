@@ -2,13 +2,13 @@
 % Please edit documentation in R/NeuralGAM.R
 \name{neuralGAM}
 \alias{neuralGAM}
-\title{Fit a \code{neuralGAM} model}
+\title{Fit a neuralGAM model}
 \usage{
 neuralGAM(
   formula,
   data,
-  num_units,
   family = "gaussian",
+  num_units = 64,
   learning_rate = 0.001,
   activation = "relu",
   kernel_initializer = "glorot_normal",
@@ -17,6 +17,8 @@ neuralGAM(
   bias_initializer = "zeros",
   activity_regularizer = NULL,
   loss = "mse",
+  build_pi = FALSE,
+  alpha = 0.95,
   validation_split = NULL,
   w_train = NULL,
   bf_threshold = 0.001,
@@ -29,99 +31,165 @@ neuralGAM(
 )
 }
 \arguments{
-\item{formula}{An object of class "formula": a description of the model to be fitted.
-Smooth terms can be added using `s()`.}
+\item{formula}{Model formula. Smooth terms must be wrapped in \code{s(...)}.
+You can specify per-term network settings, e.g.:
+\code{y ~ s(x1, num_units = 1024) + s(x3, num_units = c(1024, 512))}.}
 
-\item{data}{A data frame containing the response variable and covariates required by the formula.
-Additional terms not present in the formula will be ignored.}
+\item{data}{Data frame containing the variables.}
 
-\item{num_units}{Defines the architecture of each neural network.
-If a scalar value is provided, a single hidden layer with that number of units is used.
-If a vector of values is provided, each element defines the number of units in a hidden layer.}
+\item{family}{Response distribution: \code{"gaussian"}, \code{"binomial"}, \code{"poisson"}.}
 
-\item{family}{Distribution family to use for fitting. Options are `"gaussian"`, `"binomial"`, `"poisson"`.}
+\item{num_units}{Default hidden layer sizes for smooth terms (integer or vector).
+\strong{Mandatory} unless every \code{s(...)} specifies its own \code{num_units}.}
 
-\item{learning_rate}{Learning rate for the neural network optimizer.}
+\item{learning_rate}{Learning rate for Adam optimizer.}
 
-\item{activation}{Activation function for the hidden layers. Defaults to `"relu"`.}
+\item{activation}{Activation function for hidden layers.}
 
-\item{kernel_initializer}{Kernel initializer for the Dense layers.
-Defaults to Xavier Initializer (`"glorot_normal"`).}
+\item{kernel_initializer, bias_initializer}{Initializers for weights and biases.}
 
-\item{kernel_regularizer}{Optional regularizer function applied to the kernel weights.}
+\item{kernel_regularizer, bias_regularizer, activity_regularizer}{Optional Keras regularizers.}
 
-\item{bias_regularizer}{Optional regularizer function applied to the bias.}
+\item{loss}{Loss function.
+\itemize{
+\item If \code{build_pi = FALSE}: used directly for training.
+\item If \code{build_pi = TRUE}: must be \code{"mse"}, \code{"mae"}, or \code{"huber"} (applies to mean prediction inside PI loss).
+}}
 
-\item{bias_initializer}{Optional initializer for the bias vector.}
+\item{build_pi}{Logical. If \code{TRUE}, trains networks to predict lower bound, upper bound, and mean.}
 
-\item{activity_regularizer}{Optional regularizer function applied to the output of the layer.}
+\item{alpha}{PI coverage (only used if \code{build_pi = TRUE}), e.g. \code{0.95} for 95\% PI.}
 
-\item{loss}{Loss function to use during training. Defaults to `"mse"`.}
+\item{validation_split}{Fraction of training data used for validation.}
 
-\item{validation_split}{Numeric between 0 and 1. Fraction of training data to use for validation.}
+\item{w_train}{Optional training weights.}
 
-\item{w_train}{Optional numeric vector of sample weights. If `NULL`, all weights are set to 1.}
+\item{bf_threshold, ls_threshold}{Convergence thresholds for backfitting and local scoring.}
 
-\item{bf_threshold}{Numeric convergence threshold for the backfitting algorithm. Default is `0.001`.}
+\item{max_iter_backfitting, max_iter_ls}{Maximum iterations for backfitting and local scoring.}
 
-\item{ls_threshold}{Numeric convergence threshold for the local scoring algorithm. Default is `0.1`.}
+\item{seed}{Random seed.}
 
-\item{max_iter_backfitting}{Integer, maximum backfitting iterations. Default is 10.}
+\item{verbose}{Verbosity: \code{0} silent, \code{1} progress messages.}
 
-\item{max_iter_ls}{Integer, maximum local scoring iterations. Default is 10.}
-
-\item{seed}{Optional integer seed for reproducibility.}
-
-\item{verbose}{Verbosity mode (0 = silent, 1 = print messages). Default is 1.}
-
-\item{...}{Additional parameters passed to `keras::optimizer_adam`.}
+\item{...}{Additional arguments passed to \code{keras::optimizer_adam()}.}
 }
 \value{
-A trained `neuralGAM` object with:
-\describe{
-  \item{muhat}{Predicted response values.}
-  \item{partial}{Data frame of partial effects.}
-  \item{y}{Observed response values.}
-  \item{eta}{Linear predictor values.}
-  \item{x}{Model covariates.}
-  \item{model}{List of trained neural networks for each term.}
-  \item{history}{Training history for each term's model.}
-  \item{stats}{Training statistics including loss values.}
-  \item{mse}{Mean squared error.}
+An object of class \code{"neuralGAM"}, which is a list containing:
+\itemize{
+\item{muhat}{ Numeric vector of fitted mean predictions on the training data.}
+\item{partial}{ List of partial contributions \eqn{g_j(x_j)} for each smooth term.}
+\item{y}{ Observed response values.}
+\item{eta}{ Numeric vector of the linear predictor \eqn{\eta = \eta_0 + \sum_j g_j(x_j)}.}
+\item{y_L}{ Numeric vector of lower prediction interval bounds (if \code{build_pi = TRUE}), otherwise \code{NULL}.}
+\item{y_U}{ Numeric vector of upper prediction interval bounds (if \code{build_pi = TRUE}), otherwise \code{NULL}.}
+\item{x}{ List of model inputs (covariates) used in training.}
+\item{model}{L ist of fitted Keras models, one per smooth term (plus \code{"linear"} if a linear component is present).}
+\item{eta0}{ Intercept estimate \eqn{\eta_0}.}
+\item{family}{ Model family (\code{"gaussian"}, \code{"binomial"}, \code{"poisson"}).}
+\item{stats}{ Data frame of training/validation losses per backfitting iteration.}
+\item{mse}{ Training mean squared error.}
+\item{formula}{ The original model formula, as parsed by \code{get_formula_elements()}.}
+\item{history}{ List of Keras training histories for each fitted term.}
+\item{globals}{ List of global default hyperparameters used for architecture and training.}
+\item{alpha}{ PI coverage level (only relevant if \code{build_pi = TRUE}).}
+\item{build_pi}{ Logical; whether the model was trained to produce prediction intervals.}
 }
 }
 \description{
-Fits a \code{neuralGAM} model by building a neural network to attend to each covariate.
+Fits a Generalized Additive Model where the smooth terms are modeled using \code{keras} neural networks.
+The model can optionally output \strong{prediction intervals} (lower bound, upper bound, and mean prediction)
+using a custom quantile loss (\code{make_quantile_loss()}), or a standard single-output point prediction
+using any user-specified loss function.
+
+When \code{build_pi = TRUE}, each smooth term's network outputs three units corresponding to the lower bound,
+upper bound, and mean prediction, and is compiled with the \code{make_quantile_loss()} custom loss.
+The \code{loss} argument in this case is passed to \code{mean_loss} inside \code{make_quantile_loss()} and can be
+\code{"mse"}, \code{"mae"}, or a custom Keras loss function.
+
+When \code{build_pi = FALSE}, each smooth term's network outputs a single unit (point prediction)
+and uses the \code{loss} argument directly in \code{compile()}.
 }
 \details{
-The function builds one neural network to attend to each feature in `x`,
-using the backfitting and local scoring algorithms to fit a weighted additive model
-with neural networks as function approximators.
-The adjustment of the dependent variable and the weights is determined by the distribution of
-the response `y`, adjusted by the `family` parameter.
+\strong{Defining per-term architectures}
+You can pass most Keras architecture/training parameters inside each \code{s(...)} call:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{y ~ s(x1, num_units = 512, activation = "tanh") +
+    s(x2, num_units = c(256,128), kernel_regularizer = regularizer_l2(1e-4))
+}\if{html}{\out{</div>}}
+
+Any term without its own setting will use the global defaults.
+
+\strong{Prediction intervals (\code{build_pi = TRUE})}
+\itemize{
+\item Output: lower bound, upper bound, mean.
+\item Loss: combined quantile loss + mean prediction loss.
+\item \code{alpha} controls coverage.
+}
+
+\strong{Point prediction (\code{build_pi = FALSE})}
+\itemize{
+\item Output: single value.
+\item Loss: exactly as given in \code{loss}.
+}
 }
 \examples{
 \dontrun{
-set.seed(42)
-n <- 1000
+n <- 24500
+
+seed <- 42
+set.seed(seed)
+
 x1 <- runif(n, -2.5, 2.5)
 x2 <- runif(n, -2.5, 2.5)
-y <- 2 + x1^2 + sin(x2) + rnorm(n, 0.25)
-train <- data.frame(x1, x2, y)
+x3 <- runif(n, -2.5, 2.5)
 
-ngam <- neuralGAM(y ~ s(x1) + s(x2), data = train,
-                 num_units = 64, family = "gaussian",
-                 activation = "relu",
-                 learning_rate = 0.001, bf_threshold = 0.001,
-                 max_iter_backfitting = 5, max_iter_ls = 5,
-                 seed = 42)
-summary(ngam)
+f1 <- x1 ** 2
+f2 <- 2 * x2
+f3 <- sin(x3)
+f1 <- f1 - mean(f1)
+f2 <- f2 - mean(f2)
+f3 <- f3 - mean(f3)
+
+eta0 <- 2 + f1 + f2 + f3
+epsilon <- rnorm(n, 0.25)
+y <- eta0 + epsilon
+train <- data.frame(x1, x2, x3, y)
+
+library(neuralGAM)
+# Global architecture
+ngam <- neuralGAM(
+  y ~ s(x1) + x2,
+  data = train,
+  num_units = 128
+)
+ngam
+# Per-term architecture
+ngam <- neuralGAM(
+  y ~ s(x1, num_units = c(128,64), activation = "tanh") +
+       s(x2, num_units = 256),
+  data = train
+)
+ngam
+# Construct prediction intervals
+ngam <- neuralGAM(
+  y ~ s(x1, num_units = c(128,64), activation = "tanh") +
+       s(x2, num_units = 256),
+  data = train
+  build_pi = TRUE,
+  alpha = 0.95
+)
+# Visualize point prediction and prediction intervals using autoplot:
+autoplot(ngam, "x1")
 }
-
 }
 \references{
-Hastie, T., & Tibshirani, R. (1990). Generalized Additive Models. London: Chapman and Hall.
+Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
+arXiv preprint arXiv:1412.6980.
+Koenker, R., & Bassett, G. (1978). Regression quantiles.
+\emph{Econometrica}, 46(1), 33–50.
 }
 \author{
-Ines Ortega-Fernandez, Marta Sestelo
+Ines Ortega-Fernandez, Marta Sestelo.
 }
+\keyword{internal}

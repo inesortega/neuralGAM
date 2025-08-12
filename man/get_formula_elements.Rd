@@ -2,27 +2,94 @@
 % Please edit documentation in R/formula.R
 \name{get_formula_elements}
 \alias{get_formula_elements}
-\title{Extract formula elements}
+\title{Extract structured elements from a model formula}
 \usage{
 get_formula_elements(formula)
 }
 \arguments{
-\item{formula}{A formula object.}
+\item{formula}{A model formula. Smooth terms must be written as \code{s(var, ...)}.}
 }
 \value{
 A list with the following elements:
 \describe{
-  \item{y}{The response variable.}
-  \item{terms}{A character vector with all model terms.}
-  \item{np_terms}{A character vector with non-parametric terms.}
-  \item{p_terms}{A character vector with parametric terms.}
-  \item{np_formula}{The formula for the non-parametric terms.}
-  \item{p_formula}{The formula for the parametric terms.}
-  \item{formula}{The original formula object.}
+\item{y}{Character scalar. The response variable name.}
+\item{terms}{Character vector with all variable names on the RHS (both smooth and parametric).}
+\item{np_terms}{Character vector with smooth (non‑parametric) variable names extracted from \code{s(...)}.}
+\item{p_terms}{Character vector with parametric terms (i.e., \verb{terms \\\\ np_terms}).}
+\item{np_formula}{A formula containing only the \code{s(...)} terms (or \code{NULL} if none).}
+\item{p_formula}{A formula containing only the parametric terms (or \code{NULL} if none).}
+\item{np_architecture}{Named list keyed by smooth term (e.g., \code{"x1"}, \code{"x3"}). Each entry is
+a list of per‑term settings parsed from \code{s(term, ...)}. Supported keys include:
+\code{num_units} (numeric or numeric vector),
+\code{activation} (character),
+\code{learning_rate} (numeric),
+\code{kernel_initializer} (keras initializer object),
+\code{bias_initializer} (keras initializer object),
+\code{kernel_regularizer} (keras regularizer object),
+\code{bias_regularizer} (keras regularizer object),
+\code{activity_regularizer} (keras regularizer object).}
+\item{formula}{The original formula object.}
 }
 }
 \description{
-This function separates the model terms of a given formula into response,
-all terms, non-parametric terms, and parametric terms.
+Parses a GAM-style formula and separates the response, all terms, smooth
+(non‑parametric) terms declared via \code{s(...)}, and parametric terms. In addition,
+it extracts \strong{per‑term neural network specifications} that can be written
+inline inside each \code{s(...)} call (e.g., \code{num_units}, \code{activation},
+\code{kernel_initializer}, \code{bias_initializer}, \code{kernel_regularizer},
+\code{bias_regularizer}, \code{activity_regularizer}).
+
+This function uses an abstract syntax tree (AST) walker (no regex) to read
+the arguments of each \code{s(var, ...)}. Arguments are evaluated in the caller’s
+environment. For \verb{*_regularizer} and \verb{*_initializer} arguments, \strong{proper Keras
+objects are required} (e.g., \code{keras::regularizer_l2(1e-4)},
+\code{keras::initializer_glorot_uniform()}).
+}
+\details{
+\strong{Inline per‑term configuration in \code{s(...)}.}
+You can specify neural network hyperparameters per smooth term, e.g.:
+\preformatted{
+  y ~ s(x1, num_units = c(1024, 512),
+          activation = "tanh",
+          kernel_regularizer = keras::regularizer_l2(1e-4)) +
+      x2 +
+      s(x3, num_units = 1024,
+          bias_initializer = keras::initializer_zeros())
+}
+Values are evaluated in the caller’s environment. For regularizers and
+initializers you must pass actual Keras objects (not character strings).
+
+\strong{Supported keys.}
+Only the keys listed in \code{np_architecture} above are recognized.
+Unknown keys are ignored with a warning.
+
+\strong{Typical usage.}
+The returned \code{np_terms} and \code{np_architecture} are consumed by
+model-building code to construct one neural network per smooth term, applying
+any per‑term overrides while falling back to global defaults for unspecified keys.
+}
+\section{Errors and validation}{
+
+\itemize{
+\item The first argument of each \code{s(...)} must be a symbol naming the variable.
+\item All additional arguments to \code{s(...)} must be named.
+\item \code{*_regularizer} must be a Keras regularizer object.
+\item \code{*_initializer} must be a Keras initializer object.
+}
+}
+
+\examples{
+\dontrun{
+  fml <- y ~ s(x1, num_units = c(256,128),
+                   activation = "relu",
+                   kernel_regularizer = keras::regularizer_l2(1e-4)) +
+              x2 +
+              s(x3, num_units = 512,
+                   bias_initializer = keras::initializer_zeros())
+  parts <- get_formula_elements(fml)
+  str(parts$np_terms)         # "x1" "x3"
+  str(parts$np_architecture$x1)
+}
+
 }
 \keyword{internal}

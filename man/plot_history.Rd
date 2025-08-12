@@ -7,22 +7,22 @@
 plot_history(history, select = NULL, metric = c("loss", "val_loss"))
 }
 \arguments{
-\item{history}{A named list (e.g. `ngam$history`) where each element is a list of
-`keras_training_history` objects returned by each `fit()` call for a specific model term.}
+\item{history}{A named list (e.g. \code{ngam$history}) where each element is a list of
+\code{keras_training_history} objects returned by each \code{fit()} call for a specific model term.}
 
-\item{select}{Optional character vector of term names (e.g. `"x1"` or `c("x1", "x3")`) to subset
-the history. If `NULL` (default), all terms are included.}
+\item{select}{Optional character vector of term names (e.g. \code{"x1"} or \code{c("x1", "x3")}) to subset
+the history. If \code{NULL} (default), all terms are included.}
 
 \item{metric}{Character vector indicating which loss metric(s) to plot. Options are
-`"loss"`, `"val_loss"`, or both. Defaults to both.}
+\code{"loss"}, \code{"val_loss"}, or both. Defaults to both.}
 }
 \value{
-A `ggplot` object showing the loss curves by backfitting iteration, with facets per term.
+A \code{ggplot} object showing the loss curves by backfitting iteration, with facets per term.
 }
 \description{
 This function visualizes the training and/or validation loss over backfitting iterations
-for each term-specific model in a `neuralGAM` object. It is designed to work with the
-`history` component of a trained `neuralGAM` model.
+for each term-specific model in a \code{neuralGAM} object. It is designed to work with the
+\code{history} component of a trained \code{neuralGAM} model.
 }
 \examples{
 if (requireNamespace("neuralGAM", quietly = TRUE)) {

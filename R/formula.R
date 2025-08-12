@@ -83,7 +83,7 @@
 #' }
 #'
 #' @importFrom formula.tools lhs rhs
-#' @importFrom stats as.formula
+#' @importFrom stats as.formula terms.formula
 #' @keywords internal
 get_formula_elements <- function(formula) {
   y <- formula.tools::lhs(formula)
@@ -94,7 +94,7 @@ get_formula_elements <- function(formula) {
   np_terms <- parsed$np_terms
   np_architecture <- parsed$np_architecture
 
-  term_labels <- attr(terms(formula), "term.labels")
+  term_labels <- attr(stats::terms.formula(formula), "term.labels")
   s_labels <- if (length(term_labels)) grep("^s\\(", term_labels, value = TRUE) else character()
   np_formula <- if (length(s_labels)) stats::as.formula(paste("y ~", paste(s_labels, collapse = " + "))) else NULL
 

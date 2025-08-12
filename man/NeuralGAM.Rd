@@ -76,13 +76,13 @@ You can specify per-term network settings, e.g.:
 }
 \value{
 An object of class \code{"neuralGAM"}, which is a list containing:
-\itemize{
+\describe{
 \item{muhat}{ Numeric vector of fitted mean predictions on the training data.}
 \item{partial}{ List of partial contributions \eqn{g_j(x_j)} for each smooth term.}
 \item{y}{ Observed response values.}
 \item{eta}{ Numeric vector of the linear predictor \eqn{\eta = \eta_0 + \sum_j g_j(x_j)}.}
-\item{y_L}{ Numeric vector of lower prediction interval bounds (if \code{build_pi = TRUE}), otherwise \code{NULL}.}
-\item{y_U}{ Numeric vector of upper prediction interval bounds (if \code{build_pi = TRUE}), otherwise \code{NULL}.}
+\item{lwr}{ Numeric vector of lower prediction interval bounds (if \code{build_pi = TRUE}), otherwise \code{NULL}.}
+\item{upr}{ Numeric vector of upper prediction interval bounds (if \code{build_pi = TRUE}), otherwise \code{NULL}.}
 \item{x}{ List of model inputs (covariates) used in training.}
 \item{model}{L ist of fitted Keras models, one per smooth term (plus \code{"linear"} if a linear component is present).}
 \item{eta0}{ Intercept estimate \eqn{\eta_0}.}
@@ -175,7 +175,7 @@ ngam
 ngam <- neuralGAM(
   y ~ s(x1, num_units = c(128,64), activation = "tanh") +
        s(x2, num_units = 256),
-  data = train
+  data = train,
   build_pi = TRUE,
   alpha = 0.95
 )
@@ -187,7 +187,8 @@ autoplot(ngam, "x1")
 Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
 arXiv preprint arXiv:1412.6980.
 Koenker, R., & Bassett, G. (1978). Regression quantiles.
-\emph{Econometrica}, 46(1), 33–50.
+\emph{Econometrica}, 46(1), 33-50.
+#'
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.

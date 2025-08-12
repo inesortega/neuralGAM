@@ -104,8 +104,8 @@ and uses the loss function provided in \code{loss}.
 \itemize{
 \item Output layer has 3 units:
 \itemize{
-\item \code{y_L}: lower bound, \eqn{\tau = \frac{1-\alpha}{2}}
-\item \code{y_U}: upper bound, \eqn{\tau = 1 - \frac{1-\alpha}{2}}
+\item \code{lwr}: lower bound, \eqn{\tau = \frac{1-\alpha}{2}}
+\item \code{upr}: upper bound, \eqn{\tau = 1 - \frac{1-\alpha}{2}}
 \item \code{y_hat}: mean prediction
 }
 \item Loss function is \code{make_quantile_loss()} which combines two pinball losses

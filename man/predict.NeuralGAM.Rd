@@ -19,9 +19,9 @@ are required. If not provided, predictions are returned for the training data.}
 \item{"response"}{Returns predictions on the response scale.
 If the model was trained with \code{BUILD_PI = TRUE}, this will return a \code{data.frame} with columns:
 \itemize{
-\item \code{y_L}: Lower bound of prediction interval.
-\item \code{y_U}: Upper bound of prediction interval.
-\item \code{y_hat}: Mean prediction (point estimate).
+\item \code{lwr}: Lower bound of prediction interval.
+\item \code{upr}: Upper bound of prediction interval.
+\item \code{fit}: Mean prediction (point estimate).
 }
 Otherwise, a numeric vector of point predictions is returned.
 }
@@ -41,7 +41,7 @@ If \code{NULL} (default), all terms are returned.}
 \item For \code{type = "response"}:
 \describe{
 \item{If \code{BUILD_PI = FALSE}}{Numeric vector of predicted response values.}
-\item{If \code{BUILD_PI = TRUE}}{\code{data.frame} with columns \code{y_L}, \code{y_U}, \code{y_hat}.}
+\item{If \code{BUILD_PI = TRUE}}{\code{data.frame} with columns \code{lwr}, \code{upr}, \code{fit}.}
 }
 }
 }

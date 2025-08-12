@@ -4,11 +4,10 @@
 \alias{plot_history}
 \title{Plot training loss history for a neuralGAM model}
 \usage{
-plot_history(history, select = NULL, metric = c("loss", "val_loss"))
+plot_history(model, select = NULL, metric = c("loss", "val_loss"))
 }
 \arguments{
-\item{history}{A named list (e.g. \code{ngam$history}) where each element is a list of
-\code{keras_training_history} objects returned by each \code{fit()} call for a specific model term.}
+\item{model}{A fitted \code{neuralGAM} model.}
 
 \item{select}{Optional character vector of term names (e.g. \code{"x1"} or \code{c("x1", "x3")}) to subset
 the history. If \code{NULL} (default), all terms are included.}
@@ -21,7 +20,7 @@ A \code{ggplot} object showing the loss curves by backfitting iteration, with fa
 }
 \description{
 This function visualizes the training and/or validation loss over backfitting iterations
-for each term-specific model in a \code{neuralGAM} object. It is designed to work with the
+for each term-specific model in a fitted \code{neuralGAM} object. It is designed to work with the
 \code{history} component of a trained \code{neuralGAM} model.
 }
 \examples{
@@ -46,8 +45,8 @@ if (requireNamespace("neuralGAM", quietly = TRUE)) {
     verbose = 0
   )
 
-  plot_history(model$history)                      # Plot all terms
-  plot_history(model$history, select = "x1")       # Plot just x1
-  plot_history(model$history, metric = "val_loss") # Plot only validation loss
+  plot_history(model)                      # Plot all terms
+  plot_history(model, select = "x1")       # Plot just x1
+  plot_history(model, metric = "val_loss") # Plot only validation loss
 }
 }

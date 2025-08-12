@@ -51,8 +51,8 @@
 #' \itemize{
 #'   \item Output layer has 3 units:
 #'     \itemize{
-#'       \item \code{y_L}: lower bound, \eqn{\tau = \frac{1-\alpha}{2}}
-#'       \item \code{y_U}: upper bound, \eqn{\tau = 1 - \frac{1-\alpha}{2}}
+#'       \item \code{lwr}: lower bound, \eqn{\tau = \frac{1-\alpha}{2}}
+#'       \item \code{upr}: upper bound, \eqn{\tau = 1 - \frac{1-\alpha}{2}}
 #'       \item \code{y_hat}: mean prediction
 #'     }
 #'   \item Loss function is `make_quantile_loss()` which combines two pinball losses
@@ -215,8 +215,8 @@ make_quantile_loss <- function(alpha = 0.95,
 
   function(y_true, y_pred) {
     # Extract outputs: Lower, Upper, Mean
-    y_l   <- y_pred[, 1]  # Lower quantile prediction
-    y_u   <- y_pred[, 2]  # Upper quantile prediction
+    lwr   <- y_pred[, 1]  # Lower quantile prediction
+    upr   <- y_pred[, 2]  # Upper quantile prediction
     y_hat <- y_pred[, 3]  # Mean prediction
 
     y_t <- y_true[, 1]
@@ -230,8 +230,8 @@ make_quantile_loss <- function(alpha = 0.95,
     }
 
     # Quantile losses
-    loss_low <- pinball_loss(y_t, y_l, tau_low)
-    loss_up  <- pinball_loss(y_t, y_u, tau_up)
+    loss_low <- pinball_loss(y_t, lwr, tau_low)
+    loss_up  <- pinball_loss(y_t, upr, tau_up)
 
     # Mean loss choice
     if (mean_loss == "mse") {

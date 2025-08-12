@@ -15,9 +15,9 @@
 #'     \item{"response"}{Returns predictions on the response scale.
 #'       If the model was trained with \code{BUILD_PI = TRUE}, this will return a \code{data.frame} with columns:
 #'         \itemize{
-#'           \item \code{y_L}: Lower bound of prediction interval.
-#'           \item \code{y_U}: Upper bound of prediction interval.
-#'           \item \code{y_hat}: Mean prediction (point estimate).
+#'           \item \code{lwr}: Lower bound of prediction interval.
+#'           \item \code{upr}: Upper bound of prediction interval.
+#'           \item \code{fit}: Mean prediction (point estimate).
 #'         }
 #'       Otherwise, a numeric vector of point predictions is returned.
 #'     }
@@ -33,7 +33,7 @@
 #' - For \code{type = "response"}:
 #'   \describe{
 #'     \item{If \code{BUILD_PI = FALSE}}{Numeric vector of predicted response values.}
-#'     \item{If \code{BUILD_PI = TRUE}}{\code{data.frame} with columns \code{y_L}, \code{y_U}, \code{y_hat}.}
+#'     \item{If \code{BUILD_PI = TRUE}}{\code{data.frame} with columns \code{lwr}, \code{upr}, \code{fit}.}
 #'   }
 #'
 #' @details
@@ -120,10 +120,10 @@ predict.neuralGAM <- function(object,
     term <- colnames(x)[i]
     term_pred <- get_model_predictions(ngam, x, term, verbose)
 
-    if (is.data.frame(term_pred) && all(c("y_L","y_U","y_hat") %in% colnames(term_pred))) {
+    if (is.data.frame(term_pred) && all(c("lwr","upr","fit") %in% colnames(term_pred))) {
       # Store PI info separately
       pi_components[[term]] <- term_pred
-      f[[term]] <- term_pred$y_hat
+      f[[term]] <- term_pred$fit
     } else {
       f[[term]] <- term_pred
     }
@@ -144,9 +144,9 @@ predict.neuralGAM <- function(object,
 
     # Attach PI if available
     if (length(pi_components) > 0) {
-      y_L <- rowSums(sapply(pi_components, function(pc) pc$y_L)) + ngam$eta0
-      y_U <- rowSums(sapply(pi_components, function(pc) pc$y_U)) + ngam$eta0
-      return(data.frame(y_L = y_L, y_U = y_U, y_hat = y))
+      lwr <- rowSums(sapply(pi_components, function(pc) pc$lwr)) + ngam$eta0
+      upr <- rowSums(sapply(pi_components, function(pc) pc$upr)) + ngam$eta0
+      return(data.frame(lwr = lwr, upr = upr, fit = y))
     }
 
     return(y)
@@ -160,8 +160,21 @@ get_model_predictions <- function(ngam, x, term, verbose) {
     lm_data <- data.frame(x[ngam$formula$p_terms])
     colnames(lm_data) <- ngam$formula$p_terms
 
-    return(stats::predict(model, newdata = lm_data,
-                          type = "terms", terms = term))
+    if(ngam$build_pi == TRUE){
+      #### Handle Prediction Intervals
+      preds <- stats::predict(model, newdata = lm_data, type = "terms", terms = term, interval = "prediction", level = ngam$alpha)
+      preds_df <- data.frame(
+        lwr = preds$lwr,
+        upr = preds$upr,
+        fit = preds$fit
+      )
+      colnames(preds_df) <- c("lwr", "upr", "fit")
+      return(preds_df)
+    }
+    else{
+      return(stats::predict(model, newdata = lm_data,
+                            type = "terms", terms = term))
+    }
   }
 
   # Non-Parametric term
@@ -170,12 +183,12 @@ get_model_predictions <- function(ngam, x, term, verbose) {
     preds <- model$predict(x[[term]], verbose = verbose)
 
     # Handle PI vs no PI automatically
-    if (is.matrix(preds) && ncol(preds) == 3) {
-      # Return as data.frame with columns y_L, y_U, y_hat
+    if (ngam$build_pi == TRUE){
+      # Return as data.frame with columns lwr, upr, fit
       preds_df <- data.frame(
-        y_L = preds[, 1],
-        y_U = preds[, 2],
-        y_hat = preds[, 3]
+        lwr = preds[, 1],
+        upr = preds[, 2],
+        fit = preds[, 3]
       )
       return(preds_df)
     } else {

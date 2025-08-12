@@ -8,19 +8,19 @@ ggplot2::autoplot
 #' Produces a \code{ggplot} visualization of a smooth term from a fitted \code{neuralGAM} model.
 #' If the model was trained with prediction intervals (\code{BUILD_PI = TRUE}),
 #' the plot automatically includes a shaded ribbon showing the prediction interval
-#' between the lower (\code{y_L}) and upper (\code{y_U}) bounds.
+#' between the lower (\code{lwr}) and upper (\code{upr}) bounds.
 #'
 #' @param object A fitted \code{neuralGAM} object.
-#' @param newdata Optional \code{data.frame}. Values of covariates at which the smooth term will be evaluated.
-#' If omitted, predictions are computed for the training data.
 #' @param select Character string. Name of the smooth term to plot (e.g., \code{"x1"}).
 #' Must match a smooth term in the model.
+#' @param xlab if supplied, this value will be used as the \code{x} label for all plots.
+#' @param ylab if supplied, this value will be used as the \code{y} label for all plots.
 #' @param ... Additional arguments passed to \code{\link{predict.neuralGAM}} or \code{ggplot2} layers.
 #'
 #' @return A \code{ggplot} object showing:
 #' \itemize{
 #'   \item The mean prediction for the smooth term (\code{y_hat}) as a line.
-#'   \item If available, a ribbon showing the prediction interval between \code{y_L} and \code{y_U}.
+#'   \item If available, a ribbon showing the prediction interval between \code{lwr} and \code{upr}.
 #' }
 #'
 #' @details
@@ -126,20 +126,28 @@ autoplot.neuralGAM <-
     }
 
     # Robust PI check
-    has_PI <- (!is.null(ngam$y_L) && select %in% colnames(ngam$y_L) &&
-                 ncol(ngam$y_L) > 0 && !all(is.na(ngam$y_L[[select]]))) &&
-      (!is.null(ngam$y_U) && select %in% colnames(ngam$y_U) &&
-         ncol(ngam$y_U) > 0 && !all(is.na(ngam$y_U[[select]])))
+    has_PI <- (!is.null(ngam$lwr) && select %in% colnames(ngam$lwr) &&
+                 ncol(ngam$lwr) > 0 && !all(is.na(ngam$lwr[[select]]))) &&
+      (!is.null(ngam$upr) && select %in% colnames(ngam$upr) &&
+         ncol(ngam$upr) > 0 && !all(is.na(ngam$upr[[select]])))
 
     # Prepare PI layer if available
     if (has_PI) {
       df_ribbon <- data.frame(
         x = x[, select],
-        y_L_term = ngam$y_L[, select],
-        y_U_term = ngam$y_U[, select]
+        lwr_term = ngam$lwr[, select],
+        upr_term = ngam$upr[, select]
       )
-      pi_layer <- ggplot2::geom_ribbon(data = df_ribbon, aes(x = x, ymin = y_L_term, ymax = y_U_term),
-          fill = "gray", alpha = 0.5)
+      pi_layer <- ggplot2::geom_ribbon(
+        data = df_ribbon,
+        aes(
+          x = .data$x,
+          ymin = .data$lwr_term,
+          ymax = .data$upr_term
+        ),
+        fill = "gray",
+        alpha = 0.5
+      )
     } else {
       pi_layer <- NULL
     }

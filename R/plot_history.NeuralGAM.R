@@ -1,11 +1,10 @@
 #' Plot training loss history for a neuralGAM model
 #'
 #' This function visualizes the training and/or validation loss over backfitting iterations
-#' for each term-specific model in a `neuralGAM` object. It is designed to work with the
-#' `history` component of a trained `neuralGAM` model.
+#' for each term-specific model in a fitted \code{neuralGAM} object. It is designed to work with the
+#' `history` component of a trained \code{neuralGAM} model.
 #'
-#' @param history A named list (e.g. `ngam$history`) where each element is a list of
-#' `keras_training_history` objects returned by each `fit()` call for a specific model term.
+#' @param model A fitted \code{neuralGAM} model.
 #' @param select Optional character vector of term names (e.g. `"x1"` or `c("x1", "x3")`) to subset
 #' the history. If `NULL` (default), all terms are included.
 #' @param metric Character vector indicating which loss metric(s) to plot. Options are
@@ -16,6 +15,7 @@
 #'
 #' @importFrom ggplot2 ggplot labs aes geom_line geom_point facet_wrap
 #' @importFrom rlang .data
+#' @importFrom utils tail
 #'
 #' @examples
 #' if (requireNamespace("neuralGAM", quietly = TRUE)) {
@@ -65,14 +65,14 @@ plot_history <- function(model, select = NULL, metric = c("loss", "val_loss")) {
       # Handle scalar or length-1 loss
       if ("loss" %in% metric) {
         loss_val <- h$metrics$loss
-        if (length(loss_val) > 1) loss_val <- tail(loss_val, 1)
+        if (length(loss_val) > 1) loss_val <- utils::tail(loss_val, 1)
         row$Loss <- as.numeric(loss_val)
       }
 
       # Handle validation loss if available
       if ("val_loss" %in% metric && "val_loss" %in% names(h$metrics)) {
         val_loss_val <- h$metrics$val_loss
-        if (length(val_loss_val) > 1) val_loss_val <- tail(val_loss_val, 1)
+        if (length(val_loss_val) > 1) val_loss_val <- utils::tail(val_loss_val, 1)
         row$ValLoss <- as.numeric(val_loss_val)
       }
 

@@ -40,13 +40,13 @@
 #'
 #' @return
 #' An object of class `"neuralGAM"`, which is a list containing:
-#' \itemize{
+#' \describe{
 #'   \item{muhat}{ Numeric vector of fitted mean predictions on the training data.}
 #'   \item{partial}{ List of partial contributions \eqn{g_j(x_j)} for each smooth term.}
 #'   \item{y}{ Observed response values.}
 #'   \item{eta}{ Numeric vector of the linear predictor \eqn{\eta = \eta_0 + \sum_j g_j(x_j)}.}
-#'   \item{y_L}{ Numeric vector of lower prediction interval bounds (if `build_pi = TRUE`), otherwise `NULL`.}
-#'   \item{y_U}{ Numeric vector of upper prediction interval bounds (if `build_pi = TRUE`), otherwise `NULL`.}
+#'   \item{lwr}{ Numeric vector of lower prediction interval bounds (if `build_pi = TRUE`), otherwise `NULL`.}
+#'   \item{upr}{ Numeric vector of upper prediction interval bounds (if `build_pi = TRUE`), otherwise `NULL`.}
 #'   \item{x}{ List of model inputs (covariates) used in training.}
 #'   \item{model}{L ist of fitted Keras models, one per smooth term (plus `"linear"` if a linear component is present).}
 #'   \item{eta0}{ Intercept estimate \eqn{\eta_0}.}
@@ -81,8 +81,8 @@
 #' Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
 #' arXiv preprint arXiv:1412.6980.
 #' Koenker, R., & Bassett, G. (1978). Regression quantiles.
-#' *Econometrica*, 46(1), 33–50.
-#'
+#' *Econometrica*, 46(1), 33-50.
+#' #'
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #'
 #' @keywords internal
@@ -136,7 +136,7 @@
 #' ngam <- neuralGAM(
 #'   y ~ s(x1, num_units = c(128,64), activation = "tanh") +
 #'        s(x2, num_units = 256),
-#'   data = train
+#'   data = train,
 #'   build_pi = TRUE,
 #'   alpha = 0.95
 #' )
@@ -194,7 +194,7 @@ neuralGAM <-
       missing_any <- any(vapply(formula$np_terms, function(t)
         is.null(formula$np_architecture[[t]]$num_units), logical(1)))
       if (missing_any) {
-        stop("Provide global `num_units` or specify `num_units` inside each s(…) term.")
+        stop("Provide global `num_units` or specify `num_units` inside each s(...) term.")
       }
     } else if (!is.numeric(num_units)) {
       stop("Argument `num_units` must be numeric (integer or vector).")
@@ -265,7 +265,7 @@ neuralGAM <-
       stop("Argument 'alpha' must be a numeric value strictly between 0 and 1.")
     }
     if (build_pi && (alpha < 0.8 || alpha > 0.99)) {
-      warning("Alpha values outside 0.8–0.99 may lead to overly narrow or wide prediction intervals.")
+      warning("Alpha values outside 0.8-0.99 may lead to overly narrow or wide prediction intervals.")
     }
 
     # --- Validation split ---
@@ -322,12 +322,13 @@ neuralGAM <-
 
     x_np <- data[formula$np_terms]
 
-    f <- y_L <- y_U <- g <- data.frame(matrix(0, nrow = nrow(x), ncol = ncol(x)))
-    colnames(y_L) <- colnames(y_U) <- colnames(f) <- colnames(g) <- colnames(x)
+    f <- g <- data.frame(matrix(0, nrow = nrow(x), ncol = ncol(x)))
+    lwr <- upr <- data.frame(matrix(NA, nrow = nrow(x), ncol = ncol(x)))
+    colnames(lwr) <- colnames(upr) <- colnames(f) <- colnames(g) <- colnames(x)
 
 
     if(build_pi == TRUE){
-      y_L <- y_U <- f
+      lwr <- upr <- f
     }
 
     epochs <- c()
@@ -408,6 +409,15 @@ neuralGAM <-
         f[formula$p_terms] <- predict(linear_model, type = "terms", verbose = verbose)
         eta <- eta0 + rowSums(f)
 
+        if(build_pi == TRUE){
+          # Update yL and yU with parametric component intervals:
+          fit <- suppressWarnings(data.frame(predict(linear_model, interval="prediction", level = alpha)))
+
+          # Update prediction intervals
+          lwr[formula$p_terms] <- fit$lwr
+          upr[formula$p_terms] <- fit$upr
+        }
+
       }
       else{
         # if no parametric components, keep the mean of the adjusted dependen var.
@@ -430,7 +440,15 @@ neuralGAM <-
 
           #### Update model and obtain predictions
           t <- Sys.time()
-          nonparametric_update = .update_nonparametric_component(model, family, term, eta, f, W, Z, x_np, validation_split, verbose, loss, learning_rate, build_pi, loss_weights, alpha, ...)
+          nonparametric_update = .update_nonparametric_component(model = model, family = family,
+                                                                 term = term, eta = eta, f = f, W = W, Z = Z,
+                                                                 x_np = x_np,
+                                                                 validation_split = validation_split,
+                                                                 verbose = verbose,
+                                                                 loss = loss, learning_rate = learning_rate,
+                                                                 build_pi = build_pi, alpha = alpha,
+                                                                 loss_weights = list(W),
+                                                                 ...)
 
           model <- nonparametric_update$model
           history <- nonparametric_update$history
@@ -444,17 +462,13 @@ neuralGAM <-
             eta <- eta + f[[term]]
 
             # Update prediction intervals
-            y_L[[term]] <- y_hat[,1]
-            y_U[[term]] <- y_hat[,2]
+            lwr[[term]] <- y_hat[,1]
+            upr[[term]] <- y_hat[,2]
           }
           else{
             f[[term]] <- y_hat # y_hat or mean prediction
             f[[term]] <- f[[term]] - mean(f[[term]])
             eta <- eta + f[[term]]
-
-            # Set prediction intervals to NULL
-            y_L[[term]] <- NULL
-            y_U[[term]] <- NULL
           }
 
           ## Store training metrics for current backfitting iteration
@@ -532,8 +546,8 @@ neuralGAM <-
         partial = g,
         y = y,
         eta = eta,
-        y_L = y_L,
-        y_U = y_U,
+        lwr = lwr,
+        upr = upr,
         x = x,
         model = model,
         eta0 = eta0,
@@ -551,7 +565,7 @@ neuralGAM <-
   }
 
 .update_nonparametric_component <- function(model, family, term, eta, f, W, Z, x_np, validation_split, verbose, loss, learning_rate, build_pi, loss_weights, alpha, ...){
-# Update one parametric component:
+# Update one nonparametric component:
 #  - Remove its current contribution from eta
 #  - Compute the residual
 #  - Train the correponding neural network on that predictor
@@ -571,7 +585,7 @@ neuralGAM <-
       )
 
   } else {
-    model[[term]] <- set_compile(model[[term]], build_pi, alpha, learning_rate, loss, loss_weights = list(W), ...)
+    model[[term]] <- set_compile(model[[term]], build_pi, alpha, learning_rate, loss, loss_weights = loss_weights, ...)
 
     t <- Sys.time()
     history <-
@@ -606,7 +620,7 @@ neuralGAM <-
 
   if (require_num_units_per_term) {
     if (is.null(per_term$num_units)) {
-      stop(sprintf("Missing `num_units` in s(%s, ...) — per-term `num_units` is mandatory.", term))
+      stop(sprintf("Missing `num_units` in s(%s, ...) - per-term `num_units` is mandatory.", term))
     }
   } else {
     if (is.null(cfg$num_units))

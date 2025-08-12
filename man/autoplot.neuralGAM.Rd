@@ -12,23 +12,24 @@
 \item{select}{Character string. Name of the smooth term to plot (e.g., \code{"x1"}).
 Must match a smooth term in the model.}
 
-\item{...}{Additional arguments passed to \code{\link{predict.neuralGAM}} or \code{ggplot2} layers.}
+\item{xlab}{if supplied, this value will be used as the \code{x} label for all plots.}
 
-\item{newdata}{Optional \code{data.frame}. Values of covariates at which the smooth term will be evaluated.
-If omitted, predictions are computed for the training data.}
+\item{ylab}{if supplied, this value will be used as the \code{y} label for all plots.}
+
+\item{...}{Additional arguments passed to \code{\link{predict.neuralGAM}} or \code{ggplot2} layers.}
 }
 \value{
 A \code{ggplot} object showing:
 \itemize{
 \item The mean prediction for the smooth term (\code{y_hat}) as a line.
-\item If available, a ribbon showing the prediction interval between \code{y_L} and \code{y_U}.
+\item If available, a ribbon showing the prediction interval between \code{lwr} and \code{upr}.
 }
 }
 \description{
 Produces a \code{ggplot} visualization of a smooth term from a fitted \code{neuralGAM} model.
 If the model was trained with prediction intervals (\code{BUILD_PI = TRUE}),
 the plot automatically includes a shaded ribbon showing the prediction interval
-between the lower (\code{y_L}) and upper (\code{y_U}) bounds.
+between the lower (\code{lwr}) and upper (\code{upr}) bounds.
 }
 \details{
 The function automatically detects if prediction intervals are present in the model's output

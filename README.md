@@ -197,7 +197,7 @@ ngam <- neuralGAM(
 )
 pred <- predict(ngam, newdata = test, type = "response")
 head(terms)
-#          y_L       y_U      y_hat
+#          lwr       upr      fit
 # 1 -0.3361656 13.512428  7.2075512
 # 2 -1.4482141 12.116602  5.7794316
 # 3 -5.5030289  7.775545  1.4813798

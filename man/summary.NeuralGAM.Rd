@@ -12,11 +12,11 @@
 \item{...}{Additional arguments (currently unused).}
 }
 \value{
-Invisibly returns \code{object}. Prints a human‑readable summary.
+Invisibly returns \code{object}. Prints a human-readable summary.
 }
 \description{
 Summarizes a fitted \code{neuralGAM} object: family, formula, sample size,
-intercept, training MSE, per‑term neural net settings, per‑term NN layer
+intercept, training MSE, per-term neural net settings, per-term NN layer
 configuration, and training history. If a linear component is present, its
 coefficients are also reported.
 }

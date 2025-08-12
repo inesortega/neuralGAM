@@ -169,6 +169,23 @@ test_that("neuralGAM runs OK with deep architecture", {
   expect_equal(round(ngam$mse,4), 0.5207)
 })
 
+test_that("neuralGAM runs OK with mixed neural-linear model architecture", {
+  skip_if_no_keras()
+
+  seed <- 10
+  formula <- y ~ s(x1, num_units = 32) + x2
+  set.seed(seed)
+  data <- data.frame(x1 = 1:10, x2 = 1:10, y = rnorm(10))
+
+  ngam <- neuralGAM(
+    formula,
+    data = data,
+    seed = seed,
+    max_iter_backfitting = 1,
+    max_iter_ls = 1
+  )
+  expect_equal(round(ngam$mse,4), 0.5105)
+})
 
 test_that("neuralGAM runs OK with binomial response", {
   skip_if_no_keras()
@@ -273,11 +290,39 @@ test_that("neuralGAM runs OK with Prediction Intervals and poisson response", {
   expect_equal(round(ngam$mse,4), 4.4227)
 })
 
+
+test_that("neuralGAM runs OK with mixed neural-linear model architecture and PI", {
+  skip_if_no_keras()
+
+  seed <- 10
+  set.seed(seed)
+
+  formula <- y ~ s(x1, num_units = 32) + x2
+  data <- data.frame(x1 = 1:10, x2 = 1:10, y = rnorm(10))
+
+  # global num_units = 64 should apply only to x2, not override x1's 32
+  ngam <- neuralGAM(
+    formula,
+    data = data,
+    num_units = 64,
+    seed = seed,
+    max_iter_backfitting = 1,
+    max_iter_ls = 1,
+    build_pi = TRUE,
+    alpha = 0.95
+  )
+  expect_equal(round(ngam$mse,4), 0.5234)
+})
+
+
 test_that("neuralGAM accepts valid validation_split", {
   skip_if_no_keras()
 
   formula <- y ~ s(x)
+
   seed <- 10
+  set.seed(seed)
+
   data <- data.frame(x = 1:10, y = rnorm(10))
   ngam <- neuralGAM(formula, data, num_units = 5, seed = seed, max_iter_backfitting = 1, max_iter_ls = 1, validation_split = 0.2)
   expect_equal(round(ngam$mse,4), 2.7667)
@@ -318,11 +363,13 @@ test_that("neuralGAM accepts build_pi=TRUE with supported losses", {
 test_that("neuralGAM accepts per-term kernel_initializer and bias_initializer", {
   skip_if_no_keras()
 
+  seed <- 10
+  set.seed(seed)
   formula <- y ~ s(x, num_units = 5,
                    kernel_initializer = keras::initializer_he_normal(),
                    bias_initializer = keras::initializer_zeros())
   data <- data.frame(x = 1:10, y = rnorm(10))
-  ngam <- neuralGAM(formula, data, seed = 10, max_iter_backfitting = 1, max_iter_ls = 1)
+  ngam <- neuralGAM(formula, data, seed = seed, max_iter_backfitting = 1, max_iter_ls = 1)
   expect_true(inherits(ngam, "neuralGAM"))
 })
 
@@ -338,11 +385,15 @@ test_that("neuralGAM rejects invalid per-term kernel_initializer / bias_initiali
 
 test_that("neuralGAM accepts valid per-term regularizers", {
   skip_if_no_keras()
+
+  seed <- 10
+  set.seed(seed)
+
   formula <- y ~ s(x,
                    kernel_regularizer = keras::regularizer_l2(1e-4),
                    bias_regularizer = keras::regularizer_l1(1e-4))
   data <- data.frame(x = 1:10, y = rnorm(10))
-  ngam <- neuralGAM(formula, data, num_units = 5, seed = 10, max_iter_backfitting = 1, max_iter_ls = 1)
+  ngam <- neuralGAM(formula, data, num_units = 5, seed = seed, max_iter_backfitting = 1, max_iter_ls = 1)
   expect_true(inherits(ngam, "neuralGAM"))
 })
 
@@ -357,16 +408,19 @@ test_that("neuralGAM rejects invalid per-term regularizers", {
 test_that("neuralGAM accepts per-term num_units and default value for other smooth terms", {
   skip_if_no_keras()
 
+  seed <- 10
+  set.seed(seed)
+
   formula <- y ~ s(x1, num_units = 32) + s(x2)
   data <- data.frame(x1 = 1:10, x2 = 1:10, y = rnorm(10))
-  ngam <- neuralGAM(formula, data, num_units = 64, seed = 10, max_iter_backfitting = 1, max_iter_ls = 1)
+  ngam <- neuralGAM(formula, data, num_units = 64, seed = seed, max_iter_backfitting = 1, max_iter_ls = 1)
 
   # global num_units = 64 should apply only to x2, not override x1's 32
   ngam <- neuralGAM(
     formula,
     data = data,
     num_units = 64,
-    seed = 10,
+    seed = seed,
     max_iter_backfitting = 1,
     max_iter_ls = 1
   )

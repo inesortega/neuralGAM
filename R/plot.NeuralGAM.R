@@ -88,20 +88,20 @@ plot.neuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL, ...) {
     x_lab <- colnames(x)
   }
   if(!is.null(ylab)){
-    y_lab <- rep(ylab, ncol(x))
+    lwrab <- rep(ylab, ncol(x))
   }
   else{
-    y_lab <- rep(as.character(ngam$formula$y), ncol(x))
-    for (i in 1:length(y_lab)){
+    lwrab <- rep(as.character(ngam$formula$y), ncol(x))
+    for (i in 1:length(lwrab)){
       if(colnames(x)[i] %in% ngam$formula$np_terms){
-        y_lab[i] <- paste("s(", x_lab[i], ")", sep="")
+        lwrab[i] <- paste("s(", x_lab[i], ")", sep="")
       }
       else{ ## todo take into account factor terms!
         if(is.factor(x[[colnames(x)[i]]])){
-          y_lab[i] <- paste("Partial for ", x_lab[i])
+          lwrab[i] <- paste("Partial for ", x_lab[i])
         }
         else{
-          y_lab[i] <- x_lab[i]
+          lwrab[i] <- x_lab[i]
         }
       }
     }
@@ -115,7 +115,7 @@ plot.neuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL, ...) {
     term <- colnames(x)[[i]]
 
     # Generate the plot
-    plot(x[, i], f[,i], xlab=x_lab[i], ylab=y_lab[i], ...)
+    plot(x[, i], f[,i], xlab=x_lab[i], ylab=lwrab[i], ...)
 
     # Prompt the user to continue
     if (i < length(plot_names)) {

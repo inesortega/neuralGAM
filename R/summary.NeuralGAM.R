@@ -1,14 +1,14 @@
 #' @title Summary of a \code{neuralGAM} model
 #' @description
 #' Summarizes a fitted \code{neuralGAM} object: family, formula, sample size,
-#' intercept, training MSE, per‑term neural net settings, per‑term NN layer
+#' intercept, training MSE, per-term neural net settings, per-term NN layer
 #' configuration, and training history. If a linear component is present, its
 #' coefficients are also reported.
 #'
 #' @param object A \code{neuralGAM} object.
 #' @param ... Additional arguments (currently unused).
 #'
-#' @return Invisibly returns \code{object}. Prints a human‑readable summary.
+#' @return Invisibly returns \code{object}. Prints a human-readable summary.
 #' @export
 #' @examples
 #' \dontrun{
@@ -110,7 +110,7 @@ summary.neuralGAM <- function(object, ...) {
       breg  <- .pretty_keras_obj(if (!is.null(cfg$bias_regularizer))    cfg$bias_regularizer    else g_bias_regularizer)
       areg  <- .pretty_keras_obj(if (!is.null(cfg$activity_regularizer))cfg$activity_regularizer else g_activity_regularizer)
 
-      line <- sprintf(" • %s — units: %s | activation: %s | learning rate: %s | k_init: %s | b_init: %s | k_reg: %s | b_reg: %s | a_reg: %s",
+      line <- sprintf(" -- %s - units: %s | activation: %s | learning rate: %s | k_init: %s | b_init: %s | k_reg: %s | b_reg: %s | a_reg: %s",
                       term, units, act, lr, kinit, binit, kreg, breg, areg)
       cat(line, "\n", sep = "")
     }
@@ -164,7 +164,7 @@ summary.neuralGAM <- function(object, ...) {
   if (length(ngam$formula$np_terms)) {
     for (term in ngam$formula$np_terms) {
       mdl <- ngam$model[[term]]
-      cat(" • ", term, "\n", sep = "")
+      cat(" -- ", term, "\n", sep = "")
       tbl <- .layer_summary(mdl)
       if (NROW(tbl) == 0) {
         cat("    (no accessible layer config)\n")

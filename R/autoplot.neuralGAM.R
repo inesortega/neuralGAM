@@ -125,14 +125,8 @@ autoplot.neuralGAM <-
       }
     }
 
-    # Robust PI check
-    has_PI <- (!is.null(ngam$lwr) && select %in% colnames(ngam$lwr) &&
-                 ncol(ngam$lwr) > 0 && !all(is.na(ngam$lwr[[select]]))) &&
-      (!is.null(ngam$upr) && select %in% colnames(ngam$upr) &&
-         ncol(ngam$upr) > 0 && !all(is.na(ngam$upr[[select]])))
-
     # Prepare PI layer if available
-    if (has_PI) {
+    if (ngam$build_pi == TRUE) {
       df_ribbon <- data.frame(
         x = x[, select],
         lwr_term = ngam$lwr[, select],
@@ -165,7 +159,10 @@ autoplot.neuralGAM <-
         ggplot2::ggplot() +
           ggplot2::geom_line(ggplot2::aes(x = x[[term]], y = f[[term]]), ...) +
           pi_layer +
-          ggplot2::labs(x = xlab, y = ylab)
+          ggplot2::labs(
+            x = xlab, y = ylab,
+            subtitle = if (ngam$build_pi) sprintf("Prediction interval: %.0f%%", 100 * ngam$alpha) else NULL
+          )
       )
     }
 

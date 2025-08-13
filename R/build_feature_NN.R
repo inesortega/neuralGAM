@@ -39,7 +39,14 @@
 #'   (lower bound, upper bound, mean prediction) using quantile regression (pinball loss). If `FALSE`,
 #'   builds a single-output model with the specified loss.
 #' @param ... Additional arguments passed to `keras::optimizer_adam()`.
-#'
+#' @param pi_method Character string indicating the type of uncertainty to estimate in prediction intervals.
+#'   Must be one of `"aleatoric"`, `"epistemic"`, or `"both"`:
+#'   \itemize{
+#'     \item \code{"aleatoric"}: Use quantile regression loss to capture data-dependent (heteroscedastic) noise.
+#'     \item \code{"epistemic"}: Use MC Dropout with multiple forward passes to capture model uncertainty.
+#'     \item \code{"both"}: Combine both quantile estimation and MC Dropout to estimate total predictive uncertainty.
+#'   }
+#'   Only used when \code{build_pi = TRUE}. Defaults to \code{"aleatoric"}.
 #' @return
 #' A compiled `keras_model` object ready for training. When `build_pi = TRUE`, the
 #' model has three outputs; otherwise, it has one output.
@@ -93,6 +100,7 @@ build_feature_NN <-
            name = NULL,
            alpha = 0.95,
            build_pi = FALSE,
+           pi_method = "none",
            ...) {
 
     if (missing(num_units)) {
@@ -145,6 +153,8 @@ build_feature_NN <-
 
     model %>% keras::layer_dense(units = 1, input_shape = c(1))
 
+    # if(build_pi) model %>% keras::layer_dropout(rate = 0.2)
+
     if (is.vector(num_units)) {
       for (units in num_units) {
         model %>% keras::layer_dense(
@@ -156,6 +166,7 @@ build_feature_NN <-
           activity_regularizer = activity_regularizer,
           activation = activation
         )
+        if(build_pi) model %>% keras::layer_dropout(rate = 0.2)
       }
     } else {
       model %>% keras::layer_dense(
@@ -167,27 +178,25 @@ build_feature_NN <-
         bias_initializer = bias_initializer,
         activation = activation
       )
+      if(build_pi) model %>% keras::layer_dropout(rate = 0.2)
     }
 
-    if (build_pi) {
-      model %>% keras::layer_dropout(rate = 0.5)
-      model %>% keras::layer_dense(units = 1)
-      # model %>% keras::layer_dense(units = 3, activation = 'linear')
+    if (build_pi && pi_method %in% c("aleatoric", "both")) {
+      model %>% keras::layer_dense(units = 3, activation = 'linear')  # to return lwr, upr, fit
     } else {
       model %>% keras::layer_dense(units = 1)
     }
 
-    model <- set_compile(model, build_pi, alpha, learning_rate, loss, ...)
+    model <- set_compile(model, build_pi, pi_method, alpha, learning_rate, loss, ...)
   }
 
 
-set_compile <- function(model, build_pi, alpha, learning_rate, loss, loss_weights = NULL, ...){
-  if(build_pi){
+set_compile <- function(model, build_pi, pi_method, alpha, learning_rate, loss, loss_weights = NULL, ...){
+  if(build_pi && pi_method == "aleatoric"){
     model %>% compile(
       optimizer = optimizer_adam(learning_rate = learning_rate, ...),
-      # loss = make_quantile_loss(alpha = alpha,
-                                # mean_loss = loss),
-      loss= loss,
+      loss = make_quantile_loss(alpha = alpha,
+                                mean_loss = loss),
       loss_weights = loss_weights
     )
   }

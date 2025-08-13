@@ -155,7 +155,7 @@ summary.neuralGAM <- function(object, ...) {
       kreg       <- get_name(cfg$kernel_regularizer)
       breg       <- get_name(cfg$bias_regularizer)
 
-      out[nrow(out) + 1L, ] <- list(i, .collapse_val(units), .collapse_val(activation), .collapse_val(kinit), .collapse_val(binit), .collapse_val(kreg), .collapse_val(breg))
+      out[nrow(out) + 1L, ] <- list(i, cfg$name, .collapse_val(units), .collapse_val(activation), .collapse_val(kinit), .collapse_val(binit), .collapse_val(kreg), .collapse_val(breg))
     }
     out
   }

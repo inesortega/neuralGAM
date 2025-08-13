@@ -32,13 +32,11 @@
 #'   - When `build_pi = FALSE`, this is used directly in `compile()`. Can be any
 #'     `keras` built-in loss or custom function.
 #' @param name Optional character string. Name assigned to the model.
-#' @param n_train Optional integer. Number of training samples (currently unused
-#'   in quantile loss but kept for compatibility).
 #' @param alpha Numeric. Desired coverage level for prediction intervals when
 #'   `build_pi = TRUE`. Defaults to 0.95 (i.e., 95\% PI using 2.5\% and 97.5\%
 #'   quantiles).
 #' @param build_pi Logical. If `TRUE`, builds a model with prediction intervals
-#'   (lower bound, upper bound, mean prediction) using quantile loss. If `FALSE`,
+#'   (lower bound, upper bound, mean prediction) using quantile regression (pinball loss). If `FALSE`,
 #'   builds a single-output model with the specified loss.
 #' @param ... Additional arguments passed to `keras::optimizer_adam()`.
 #'
@@ -93,7 +91,6 @@ build_feature_NN <-
            activity_regularizer = NULL,
            loss = "mse",
            name = NULL,
-           n_train = NULL,
            alpha = 0.95,
            build_pi = FALSE,
            ...) {
@@ -127,10 +124,6 @@ build_feature_NN <-
 
     if (!is.character(loss) && !is.function(loss)) {
       stop("Argument 'loss' must be a character string (keras built-in) or a custom loss function.")
-    }
-
-    if (!is.null(n_train) && (!is.numeric(n_train) || n_train <= 0)) {
-      stop("Argument 'n_train' must be a positive numeric value or NULL.")
     }
 
     # ---- Loss compatibility check for PI mode ----
@@ -177,7 +170,9 @@ build_feature_NN <-
     }
 
     if (build_pi) {
-      model %>% keras::layer_dense(units = 3, activation = 'linear')
+      model %>% keras::layer_dropout(rate = 0.5)
+      model %>% keras::layer_dense(units = 1)
+      # model %>% keras::layer_dense(units = 3, activation = 'linear')
     } else {
       model %>% keras::layer_dense(units = 1)
     }
@@ -190,8 +185,9 @@ set_compile <- function(model, build_pi, alpha, learning_rate, loss, loss_weight
   if(build_pi){
     model %>% compile(
       optimizer = optimizer_adam(learning_rate = learning_rate, ...),
-      loss = make_quantile_loss(alpha = alpha,
-                                mean_loss = loss),
+      # loss = make_quantile_loss(alpha = alpha,
+                                # mean_loss = loss),
+      loss= loss,
       loss_weights = loss_weights
     )
   }

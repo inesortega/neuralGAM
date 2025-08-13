@@ -168,6 +168,7 @@ neuralGAM <-
            verbose = 1,
            ...) {
 
+
     global_defaults <- list(
       num_units          = num_units,          # still required globally unless every s(...) overrides
       activation         = activation,
@@ -307,7 +308,6 @@ neuralGAM <-
       stop("Argument 'verbose' must be 0 (silent) or 1 (verbose).")
     }
 
-
     # Initialization
     converged <- FALSE
 
@@ -367,7 +367,6 @@ neuralGAM <-
         bias_initializer = formula$np_architecture[[term]]$bias_initializer,
         activity_regularizer = formula$np_architecture[[term]]$activity_regularizer,
         name = term,
-        n_train = nrow(data),
         alpha = alpha,
         build_pi = build_pi,
         ...
@@ -411,6 +410,7 @@ neuralGAM <-
 
         if(build_pi == TRUE){
           # Update yL and yU with parametric component intervals:
+
           fit <- suppressWarnings(data.frame(predict(linear_model, interval="prediction", level = alpha)))
 
           # Update prediction intervals
@@ -452,18 +452,18 @@ neuralGAM <-
 
           model <- nonparametric_update$model
           history <- nonparametric_update$history
-          y_hat <- nonparametric_update$y_hat
+          y_hat <- nonparametric_update$fit
 
           # Update f with current learned function y_hat for predictor k
 
           if(build_pi == TRUE){
-            f[[term]] <- y_hat[,3] # y_hat or mean prediction
+            f[[term]] <- y_hat$fit # y_hat or mean prediction
             f[[term]] <- f[[term]] - mean(f[[term]])
             eta <- eta + f[[term]]
 
             # Update prediction intervals
-            lwr[[term]] <- y_hat[,1]
-            upr[[term]] <- y_hat[,2]
+            lwr[[term]] <- y_hat$lwr
+            upr[[term]] <- y_hat$upr
           }
           else{
             f[[term]] <- y_hat # y_hat or mean prediction
@@ -564,43 +564,76 @@ neuralGAM <-
     return(res)
   }
 
-.update_nonparametric_component <- function(model, family, term, eta, f, W, Z, x_np, validation_split, verbose, loss, learning_rate, build_pi, loss_weights, alpha, ...){
-# Update one nonparametric component:
-#  - Remove its current contribution from eta
-#  - Compute the residual
-#  - Train the correponding neural network on that predictor
-
+.update_nonparametric_component <- function(model, family, term, eta, f, W, Z, x_np,
+                                            validation_split, verbose, loss, learning_rate,
+                                            build_pi, loss_weights, alpha,
+                                            mc_dropout = TRUE, forward_passes = 15, ...) {
+  # Remove the term's current contribution from eta
   eta <- eta - f[[term]]
   residuals <- Z - eta
 
-  # Fit network k with x[k] towards residuals
+  # Compile for non-Gaussian families
   if (family == "gaussian") {
-    history <-
-      model[[term]] %>% fit(
-        x_np[[term]],
-        residuals,
-        validation_split = validation_split,
-        epochs = 1,
-        verbose = verbose
-      )
-
+    history <- model[[term]] %>% fit(
+      x_np[[term]],
+      residuals,
+      validation_split = validation_split,
+      epochs = 1,
+      verbose = verbose
+    )
   } else {
-    model[[term]] <- set_compile(model[[term]], build_pi, alpha, learning_rate, loss, loss_weights = loss_weights, ...)
+    model[[term]] <- set_compile(
+      model[[term]], build_pi, alpha, learning_rate, loss,
+      loss_weights = loss_weights, ...
+    )
 
-    t <- Sys.time()
-    history <-
-      model[[term]] %>% fit(
-        x_np[[term]],
-        residuals,
-        epochs = 1,
-        sample_weight = list(W),
-        verbose = verbose,
-        validation_split = validation_split
-      )
+    history <- model[[term]] %>% fit(
+      x_np[[term]],
+      residuals,
+      epochs = 1,
+      sample_weight = list(W),
+      verbose = verbose,
+      validation_split = validation_split
+    )
   }
 
-  # Update f with current learned function for predictor k
-  y_hat <- model[[term]] %>% predict(x_np[[term]], verbose = verbose)
+  # ---- Monte Carlo Dropout forward passes ----
+  if (isTRUE(mc_dropout) && forward_passes > 1) {
+    if(verbose){
+      print("Runing MC...")
+    }
+    preds_list <- replicate(
+      forward_passes,
+      {
+        # Force dropout active: predict(..., training = TRUE)
+        model[[term]] %>% predict(x_np[[term]],
+                                  verbose = 0,
+                                  training = TRUE)
+      },
+      simplify = FALSE
+    )
+
+    preds_array <- abind::abind(preds_list, along = 3)  # shape: [n_obs, 1, forward_passes]
+    y_hat_mean <- apply(preds_array, c(1, 2), mean)
+    y_hat_var  <- apply(preds_array, c(1, 2), var)
+
+    # Compute lower and upper bounds of PI using empirical quantiles (non-parametric percentile approach from MC samples):
+    # adjust alpha (i.e from 95% desired coverage, we want alpha set to 0.05)
+    alpha <- 1 - alpha
+    lower_q <- alpha / 2
+    upper_q <- 1 - alpha / 2
+
+    ci_lower <- apply(preds_array, 1, quantile, probs = lower_q)
+    ci_upper <- apply(preds_array, 1, quantile, probs = upper_q)
+
+    preds <- data.frame(fit = y_hat_mean,
+                        lwr = ci_lower,
+                        upr = ci_upper)
+  } else {
+    # Standard deterministic prediction
+    preds <- model[[term]] %>% predict(x_np[[term]], verbose = verbose)
+    # y_hat_sd <- rep(NA_real_, length(y_hat))
+  }
 
   res = list("model" = model,
              "history" = history,

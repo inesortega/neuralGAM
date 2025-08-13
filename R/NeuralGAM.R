@@ -567,6 +567,7 @@ neuralGAM <-
 .update_nonparametric_component <- function(model, family, term, eta, f, W, Z, x_np,
                                             validation_split, verbose, loss, learning_rate,
                                             build_pi, loss_weights, alpha,
+                                            mc_dropout = TRUE, forward_passes = 15, ...) {
   # Remove the term's current contribution from eta
   eta <- eta - f[[term]]
   residuals <- Z - eta
@@ -636,7 +637,7 @@ neuralGAM <-
 
   res = list("model" = model,
              "history" = history,
-             "y_hat" = y_hat)
+             "fit" = preds)
   return(res)
 }
 

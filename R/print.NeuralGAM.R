@@ -58,29 +58,25 @@
 print.neuralGAM <- function(x, ...) {
   if (inherits(x, "neuralGAM")) {
     # Print the class name
-    cat("Class: neuralGAM \n")
-
     # Print the object's contents
     ngam <- x
 
-    cat(paste("\nDistribution Family: ", ngam$family))
-    cat(paste("\nFormula: ", ngam$formula$formula))
+    build_pi <- tryCatch(isTRUE(ngam$build_pi), error = function(e) FALSE)
+    alpha    <- tryCatch(ngam$alpha, error = function(e) NA_real_)
 
-    if(!is.null(ngam$model$linear)){
-      cat(paste(
-        "\nIntercept:",
-        round(ngam$model$linear$coefficients["(Intercept)"], 4)
-      ))
+    cat("Class: neuralGAM \n")
+    cat(rep("=", 72), sep = "", "\n")
+    cat("Family          : ", ngam$family, "\n", sep = "")
+    cat("Formula         : ", deparse(ngam$formula$formula), "\n", sep = "")
+    cat("Observations    : ", NROW(ngam$y), "\n", sep = "")
+    cat("Intercept (eta0): ", format(ngam$eta0, digits = 6), "\n", sep = "")
+    cat("Train MSE       : ", format(ngam$mse, digits = 6), "\n", sep = "")
+    if (isTRUE(build_pi)) {
+      cat("Prediction Int. : ENABLED (alpha =", alpha, ")\n")
+    } else {
+      cat("Prediction Int. : disabled\n")
     }
-    else{
-      cat(paste(
-        "\nIntercept:",
-        round(ngam$eta0, 4)
-      ))
-    }
-
-    cat(paste("\nMSE:", round(ngam$mse, 4)))
-    cat(paste("\nSample size:", nrow(ngam$x)))
+    cat(rep("-", 72), sep = "", "\n")
 
     invisible(x)
   } else{

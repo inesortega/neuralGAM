@@ -82,6 +82,7 @@ autoplot.neuralGAM <-
            select,
            xlab = NULL,
            ylab = NULL,
+           pi = TRUE,
            ...) {
     if (!inherits(object, "neuralGAM")) {
       stop("Argument 'object' must be of class 'neuralGAM'")
@@ -126,7 +127,7 @@ autoplot.neuralGAM <-
     }
 
     # Prepare PI layer if available
-    if (ngam$build_pi == TRUE) {
+    if (ngam$build_pi == TRUE && pi == TRUE) {
       df_ribbon <- data.frame(
         x = x[, select],
         lwr_term = ngam$lwr[, select],
@@ -161,7 +162,7 @@ autoplot.neuralGAM <-
           pi_layer +
           ggplot2::labs(
             x = xlab, y = ylab,
-            subtitle = if (ngam$build_pi) sprintf("Prediction interval: %.0f%%", 100 * ngam$alpha) else NULL
+            subtitle = if (ngam$build_pi == TRUE && pi == TRUE) sprintf("Prediction interval: %.0f%% coverage", 100 * (1-ngam$alpha)) else NULL
           )
       )
     }

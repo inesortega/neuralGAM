@@ -32,21 +32,20 @@
 #'   - When `build_pi = FALSE`, this is used directly in `compile()`. Can be any
 #'     `keras` built-in loss or custom function.
 #' @param name Optional character string. Name assigned to the model.
-#' @param alpha Numeric. Desired coverage level for prediction intervals when
-#'   `build_pi = TRUE`. Defaults to 0.95 (i.e., 95\% PI using 2.5\% and 97.5\%
+#' @param alpha Numeric. Desired PI significance level for prediction intervals when
+#'   `build_pi = TRUE`. Defaults to 0.05 (i.e., 95\% PI using 2.5\% and 97.5\%
 #'   quantiles).
 #' @param build_pi Logical. If `TRUE`, builds a model with prediction intervals
-#'   (lower bound, upper bound, mean prediction) using quantile regression (pinball loss). If `FALSE`,
-#'   builds a single-output model with the specified loss.
-#' @param ... Additional arguments passed to `keras::optimizer_adam()`.
+#'   (lower bound, upper bound, mean prediction). If `FALSE`, builds a single-output model with the specified loss.
 #' @param pi_method Character string indicating the type of uncertainty to estimate in prediction intervals.
 #'   Must be one of `"aleatoric"`, `"epistemic"`, or `"both"`:
 #'   \itemize{
 #'     \item \code{"aleatoric"}: Use quantile regression loss to capture data-dependent (heteroscedastic) noise.
-#'     \item \code{"epistemic"}: Use MC Dropout with multiple forward passes to capture model uncertainty.
+#'     \item \code{"epistemic"}: Use Monte Carlo Dropout with multiple forward passes to capture model uncertainty.
 #'     \item \code{"both"}: Combine both quantile estimation and MC Dropout to estimate total predictive uncertainty.
 #'   }
 #'   Only used when \code{build_pi = TRUE}. Defaults to \code{"aleatoric"}.
+#' @param ... Additional arguments passed to `keras::optimizer_adam()`.
 #' @return
 #' A compiled `keras_model` object ready for training. When `build_pi = TRUE`, the
 #' model has three outputs; otherwise, it has one output.
@@ -212,11 +211,11 @@ set_compile <- function(model, build_pi, pi_method, alpha, learning_rate, loss, 
 }
 
 
-make_quantile_loss <- function(alpha = 0.95,
+make_quantile_loss <- function(alpha = 0.05,
                                mean_loss = "mse") {
-  # Quantile values
-  tau_low <- (1 - alpha) / 2
-  tau_up  <- 1 - tau_low
+  # Quantile values - Convert miscoverage to central-interval quantiles
+  tau_low <- alpha / 2
+  tau_up  <- 1 - alpha / 2
 
   function(y_true, y_pred) {
     # Extract outputs: Lower, Upper, Mean
@@ -226,7 +225,7 @@ make_quantile_loss <- function(alpha = 0.95,
 
     y_t <- y_true[, 1]
 
-    # Pinball loss helper
+    # Pinball (quantile) loss for level tau in (0,1)
     pinball_loss <- function(y, q, tau) {
       e <- y - q
       tensorflow::tf$reduce_mean(

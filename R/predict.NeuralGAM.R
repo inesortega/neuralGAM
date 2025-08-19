@@ -154,46 +154,144 @@ predict.neuralGAM <- function(object,
 }
 
 get_model_predictions <- function(ngam, x, term, verbose) {
-  # Linear term
+  ## -------------------------
+  ## Parametric (linear) term
+  ## -------------------------
   if (term %in% ngam$formula$p_terms) {
     model <- ngam$model$linear
     lm_data <- data.frame(x[ngam$formula$p_terms])
     colnames(lm_data) <- ngam$formula$p_terms
 
-    if(ngam$build_pi == TRUE){
-      #### Handle Prediction Intervals
-      preds <- stats::predict(model, newdata = lm_data, type = "terms", terms = term, interval = "prediction", level = ngam$alpha)
+    if (isTRUE(ngam$build_pi)) {
+      preds <- stats::predict(
+        model,
+        newdata = lm_data,
+        type = "terms",
+        terms = term,
+        interval = "prediction",
+        level = ngam$alpha
+      )
       preds_df <- data.frame(
         lwr = preds$lwr,
         upr = preds$upr,
-        fit = preds$fit
+        fit = preds$fit,
+        var_epistemic = NA_real_,
+        var_aleatoric = NA_real_,
+        var_total = NA_real_
       )
       colnames(preds_df) <- c("lwr", "upr", "fit")
       return(preds_df)
-    }
-    else{
-      return(stats::predict(model, newdata = lm_data,
-                            type = "terms", terms = term))
+    } else {
+      return(stats::predict(model, newdata = lm_data, type = "terms", terms = term))
     }
   }
 
-  # Non-Parametric term
+  ## -------------------------
+  ## Non-parametric (NN) term
+  ## -------------------------
   if (term %in% ngam$formula$np_terms) {
     model <- ngam$model[[term]]
-    preds <- model$predict(x[[term]], verbose = verbose)
+    X <- x[[term]]
+    if (is.null(dim(X))) X <- matrix(X, ncol = 1L)
 
-    # Handle PI vs no PI automatically
-    if (ngam$build_pi == TRUE){
-      # Return as data.frame with columns lwr, upr, fit
-      preds_df <- data.frame(
-        lwr = preds[, 1],
-        upr = preds[, 2],
-        fit = preds[, 3]
-      )
-      return(preds_df)
-    } else {
-      # Return mean prediction only
+    # No PI: return point prediction on link scale
+    if (!isTRUE(ngam$build_pi)) {
+      preds <- model$predict(X, verbose = verbose)
       return(as.numeric(preds))
     }
+
+    # Determine PI method
+    pm <- tryCatch(model$pi_method, error = function(e) NULL)
+    if (is.null(pm) || pm %in% c("", "none", NA)) {
+      probe <- try(suppressWarnings(model$predict(X[1, , drop = FALSE], verbose = 0)), silent = TRUE)
+      outdim <- if (inherits(probe, "try-error")) 1L else ncol(as.matrix(probe))
+      pm <- if (outdim == 3L) "aleatoric" else "epistemic"
+    }
+
+    alpha <- ngam$alpha
+    lower_q <- alpha / 2
+    upper_q <- 1 - alpha / 2
+
+    if (identical(pm, "aleatoric")) {
+      # Expect 3-head output: [lwr, upr, fit] (link scale)
+      preds <- as.matrix(model$predict(X, verbose = verbose))
+      if (ncol(preds) >= 3L) {
+        lwr <- preds[, 1]; upr <- preds[, 2]; mu <- preds[, 3]
+        z_val <- stats::qnorm(1 - alpha / 2)
+        width <- pmax(upr - lwr, 0)
+        sd_ale <- if (z_val > 0) width / (2 * z_val) else rep(NA_real_, length(width))
+        var_ale <- sd_ale^2
+        return(data.frame(
+          lwr = lwr,
+          upr = upr,
+          fit = mu,
+          var_epistemic = NA_real_,
+          var_aleatoric = var_ale,
+          var_total = var_ale
+        ))
+      } else {
+        # Fallback: no PI available from head
+        return(as.numeric(preds[, 1]))
+      }
+    }
+
+    if (identical(pm, "epistemic")) {
+      # MC Dropout around a single-head mean
+      passes <- tryCatch(as.integer(model$forward_passes), error = function(e) NA_integer_)
+      if (is.na(passes) || passes <= 0L) passes <- 30L
+      ya <- .mc_dropout_forward(model, X, passes = passes, output_dim = 1L)  # [passes, n, 1]
+      ymat <- ya[, , 1]
+      lwr <- matrixStats::colQuantiles(ymat, probs = lower_q)
+      upr <- matrixStats::colQuantiles(ymat, probs = upper_q)
+      mu  <- Matrix::colMeans(ymat)
+      v   <- matrixStats::colVars(ymat)
+      return(data.frame(
+        lwr = as.numeric(lwr),
+        upr = as.numeric(upr),
+        fit = as.numeric(mu),
+        var_epistemic = as.numeric(v),
+        var_aleatoric = NA_real_,
+        var_total = as.numeric(v)
+      ))
+    }
+
+    if (identical(pm, "both")) {
+      # MC Dropout around 3-head model: combine aleatoric + epistemic
+      passes <- tryCatch(as.integer(model$forward_passes), error = function(e) NA_integer_)
+      if (is.na(passes) || passes <= 0L) passes <- 30L
+      ya <- .mc_dropout_forward(model, X, passes = passes, output_dim = 3L)  # [passes, n, 3]
+      lwr_mat  <- ya[, , 1]
+      upr_mat  <- ya[, , 2]
+      mean_mat <- ya[, , 3]
+      # This returns fit, lwr, upr, var_epistemic, var_aleatoric, var_total
+      return(.combine_uncertainties(
+        lwr_mat = lwr_mat,
+        upr_mat = upr_mat,
+        mean_mat = mean_mat,
+        alpha = alpha
+      ))
+    }
+
+    # Unknown method: best-effort fallback
+    preds <- as.matrix(model$predict(X, verbose = verbose))
+    if (ncol(preds) >= 3L) {
+      lwr <- preds[, 1]; upr <- preds[, 2]; mu <- preds[, 3]
+      z_val <- stats::qnorm(1 - alpha / 2)
+      width <- pmax(upr - lwr, 0)
+      sd_ale <- if (z_val > 0) width / (2 * z_val) else rep(NA_real_, length(width))
+      var_ale <- sd_ale^2
+      return(data.frame(
+        lwr = lwr,
+        upr = upr,
+        fit = mu,
+        var_epistemic = NA_real_,
+        var_aleatoric = var_ale,
+        var_total = var_ale
+      ))
+    } else {
+      return(as.numeric(preds[, 1]))
+    }
   }
+
+  stop("Term '", term, "' not found in the model formula.")
 }

@@ -37,7 +37,7 @@
 #'     \item \code{"both"}: Combine both quantile estimation and MC Dropout to estimate total predictive uncertainty.
 #'   }
 #'   Only used when \code{build_pi = TRUE}. Defaults to \code{"aleatoric"}.
-#' @param alpha PI coverage (only used if `build_pi = TRUE`), e.g. `0.95` for 95% PI.
+#' @param alpha PI significance level (only used if `build_pi = TRUE`), e.g. `0.05` for 95% PI.
 #' @param validation_split Fraction of training data used for validation.
 #' @param w_train Optional training weights.
 #' @param bf_threshold,ls_threshold Convergence thresholds for backfitting and local scoring.
@@ -64,7 +64,7 @@
 #'   \item{formula}{ The original model formula, as parsed by `get_formula_elements()`.}
 #'   \item{history}{ List of Keras training histories for each fitted term.}
 #'   \item{globals}{ List of global default hyperparameters used for architecture and training.}
-#'   \item{alpha}{ PI coverage level (only relevant if `build_pi = TRUE`).}
+#'   \item{alpha}{ PI significance level (only relevant if `build_pi = TRUE`).}
 #'   \item{build_pi}{ Logical; whether the model was trained to produce prediction intervals.}
 #' }
 #'
@@ -102,8 +102,7 @@
 #' @importFrom reticulate py_available
 #' @importFrom magrittr %>%
 #' @importFrom formula.tools lhs rhs
-#' @importFrom matrixStats colQuantiles colVars
-#' @importFrom Matrix colMeans
+#' @importFrom matrixStats colQuantiles colVars colMeans2
 #' @export
 #' @examples \dontrun{
 #' n <- 24500
@@ -148,7 +147,7 @@
 #'        s(x2, num_units = 256),
 #'   data = train,
 #'   build_pi = TRUE,
-#'   alpha = 0.95
+#'   alpha = 0.05
 #' )
 #' # Visualize point prediction and prediction intervals using autoplot:
 #' autoplot(ngam, "x1")
@@ -168,7 +167,7 @@ neuralGAM <-
            loss = "mse",
            pi_method = "none",
            build_pi = FALSE,
-           alpha = 0.95,
+           alpha = 0.05,
            forward_passes = 0,
            validation_split = NULL,
            w_train = NULL,
@@ -284,9 +283,6 @@ neuralGAM <-
     # --- alpha ---
     if (!is.numeric(alpha) || alpha <= 0 || alpha >= 1) {
       stop("Argument 'alpha' must be a numeric value strictly between 0 and 1.")
-    }
-    if (build_pi && (alpha < 0.8 || alpha > 0.99)) {
-      warning("Alpha values outside 0.8-0.99 may lead to overly narrow or wide prediction intervals.")
     }
 
     # --- Validation split ---
@@ -575,22 +571,24 @@ neuralGAM <-
         history = model_history,
         globals = global_defaults,
         alpha = alpha,
-        build_pi = build_pi
+        build_pi = build_pi,
+        pi_method = pi_method,
+        forward_passes = forward_passes
       )
     class(res) <- "neuralGAM"
     return(res)
   }
 
+
 .update_nonparametric_component <- function(model, family, term, eta, f, W, Z, x_np,
                                             validation_split, verbose, loss, learning_rate,
                                             build_pi, loss_weights, alpha,
-                                            pi_method = pi_method,
-                                            forward_passes = forward_passes, ...) {
+                                            pi_method,
+                                            forward_passes, ...) {
   # Remove the term's current contribution from eta
   eta <- eta - f[[term]]
   residuals <- Z - eta
-
-  # Compile for non-Gaussian families
+  # ---- Fit - one epoch ----
   if (family == "gaussian") {
     history <- model[[term]] %>% fit(
       x_np[[term]],
@@ -600,6 +598,7 @@ neuralGAM <-
       verbose = verbose
     )
   } else {
+    # Compile for non-gaussian families
     model[[term]] <- set_compile(
       model[[term]], build_pi, pi_method, alpha, learning_rate, loss,
       loss_weights = loss_weights, ...
@@ -615,101 +614,135 @@ neuralGAM <-
     )
   }
 
-  # ---- Monte Carlo Dropout forward passes ----
+  # ---- Prediction and uncertainty estimation ----
+  preds <- NULL
+  y_hat_var <- NULL
+
+  lower_q <- alpha / 2
+  upper_q <- 1 - alpha / 2
+
+  x <- x_np[[term]]
+  if (is.null(dim(x))) x <- matrix(x, ncol = 1L)
+
   if (pi_method == "epistemic") {
-    passes <- as.integer(forward_passes)
-    # tf <- reticulate::import("tensorflow")
+    # Compute only epistemic uncertainty by using `forward_passess` with Dropout layer
+    y_array <- .mc_dropout_forward(model[[term]], x, forward_passes, output_dim = 1L)
 
-    x <- x_np[[term]]
-    if (is.null(dim(x))) x <- matrix(x, ncol = 1L)
+    # y_array shape: [passes, n_obs, 1]
+    y_mat <- y_array[, , 1]                       # [passes, n_obs]
 
-    x_tf <- tensorflow::tf$convert_to_tensor(x)
-    n_obs <- nrow(x)
-
-    # Tile the batch 'passes' times: shape becomes [passes * n_obs, 1]
-    x_tiled <- tensorflow::tf$tile(x_tf, as.integer(c(passes, 1L)))  # tile along batch only
-
-    # Single forward call with dropout active across all passess
-    # y_tiled <- model[[term]] %>% predict(x_tiled, verbose = verbose, training = TRUE)
-    y_tiled <- model[[term]](x_tiled, training = TRUE)
-
-    #n_obs <- length(x_np[[term]])
-    if (length(dim(y_tiled)) == 1L) {
-      y_tiled <- tensorflow::tf$expand_dims(y_tiled, axis = -1L)
-    }
-
-    # y_tiled has shape [passes * n_obs, 1]
-    y <- tensorflow::tf$reshape(y_tiled, shape = c(passes, n_obs, 1L))           # [passes, n_obs, 1]
-    y <- tensorflow::tf$transpose(y, perm = c(1L, 2L, 0L))                       # [n_obs, 1, passes]
-    y_array <- as.array(y)
-
-    # Compute lower and upper bounds of PI using empirical quantiles (non-parametric percentile approach from MC samples):
-    # adjust alpha (i.e from 95% desired coverage, we want alpha set to 0.05)
-    alpha <- 1 - alpha
-    lower_q <- alpha / 2
-    upper_q <- 1 - alpha / 2
-
-    # Reorder into [passes, n_obs]
-    y_mat <- aperm(y_array, c(3, 1, 2))
-    y_mat <- matrix(y_mat, nrow = passes)
-
-    # Compute quantiles
-    ci_lower <- matrixStats::colQuantiles(y_mat, probs = lower_q)
-    ci_upper <- matrixStats::colQuantiles(y_mat, probs = upper_q)
-
+    ci_lower  <- matrixStats::colQuantiles(y_mat, probs = lower_q)
+    ci_upper  <- matrixStats::colQuantiles(y_mat, probs = upper_q)
     y_hat_mean <- Matrix::colMeans(y_mat)
-    y_hat_var <- matrixStats::colVars(y_mat)
+    y_hat_var  <- matrixStats::colVars(y_mat)
 
     preds <- data.frame(lwr = ci_lower,
                         fit = y_hat_mean,
-                        upr = ci_upper)
-  }
-  else if(pi_method == "both"){
-    passes <- as.integer(forward_passes)
+                        upr = ci_upper,
+                        var_epistemic = y_hat_var,
+                        var_aleatoric = NA_real_,
+                        var_total = y_hat_var)
 
-    x <- x_np[[term]]
-    if (is.null(dim(x))) x <- matrix(x, ncol = 1L)
-    x_tf <- tensorflow::tf$convert_to_tensor(x)
-    n_obs <- nrow(x)
+  } else if (pi_method == "both") {
+    y_array <- .mc_dropout_forward(model[[term]], x, forward_passes, output_dim = 3L)
+    # y_array: [passes, n_obs, 3]
+    lwr_mat  <- y_array[, , 1]
+    upr_mat  <- y_array[, , 2]
+    mean_mat <- y_array[, , 3]
+    preds <- .combine_uncertainties(lwr_mat, upr_mat, mean_mat, alpha = alpha)
 
-    x_tiled <- tensorflow::tf$tile(x_tf, as.integer(c(passes, 1L)))
-    y_tiled <- model[[term]](x_tiled, training = TRUE)
-
-    # y_tiled: [passes * n_obs, 3]
-    y_reshaped <- tensorflow::tf$reshape(y_tiled, shape = c(passes, n_obs, 3L))
-    y_array <- as.array(tensorflow::tf$transpose(y_reshaped, perm = c(1L, 2L, 3L)))  # [passes, n_obs, 3]
-
-    # Reorder to [n_obs, 3, passes]
-    y_array <- aperm(y_array, c(2, 3, 1))  # [n_obs, 3, passes]
-
-    # Extract each channel from NN prediction: 1 = lwr, 2 = upr, 3 = mean
-    lwr_mat <- y_array[, 1, ]
-    upr_mat <- y_array[, 2, ]
-    mean_mat <- y_array[, 3, ]
-
-    # Aggregate per column
-    preds <- data.frame(
-      lwr = matrixStats::colQuantiles(lwr_mat, probs = alpha / 2),
-      fit = Matrix::colMeans(mean_mat),
-      upr = matrixStats::colQuantiles(upr_mat, probs = 1 - alpha / 2)
+    preds <- .combine_uncertainties(
+      lwr_mat = lwr_mat,
+      upr_mat = upr_mat,
+      mean_mat = mean_mat,
+      alpha = alpha
     )
-  }
-  else if(pi_method %in% c("aleatoric", "none")) {
-    # Standard deterministic prediction
-    y_hat <- model[[term]] %>% predict(x_np[[term]], verbose = 0)
-    preds <- data.frame(
-      lwr = y_hat[, 1],
-      upr = y_hat[,2],
-      fit = y_hat[,3]
-    )
-    y_hat_var <- rep(NA_real_, length(preds))
+  } else if (pi_method %in% c("aleatoric", "none")) {
+    y_hat <- model[[term]] %>% predict(x, verbose = 0)
+
+    if (ncol(y_hat) == 3) {
+      lwr <- y_hat[, 1]; upr <- y_hat[, 2]; mu <- y_hat[, 3]
+      z_val <- stats::qnorm(1 - alpha / 2)
+      width <- pmax(upr - lwr, 0)
+      sd_ale <- if (z_val > 0) width / (2 * z_val) else rep(NA_real_, length(width))
+      var_ale <- sd_ale^2
+      preds <- data.frame(
+        lwr = lwr,
+        upr = upr,
+        fit = mu,
+        var_epistemic = NA_real_,
+        var_aleatoric = var_ale,
+        var_total = var_ale
+      )
+    } else {
+      preds <- data.frame(
+        fit = y_hat[, 1],
+        lwr = NA_real_,
+        upr = NA_real_,
+        var_epistemic = NA_real_,
+        var_aleatoric = NA_real_,
+        var_total = NA_real_
+      )
+    }
   }
 
-  res = list("model" = model,
-             "history" = history,
-             "fit" = preds,
-             "var" = y_hat_var)
-  return(res)
+  # Resultado final
+  list(
+    model = model,
+    history = history,
+    fit = preds,
+    var = y_hat_var
+  )
+}
+
+
+
+.mc_dropout_forward <- function(model, x, passes, output_dim) {
+  if (!is.matrix(x)) x <- as.matrix(x)
+  if (!is.numeric(x)) stop("Input 'x' must be numeric.")
+
+  n_obs <- nrow(x)
+  passes <- as.integer(passes)
+  output_dim <- as.integer(output_dim)
+
+  x_tf    <- tensorflow::tf$convert_to_tensor(x)
+  x_tiled <- tensorflow::tf$tile(x_tf, as.integer(c(passes, 1L)))  # [passes*n_obs, d]
+  y_tiled <- model(x_tiled, training = TRUE)                        # dropout ON
+
+  if (length(dim(y_tiled)) == 1L) {
+    y_tiled <- tensorflow::tf$expand_dims(y_tiled, axis = -1L)      # [passes*n_obs, 1]
+  }
+
+  y_reshaped <- tensorflow::tf$reshape(y_tiled, shape = c(passes, n_obs, output_dim))
+  as.array(y_reshaped)  # <-- [passes, n_obs, output_dim]
+}
+
+
+
+.combine_uncertainties <- function(lwr_mat, upr_mat, mean_mat, alpha) {
+  # lwr_mat, upr_mat, mean_mat: matrices of shape [forward_passess, n_obs]
+  z_val <- qnorm(1 - alpha / 2)
+
+  # Epistemic: across forward passes, compute mean and variance
+  mean_pred <- matrixStats::colMeans2(mean_mat)
+  epistemic_var <- matrixStats::colVars(mean_mat)
+
+  # Aleatoric: from interval widths
+  aleatoric_sd_each <- (upr_mat - lwr_mat) / (2 * z_val)
+  aleatoric_var <- matrixStats::colMeans2(aleatoric_sd_each^2)
+
+  # Total variance and interval
+  total_var <- epistemic_var + aleatoric_var
+  total_sd <- sqrt(total_var)
+
+  data.frame(
+    fit = mean_pred,
+    lwr = mean_pred - z_val * total_sd,
+    upr = mean_pred + z_val * total_sd,
+    var_epistemic = epistemic_var,
+    var_aleatoric = aleatoric_var,
+    var_total = total_var
+  )
 }
 
 .merge_term_config <- function(global, per_term) {

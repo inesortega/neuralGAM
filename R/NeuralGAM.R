@@ -168,7 +168,7 @@ neuralGAM <-
            pi_method = "none",
            build_pi = FALSE,
            alpha = 0.05,
-           forward_passes = 0,
+           forward_passes = 30,
            validation_split = NULL,
            w_train = NULL,
            bf_threshold = 0.001,

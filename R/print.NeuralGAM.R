@@ -72,7 +72,7 @@ print.neuralGAM <- function(x, ...) {
     cat("Intercept (eta0): ", format(ngam$eta0, digits = 6), "\n", sep = "")
     cat("Train MSE       : ", format(ngam$mse, digits = 6), "\n", sep = "")
     if (isTRUE(build_pi)) {
-      cat("Prediction Int. : ENABLED (alpha =", alpha, ")\n")
+      cat("Prediction Int. : ENABLED (alpha = ", alpha, " method = ", ngam$pi_method, ")\n", sep = "")
     } else {
       cat("Prediction Int. : disabled\n")
     }

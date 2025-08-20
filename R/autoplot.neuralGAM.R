@@ -161,8 +161,8 @@ autoplot.neuralGAM <-
           ggplot2::geom_line(ggplot2::aes(x = x[[term]], y = f[[term]]), ...) +
           pi_layer +
           ggplot2::labs(
-            x = xlab, y = ylab,
-            subtitle = if (ngam$build_pi == TRUE && pi == TRUE) sprintf("Prediction interval: %.0f%% coverage", 100 * (1-ngam$alpha)) else NULL
+            x = xlab, y = ylab
+            # subtitle = if (ngam$build_pi == TRUE && pi == TRUE) sprintf("Prediction interval: %.0f%% coverage", 100 * (1-ngam$alpha)) else NULL
           )
       )
     }

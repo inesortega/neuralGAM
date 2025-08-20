@@ -143,10 +143,10 @@
 #' ngam
 #' # Construct prediction intervals
 #' ngam <- neuralGAM(
-#'   y ~ s(x1, num_units = c(128,64), activation = "tanh") +
-#'        s(x2, num_units = 256),
+#'   y ~ s(x1) + x2,
+#'   num_units = 128,
 #'   data = train,
-#'   build_pi = TRUE,
+#'   build_pi = TRUE, pi_method = "aleatoric",
 #'   alpha = 0.05
 #' )
 #' # Visualize point prediction and prediction intervals using autoplot:
@@ -169,6 +169,7 @@ neuralGAM <-
            build_pi = FALSE,
            alpha = 0.05,
            forward_passes = 30,
+           dropout_rate = 0.1,
            validation_split = NULL,
            w_train = NULL,
            bf_threshold = 0.001,
@@ -285,6 +286,11 @@ neuralGAM <-
       stop("Argument 'alpha' must be a numeric value strictly between 0 and 1.")
     }
 
+    # --- dropout rate ---
+    if (!is.numeric(dropout_rate) || dropout_rate <= 0 || dropout_rate >= 1) {
+      stop("Argument 'dropout_rate' must be a numeric value strictly between 0 and 1.")
+    }
+
     # --- Validation split ---
     if (!is.null(validation_split) && (!is.numeric(validation_split) || validation_split < 0 || validation_split >= 1)) {
       stop("Argument 'validation_split' must be NULL or a numeric value in (0, 1).")
@@ -386,6 +392,7 @@ neuralGAM <-
         alpha = alpha,
         build_pi = build_pi,
         pi_method = pi_method,
+        dropout_rate = dropout_rate,
         ...
       )
       model_history[[term]] <- list()
@@ -428,7 +435,7 @@ neuralGAM <-
         if(build_pi == TRUE){
           # Update yL and yU with parametric component intervals:
 
-          fit <- suppressWarnings(data.frame(predict(linear_model, interval="prediction", level = alpha)))
+          fit <- suppressWarnings(data.frame(predict(linear_model, interval="prediction", level = 1-alpha)))
 
           # Update prediction intervals
           lwr[formula$p_terms] <- fit$lwr
@@ -475,13 +482,16 @@ neuralGAM <-
 
           # Update f with current learned function y_hat for predictor k
           f[[term]] <- fit$fit # y_hat only
-          f[[term]] <- f[[term]] - mean(f[[term]])
+
+          mean_val <- mean(f[[term]])
+
+          f[[term]] <- f[[term]] - mean_val
           eta <- eta + f[[term]]
 
           if(build_pi == TRUE){
             # Update prediction intervals
-            lwr[[term]] <- fit$lwr
-            upr[[term]] <- fit$upr
+            lwr[[term]] <- fit$lwr - mean_val
+            upr[[term]] <- fit$upr - mean_val
           }
 
           ## Store training metrics for current backfitting iteration
@@ -626,36 +636,41 @@ neuralGAM <-
 
   if (pi_method == "epistemic") {
     # Compute only epistemic uncertainty by using `forward_passess` with Dropout layer
+    mu_det <- as.numeric(model[[term]] %>% predict(x, verbose = 0))
+
+    # stochastic passes for uncertainty (dropout ON)
     y_array <- .mc_dropout_forward(model[[term]], x, forward_passes, output_dim = 1L)
+    y_mat   <- y_array[, , 1]
 
-    # y_array shape: [passes, n_obs, 1]
-    y_mat <- y_array[, , 1]                       # [passes, n_obs]
+    ci_lower <- matrixStats::colQuantiles(y_mat, probs = lower_q)
+    ci_upper <- matrixStats::colQuantiles(y_mat, probs = upper_q)
+    y_var    <- matrixStats::colVars(y_mat)
 
-    ci_lower  <- matrixStats::colQuantiles(y_mat, probs = lower_q)
-    ci_upper  <- matrixStats::colQuantiles(y_mat, probs = upper_q)
-    y_hat_mean <- Matrix::colMeans(y_mat)
-    y_hat_var  <- matrixStats::colVars(y_mat)
-
-    preds <- data.frame(lwr = ci_lower,
-                        fit = y_hat_mean,
-                        upr = ci_upper,
-                        var_epistemic = y_hat_var,
-                        var_aleatoric = NA_real_,
-                        var_total = y_hat_var)
-
+    preds <- data.frame(
+      lwr = ci_lower,
+      fit = mu_det,              # <- smooth, deterministic
+      upr = ci_upper,
+      var_epistemic = y_var,
+      var_aleatoric = NA_real_,
+      var_total     = y_var
+    )
   } else if (pi_method == "both") {
+    # Compute only epistemic uncertainty by using `forward_passess` with Dropout layer
+    mu_det <- as.numeric(model[[term]] %>% predict(x, verbose = 0))
+
+    # 2) MC-dropout forward: 3 outputs per pass
     y_array <- .mc_dropout_forward(model[[term]], x, forward_passes, output_dim = 3L)
     # y_array: [passes, n_obs, 3]
     lwr_mat  <- y_array[, , 1]
     upr_mat  <- y_array[, , 2]
     mean_mat <- y_array[, , 3]
-    preds <- .combine_uncertainties(lwr_mat, upr_mat, mean_mat, alpha = alpha)
-
-    preds <- .combine_uncertainties(
-      lwr_mat = lwr_mat,
-      upr_mat = upr_mat,
+    preds <- .combine_uncertainties_sampling(
+      lwr_mat  = lwr_mat,
+      upr_mat  = upr_mat,
       mean_mat = mean_mat,
-      alpha = alpha
+      alpha    = alpha,
+      inner_samples = 50,
+      centerline = mu_det     # use deterministic for smooth plot
     )
   } else if (pi_method %in% c("aleatoric", "none")) {
     y_hat <- model[[term]] %>% predict(x, verbose = 0)
@@ -696,52 +711,56 @@ neuralGAM <-
 }
 
 
-
 .mc_dropout_forward <- function(model, x, passes, output_dim) {
   if (!is.matrix(x)) x <- as.matrix(x)
-  if (!is.numeric(x)) stop("Input 'x' must be numeric.")
-
-  n_obs <- nrow(x)
-  passes <- as.integer(passes)
-  output_dim <- as.integer(output_dim)
-
-  x_tf    <- tensorflow::tf$convert_to_tensor(x)
-  x_tiled <- tensorflow::tf$tile(x_tf, as.integer(c(passes, 1L)))  # [passes*n_obs, d]
-  y_tiled <- model(x_tiled, training = TRUE)                        # dropout ON
-
-  if (length(dim(y_tiled)) == 1L) {
-    y_tiled <- tensorflow::tf$expand_dims(y_tiled, axis = -1L)      # [passes*n_obs, 1]
+  n <- nrow(x)
+  out <- array(NA_real_, dim = c(passes, n, output_dim))
+  x_tf <- tensorflow::tf$convert_to_tensor(x)
+  for (b in seq_len(passes)) {
+    y <- model(x_tf, training = TRUE)                # dropout ON
+    if (length(dim(y)) == 1L) y <- tensorflow::tf$expand_dims(y, axis = -1L)
+    out[b, , ] <- as.array(y)
   }
-
-  y_reshaped <- tensorflow::tf$reshape(y_tiled, shape = c(passes, n_obs, output_dim))
-  as.array(y_reshaped)  # <-- [passes, n_obs, output_dim]
+  out
 }
 
 
+.combine_uncertainties_sampling <- function(lwr_mat, upr_mat, mean_mat,
+                                            alpha = 0.05, inner_samples = 50,
+                                            centerline = NULL) {
+  stopifnot(all(dim(lwr_mat) == dim(upr_mat)),
+            all(dim(lwr_mat) == dim(mean_mat)))
+  z <- qnorm(1 - alpha/2)
+  Tpasses <- nrow(mean_mat); n <- ncol(mean_mat)
 
-.combine_uncertainties <- function(lwr_mat, upr_mat, mean_mat, alpha) {
-  # lwr_mat, upr_mat, mean_mat: matrices of shape [forward_passess, n_obs]
-  z_val <- qnorm(1 - alpha / 2)
+  # aleatoric sd per pass/obs
+  sd_mat <- pmax((upr_mat - lwr_mat) / (2 * z), 1e-8)
 
-  # Epistemic: across forward passes, compute mean and variance
-  mean_pred <- matrixStats::colMeans2(mean_mat)
-  epistemic_var <- matrixStats::colVars(mean_mat)
+  # sample from the mixture
+  # total samples per obs = Tpasses * inner_samples
+  # returns [n, T*inner] matrix (but we compute quantiles on the fly to save memory)
+  lwr <- numeric(n); upr <- numeric(n); mean_pred <- numeric(n)
 
-  # Aleatoric: from interval widths
-  aleatoric_sd_each <- (upr_mat - lwr_mat) / (2 * z_val)
-  aleatoric_var <- matrixStats::colMeans2(aleatoric_sd_each^2)
+  for (i in seq_len(n)) {
+    # draw eps for all passes at once
+    eps <- matrix(rnorm(Tpasses * inner_samples), nrow = Tpasses)
+    y_samps <- mean_mat[, i, drop = TRUE] + sd_mat[, i, drop = TRUE] * eps
+    y_samps <- as.vector(y_samps)
+    lwr[i]  <- as.numeric(stats::quantile(y_samps, probs = alpha/2, names = FALSE, type = 7))
+    upr[i]  <- as.numeric(stats::quantile(y_samps, probs = 1 - alpha/2, names = FALSE, type = 7))
+    mean_pred[i] <- if (!is.null(centerline)) centerline[i] else mean(y_samps)
+  }
 
-  # Total variance and interval
-  total_var <- epistemic_var + aleatoric_var
-  total_sd <- sqrt(total_var)
+  var_epistemic <- matrixStats::colVars(mean_mat)
+  var_aleatoric <- matrixStats::colMeans2(((upr_mat - lwr_mat)/(2*z))^2)
 
   data.frame(
     fit = mean_pred,
-    lwr = mean_pred - z_val * total_sd,
-    upr = mean_pred + z_val * total_sd,
-    var_epistemic = epistemic_var,
-    var_aleatoric = aleatoric_var,
-    var_total = total_var
+    lwr = lwr,
+    upr = upr,
+    var_epistemic = var_epistemic,                 # across passes
+    var_aleatoric = var_aleatoric,
+    var_total     = var_epistemic + var_aleatoric
   )
 }
 

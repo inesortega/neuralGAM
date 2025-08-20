@@ -97,9 +97,10 @@ build_feature_NN <-
            activity_regularizer = NULL,
            loss = "mse",
            name = NULL,
-           alpha = 0.95,
+           alpha = 0.05,
            build_pi = FALSE,
            pi_method = "none",
+           dropout_rate = 0.1,
            ...) {
 
     if (missing(num_units)) {
@@ -123,6 +124,10 @@ build_feature_NN <-
 
     if (!is.numeric(alpha) || alpha <= 0 || alpha >= 1) {
       stop("Argument 'alpha' must be a numeric value strictly between 0 and 1.")
+    }
+
+    if (!is.numeric(dropout_rate) || dropout_rate <= 0 || dropout_rate >= 1) {
+      stop("Argument 'dropout_rate' must be a numeric value strictly between 0 and 1.")
     }
 
     if (!is.logical(build_pi) || length(build_pi) != 1) {
@@ -152,8 +157,6 @@ build_feature_NN <-
 
     model %>% keras::layer_dense(units = 1, input_shape = c(1))
 
-    # if(build_pi) model %>% keras::layer_dropout(rate = 0.2)
-
     if (is.vector(num_units)) {
       for (units in num_units) {
         model %>% keras::layer_dense(
@@ -165,7 +168,7 @@ build_feature_NN <-
           activity_regularizer = activity_regularizer,
           activation = activation
         )
-        if(build_pi) model %>% keras::layer_dropout(rate = 0.2)
+        if(build_pi && pi_method %in% c("epistemic", "both")) model %>% keras::layer_dropout(rate = dropout_rate)
       }
     } else {
       model %>% keras::layer_dense(
@@ -177,7 +180,7 @@ build_feature_NN <-
         bias_initializer = bias_initializer,
         activation = activation
       )
-      if(build_pi) model %>% keras::layer_dropout(rate = 0.2)
+      if(build_pi && pi_method %in% c("epistemic", "both")) model %>% keras::layer_dropout(rate = dropout_rate)
     }
 
     if (build_pi && pi_method %in% c("aleatoric", "both")) {

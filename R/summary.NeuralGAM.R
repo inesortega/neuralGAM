@@ -258,3 +258,30 @@ summary.neuralGAM <- function(object, ...) {
     as.character(x)
   }
 }
+
+
+.merge_term_config <- function(global, per_term) {
+  out <- global
+  if (length(per_term)) for (nm in names(per_term)) out[[nm]] <- per_term[[nm]]
+  out
+}
+
+.get_term_config <- function(formula_parsed, term, global_defaults, require_num_units_per_term = FALSE) {
+  per_term <- formula_parsed$np_architecture[[term]]
+  cfg <- .merge_term_config(global_defaults, per_term)
+
+  if (require_num_units_per_term) {
+    if (is.null(per_term$num_units)) {
+      stop(sprintf("Missing `num_units` in s(%s, ...) - per-term `num_units` is mandatory.", term))
+    }
+  } else {
+    if (is.null(cfg$num_units))
+      stop(sprintf("Provide `num_units` globally or inside s(%s, num_units = ...).", term))
+  }
+
+  cfg$kernel_regularizer   <- .coerce_regularizer(cfg$kernel_regularizer)
+  cfg$bias_regularizer     <- .coerce_regularizer(cfg$bias_regularizer)
+  cfg$activity_regularizer <- .coerce_regularizer(cfg$activity_regularizer)
+
+  cfg
+}

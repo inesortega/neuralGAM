@@ -21,7 +21,6 @@ Imports:
   magrittr,
   reticulate,
   formula.tools,
-  gridExtra,
   matrixStats,
   rlang
 SystemRequirements: python (>= 3.10), keras, tensorflow

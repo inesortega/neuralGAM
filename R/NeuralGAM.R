@@ -695,6 +695,8 @@ neuralGAM <-
 
   if (pi_method == "epistemic") {
     # Compute only epistemic uncertainty by using `forward_passes` with Dropout layer
+
+    # Deterministic behaviour at each backfitting iteration - on the last iteration we compute the MC Dropout
     mu_det <- as.numeric(model[[term]] %>% predict(x, verbose = 0))
 
     # stochastic passes for uncertainty (dropout ON)

@@ -1,3 +1,7 @@
+# neuralGAM 2.0.0
+
+This version adds....
+
 # neuralGAM 1.1.1
 
 This version fixes a minor issue, regarding the verbosity of the package outputs. Now verbose is considered in all the required function calls.

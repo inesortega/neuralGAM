@@ -36,7 +36,7 @@ Produces plots on the current graphics device.
 }
 \description{
 Visualization of a fitted \code{neuralGAM}. Plots learned partial effects, either as
-scatter/line plots for continuous covariates or boxplots for factor covariates.
+scatter/line plots for continuous covariates or s for factor covariates.
 Confidence and/or prediction intervals can be added if available.
 }
 \author{

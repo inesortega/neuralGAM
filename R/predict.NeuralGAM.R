@@ -37,6 +37,7 @@
 #'   approximation defined by the predicted quantile bounds.
 #'   Larger values improve stability of the sampled prediction intervals at the cost of speed.
 #' @param verbose Integer (0/1). Default \code{1}.
+#' @param \ldots Other options.
 #' @return
 #' - If \code{interval == "none"}:
 #'   \itemize{
@@ -51,6 +52,7 @@
 #'     \item \code{type="response"}: data frame with CI, PI, or both (when available).
 #'     \item \code{type="terms"}: intervals are not returned; same as \code{interval = "none"}.
 #'   }
+#'
 #' @importFrom stats predict qnorm
 #' @export
 #' @examples
@@ -169,7 +171,7 @@ predict.neuralGAM <- function(object,
                               interval = c("none","confidence","prediction","both"),
                               level = 0.95, forward_passes = 30,
                               inner_samples = 20,
-                              verbose = 1) {
+                              verbose = 1, ...) {
   stopifnot(inherits(object, "neuralGAM"))
   type     <- match.arg(type)
   interval <- match.arg(interval)

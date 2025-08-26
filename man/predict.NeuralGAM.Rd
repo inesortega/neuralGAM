@@ -14,7 +14,8 @@
   level = 0.95,
   forward_passes = 30,
   inner_samples = 20,
-  verbose = 1
+  verbose = 1,
+  ...
 )
 }
 \arguments{
@@ -45,6 +46,8 @@ approximation defined by the predicted quantile bounds.
 Larger values improve stability of the sampled prediction intervals at the cost of speed.}
 
 \item{verbose}{Integer (0/1). Default \code{1}.}
+
+\item{\ldots}{Other options.}
 }
 \value{
 \itemize{

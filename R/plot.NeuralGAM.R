@@ -2,7 +2,7 @@
 #'
 #' @description
 #' Visualization of a fitted \code{neuralGAM}. Plots learned partial effects, either as
-#' scatter/line plots for continuous covariates or boxplots for factor covariates.
+#' scatter/line plots for continuous covariates or s for factor covariates.
 #' Confidence and/or prediction intervals can be added if available.
 #'
 #' @param x A fitted \code{neuralGAM} object as produced by \code{neuralGAM()}.
@@ -17,6 +17,7 @@
 #'
 #' @return Produces plots on the current graphics device.
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
+#' @importFrom graphics  arrows lines points
 #' @export
 plot.neuralGAM <- function(x, select = NULL,
                            xlab = NULL, ylab = NULL,
@@ -61,8 +62,8 @@ plot.neuralGAM <- function(x, select = NULL,
     yv <- f[[term]]
 
     if (is.factor(xv)) {
-      # -------- factor term: boxplot + optional mean ± SE
-      boxplot(yv ~ xv, xlab = term, ylab = paste("Partial for", term),
+      # -------- factor term:  + optional mean ± SE
+      graphics::boxplot(yv ~ xv, xlab = term, ylab = paste("Partial for", term),
               main = term, ...)
 
       if (!is.null(se_mat)) {
@@ -71,8 +72,8 @@ plot.neuralGAM <- function(x, select = NULL,
         ci_lwr <- means - z * ses
         ci_upr <- means + z * ses
 
-        points(seq_along(means), means, pch = 19, col = "red")
-        arrows(seq_along(means), ci_lwr, seq_along(means), ci_upr,
+        graphics::points(seq_along(means), means, pch = 19, col = "red")
+        graphics::arrows(seq_along(means), ci_lwr, seq_along(means), ci_upr,
                angle = 90, code = 3, length = 0.05, col = "red")
       }
 
@@ -81,19 +82,19 @@ plot.neuralGAM <- function(x, select = NULL,
       ord <- order(xv)
       plot(xv, yv, type = "p", xlab = term, ylab = paste("s(", term, ")", sep=""),
            main = term, ...)
-      lines(xv[ord], yv[ord], col = "blue")
+      graphics::lines(xv[ord], yv[ord], col = "blue")
 
       if (!is.null(se_mat)) {
         se <- se_mat[, term]
         lwr_ci <- yv - z * se
         upr_ci <- yv + z * se
-        lines(xv[ord], lwr_ci[ord], col = "red", lty = 2)
-        lines(xv[ord], upr_ci[ord], col = "red", lty = 2)
+        graphics::lines(xv[ord], lwr_ci[ord], col = "red", lty = 2)
+        graphics::lines(xv[ord], upr_ci[ord], col = "red", lty = 2)
       }
 
       if (!is.null(lwr_mat) && !is.null(upr_mat)) {
-        lines(xv[ord], lwr_mat[ord, term], col = "darkgreen", lty = 3)
-        lines(xv[ord], upr_mat[ord, term], col = "darkgreen", lty = 3)
+        graphics::lines(xv[ord], lwr_mat[ord, term], col = "darkgreen", lty = 3)
+        graphics::lines(xv[ord], upr_mat[ord, term], col = "darkgreen", lty = 3)
       }
     }
 

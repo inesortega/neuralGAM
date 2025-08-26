@@ -115,7 +115,6 @@ autoplot(ngam, which = "terms", term = "x2", interval = "confidence")
 # user arranges multiple terms manually (pseudo-code)
 p1 <- autoplot(ngam, which = "terms", term = "x1")
 p2 <- autoplot(ngam, which = "terms", term = "x2")
-# arrange p1, p2 using your preferred layout tooling, for example using grid.arrange:
-gridExtra::grid.arrange(grobs = list(p1,p2), ncol = 2)
+# arrange p1, p2 using your preferred layout tooling, for example using: gridExtra::grid.arrange(grobs = list(p1,p2), ncol = 2)
 }
 }

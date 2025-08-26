@@ -4,105 +4,194 @@
 \alias{predict.neuralGAM}
 \title{Predictions from a fitted \code{neuralGAM} object}
 \usage{
-\method{predict}{neuralGAM}(object, newdata = NULL, type = "link", terms = NULL, verbose = 1, ...)
+\method{predict}{neuralGAM}(
+  object,
+  newdata = NULL,
+  type = c("link", "response", "terms"),
+  terms = NULL,
+  se.fit = FALSE,
+  interval = c("none", "confidence", "prediction", "both"),
+  level = 0.95,
+  forward_passes = 30,
+  inner_samples = 20,
+  verbose = 1
+)
 }
 \arguments{
 \item{object}{A fitted \code{neuralGAM} object.}
 
-\item{newdata}{A data frame or list containing covariate values at which predictions
-are required. If not provided, predictions are returned for the training data.}
+\item{newdata}{Optional \code{data.frame}/list of covariates at which to predict.
+If omitted, the training data cached in the object are used.}
 
-\item{type}{Type of prediction:
-\describe{
-\item{"link"}{Returns the linear predictor (default).}
-\item{"terms"}{Returns each model component contribution as separate columns in a \code{data.frame}.}
-\item{"response"}{Returns predictions on the response scale.
-If the model was trained with \code{BUILD_PI = TRUE}, this will return a \code{data.frame} with columns:
-\itemize{
-\item \code{lwr}: Lower bound of prediction interval.
-\item \code{upr}: Upper bound of prediction interval.
-\item \code{fit}: Mean prediction (point estimate).
-}
-Otherwise, a numeric vector of point predictions is returned.
-}
-}}
+\item{type}{One of \code{c("link","response","terms")}. Default \code{"link"}.}
 
-\item{terms}{If \code{type = "terms"}, a character vector of term names to return.
-If \code{NULL} (default), all terms are returned.}
+\item{terms}{If \code{type = "terms"}, character vector of term names to include.
+If \code{NULL}, all terms are returned. Intercept is not included (as in \code{mgcv}).}
 
-\item{verbose}{Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.}
+\item{se.fit}{Logical; if \code{TRUE}, return SEs of the fitted mean (mgcv-style). Default \code{FALSE}.
+For \code{type="terms"}, returns a matrix of per-term SEs (epistemic) when available.}
 
-\item{...}{Additional arguments passed to underlying prediction methods.}
+\item{interval}{One of \code{c("none","confidence","prediction","both")}. Default \code{"none"}.}
+
+\item{level}{Coverage level for intervals (e.g., \code{0.95}). Default \code{0.95}.}
+
+\item{forward_passes}{Integer, number of forward passess to run MC-dropout when computing
+epistemic uncertainty (\code{pi_method = "epistemic"}) or both aleatoric and epistemic.}
+
+\item{inner_samples}{Integer, number of draws per MC-dropout pass used when combining
+aleatoric and epistemic uncertainty (\code{pi_method = "both"}).
+For each dropout mask, \code{inner_samples} values are generated from the Normal
+approximation defined by the predicted quantile bounds.
+Larger values improve stability of the sampled prediction intervals at the cost of speed.}
+
+\item{verbose}{Integer (0/1). Default \code{1}.}
+
+\item{validation_split}{Optional fraction of training data used for validation.}
 }
 \value{
 \itemize{
-\item For \code{type = "link"}: numeric vector of linear predictor values.
-\item For \code{type = "terms"}: \code{data.frame} of term contributions.
-\item For \code{type = "response"}:
-\describe{
-\item{If \code{BUILD_PI = FALSE}}{Numeric vector of predicted response values.}
-\item{If \code{BUILD_PI = TRUE}}{\code{data.frame} with columns \code{lwr}, \code{upr}, \code{fit}.}
+\item If \code{interval == "none"}:
+\itemize{
+\item \code{se.fit = FALSE}: vector (link/response) or matrix (terms).
+\item \code{se.fit = TRUE}: \code{list(fit, se.fit)} for link/response; for terms,
+\code{list(fit = terms_matrix, se.fit = se_terms_matrix)}.
+}
+\item If \code{interval != "none"}:
+\itemize{
+\item \code{type="link"}: data frame with CI columns (\code{lwr}, \code{upr});
+PIs are not provided on the link scale.
+\item \code{type="response"}: data frame with CI, PI, or both (when available).
+\item \code{type="terms"}: intervals are not returned; same as \code{interval = "none"}.
 }
 }
 }
 \description{
-Generates predictions from a fitted \code{neuralGAM} model for new or training data.
-Supports both standard point predictions and prediction intervals if the model was trained
-with \code{BUILD_PI = TRUE}.
+Generate predictions from a fitted \code{neuralGAM} model:
+\itemize{
+\item \code{type = "link"} (default): linear predictor on the link scale.
+\item \code{type = "response"}: predictions on the response scale.
+\item \code{type = "terms"}: per-term contributions to the linear predictor (no intercept).
 }
-\details{
-When prediction intervals are available (\code{BUILD_PI = TRUE}), the lower and upper bounds
-are returned along with the mean prediction. For plotting, these can be passed to
-\code{autoplot.neuralGAM()}, which will automatically add ribbons for intervals.
+
+If \code{se.fit = TRUE}, standard errors (SE) of the \emph{fitted mean} are returned
+(epistemic only; mgcv-style). For \code{type="response"} the SE is mapped with the
+delta method: \eqn{se_\mu = |d\mu/d\eta| \cdot se_\eta}.
+
+Optional interval bands can be requested via \code{interval}:
+\describe{
+\item{\code{"confidence"}}{Confidence interval (CI) for the mean, built from SEs (epistemic).}
+\item{\code{"prediction"}}{Prediction interval (PI) for a new observation, available only if
+the model was trained with \code{pi_method \%in\% c("aleatoric", "both")}. Bands are formed
+by summing per-term bounds on the link scale and mapping through the inverse link.}
+\item{\code{"both"}}{Return both CI and PI if available.}
+}
 }
 \examples{
 \dontrun{
-
-n <- 24500
-
-seed <- 42
-set.seed(seed)
-
+set.seed(42)
+n <- 2000
 x1 <- runif(n, -2.5, 2.5)
 x2 <- runif(n, -2.5, 2.5)
 x3 <- runif(n, -2.5, 2.5)
-
-f1 <-x1**2
-f2 <- 2*x2
+f1 <- x1^2
+f2 <- 2 * x2
 f3 <- sin(x3)
-f1 <- f1 - mean(f1)
-f2 <- f2 - mean(f2)
-f3 <- f3 - mean(f3)
-
-eta0 <- 2 + f1 + f2 + f3
-epsilon <- rnorm(n, 0.25)
-y <- eta0 + epsilon
+y  <- 2 + f1 + f2 + f3 + rnorm(n, 0.25)
 train <- data.frame(x1, x2, x3, y)
 
 library(neuralGAM)
-ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
-                 num_units = 1024, family = "gaussian",
-                 activation = "relu",
-                 learning_rate = 0.001, bf_threshold = 0.001,
-                 max_iter_backfitting = 10, max_iter_ls = 10,
-                 seed = seed
-                 )
-n <- 5000
-x1 <- runif(n, -2.5, 2.5)
-x2 <- runif(n, -2.5, 2.5)
-x3 <- runif(n, -2.5, 2.5)
-test <- data.frame(x1, x2, x3)
 
-# Obtain linear predictor
-eta <- predict(ngam, test, type = "link")
+## -------------------------
+## 1) Model without PIs
+## -------------------------
+ngam0 <- neuralGAM(
+  y ~ s(x1) + x2 + s(x3),
+  data = train,
+  family = "gaussian",
+  num_units = 128
+)
 
-# Obtain predicted response
-yhat <- predict(ngam, test, type = "response")
+# a) Linear predictor (link scale)
+eta <- predict(ngam0, type = "link")
 
-# Obtain each component of the linear predictor
-terms <- predict(ngam, test, type = "terms")
+# b) Response scale predictions
+mu  <- predict(ngam0, type = "response")
 
-# Obtain only certain terms:
-terms <- predict(ngam, test, type = "terms", terms = c("x1", "x2"))
+# c) Per-term contributions (link scale)
+trm <- predict(ngam0, type = "terms")
+
+# d) Standard errors (CI for the mean) via se.fit = TRUE
+pr_link <- predict(ngam0, type = "link", se.fit = TRUE)
+pr_resp <- predict(ngam0, type = "response", se.fit = TRUE)
+
+# e) Terms with SEs (matrix)
+pr_terms <- predict(ngam0, type = "terms", se.fit = TRUE)
+
+# f) Newdata predictions
+newx <- data.frame(
+  x1 = seq(-2.5, 2.5, length.out = 200),
+  x2 = 0,
+  x3 = 0
+)
+mu_new <- predict(ngam0, newdata = newx, type = "response")
+
+## -------------------------
+## 2) Model with PIs (aleatoric)
+## -------------------------
+ngam_ale <- neuralGAM(
+  y ~ s(x1) + x2 + s(x3),
+  data = train,
+  family = "gaussian",
+  num_units = 128,
+  pi_method = "aleatoric",
+  alpha = 0.05
+)
+
+# a) Response predictions + CI for the mean (from SEs)
+ci_df <- predict(ngam_ale, type = "response",
+                 interval = "confidence", level = 0.95)
+
+# b) Response predictions + PI (from quantile heads)
+pi_df <- predict(ngam_ale, type = "response",
+                 interval = "prediction", level = 0.95)
+
+# c) Both CI and PI
+both_df <- predict(ngam_ale, type = "response",
+                   interval = "both", level = 0.95)
+
+# d) Terms: contributions (no intercept). CIs if SEs are available.
+trm_ci <- predict(ngam_ale, type = "terms", se.fit = TRUE)
+
+# e) Subset of terms
+trm_x1x2 <- predict(ngam_ale, type = "terms", terms = c("x1", "x2"))
+
+# f) Newdata with intervals
+newx2 <- data.frame(
+  x1 = seq(-2.5, 2.5, length.out = 300),
+  x2 = 0.5,
+  x3 = 0
+)
+both_new <- predict(ngam_ale, newdata = newx2, type = "response",
+                    interval = "both", level = 0.95)
+
+## -------------------------
+## 3) Model with PIs (both: aleatoric + epistemic)
+## -------------------------
+ngam_both <- neuralGAM(
+  y ~ s(x1) + x2 + s(x3),
+  data = train,
+  family = "gaussian",
+  num_units = 128,
+  pi_method = "both",
+  alpha = 0.05,
+  forward_passes = 50,      # increase for smoother bands
+  inner_samples = 20
+)
+
+# Response predictions with PI and CI
+res_both <- predict(ngam_both, type = "response", interval = "both")
+
+# Link-scale CI (PI is not defined on the link scale)
+link_ci_both <- predict(ngam_both, type = "link", interval = "confidence")
 }
 }

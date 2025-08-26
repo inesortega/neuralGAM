@@ -27,15 +27,15 @@ link <- function(family, muhat) {
   if (family == "gaussian") {
     out <- muhat
   }
-
   if (family == "binomial") {
-    eta_clamped <- pmin(pmax(muhat, -300), 300)
-    exp_eta <- exp(eta_clamped)
-    out <- exp_eta / (1 + exp_eta)
+    d <- pmax(1 - muhat, 1e-4)
+    ratio <- muhat / d
+    ratio <- pmin(pmax(ratio, 1e-4), 9999.0)
+    out <- log(ratio)
   }
-
   if (family == "poisson") {
-    out <- ifelse(muhat <= 88, exp(muhat), exp(88))
+    muhat <- pmax(muhat, 1e-4)
+    out <- log(muhat)
   }
 
   return(out)

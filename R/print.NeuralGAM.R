@@ -65,16 +65,16 @@ print.neuralGAM <- function(x, ...) {
     alpha    <- tryCatch(ngam$alpha, error = function(e) NA_real_)
 
     cat("Class: neuralGAM \n")
-    cat(rep("=", 72), sep = "", "\n")
-    cat("Family          : ", ngam$family, "\n", sep = "")
-    cat("Formula         : ", deparse(ngam$formula$formula), "\n", sep = "")
-    cat("Observations    : ", NROW(ngam$y), "\n", sep = "")
-    cat("Intercept (eta0): ", format(ngam$eta0, digits = 6), "\n", sep = "")
-    cat("Train MSE       : ", format(ngam$mse, digits = 6), "\n", sep = "")
+    cat("Family             : ", ngam$family, "\n", sep = "")
+    cat("Formula            : ", deparse(ngam$formula$formula), "\n", sep = "")
+    cat("Observations       : ", NROW(ngam$y), "\n", sep = "")
+    cat("Intercept (eta0)   : ", format(ngam$eta0, digits = 6), "\n", sep = "")
+    cat(sprintf("Deviance explained : %.2f%%\n", attr(.deviance_explained.neuralGAM(ngam), "percent")))
+    cat("Train MSE          : ", format(ngam$mse, digits = 6), "\n", sep = "")
     if (isTRUE(build_pi)) {
-      cat("Prediction Int. : ENABLED (alpha = ", alpha, " method = ", ngam$pi_method, ")\n", sep = "")
+      cat("Pred. / Conf. Int. : ENABLED (alpha = ", alpha, ", method = ", ngam$pi_method, ")\n", sep = "")
     } else {
-      cat("Prediction Int. : disabled\n")
+      cat("Pred. / Conf. Int. : disabled\n")
     }
     cat(rep("-", 72), sep = "", "\n")
 

@@ -15,9 +15,9 @@ build_feature_NN(
   activity_regularizer = NULL,
   loss = "mse",
   name = NULL,
-  n_train = NULL,
-  alpha = 0.95,
-  build_pi = FALSE,
+  alpha = 0.05,
+  pi_method = "none",
+  dropout_rate = 0.1,
   ...
 )
 }
@@ -44,24 +44,26 @@ bias terms.}
 
 \item{loss}{Loss function to use.
 \itemize{
-\item When \code{build_pi = TRUE}, this is passed as the mean prediction loss inside
+\item When \code{pi_method} is \code{aleatoric} or \code{both}, this is passed as the mean prediction loss inside
 \code{make_quantile_loss()} (choose from \code{"mse"}, \code{"mae"}).
-\item When \code{build_pi = FALSE}, this is used directly in \code{compile()}. Can be any
+\item In any other case, this is used directly in \code{compile()}. Can be any
 \code{keras} built-in loss or custom function.
 }}
 
 \item{name}{Optional character string. Name assigned to the model.}
 
-\item{n_train}{Optional integer. Number of training samples (currently unused
-in quantile loss but kept for compatibility).}
-
-\item{alpha}{Numeric. Desired coverage level for prediction intervals when
-\code{build_pi = TRUE}. Defaults to 0.95 (i.e., 95\\% PI using 2.5\\% and 97.5\\%
+\item{alpha}{Numeric. Desired significance level for prediction intervals when
+builading Prediction Intervals. Defaults to 0.05 (i.e., 95\\% PI using 2.5\\% and 97.5\\%
 quantiles).}
 
-\item{build_pi}{Logical. If \code{TRUE}, builds a model with prediction intervals
-(lower bound, upper bound, mean prediction) using quantile loss. If \code{FALSE},
-builds a single-output model with the specified loss.}
+\item{pi_method}{Character string indicating the type of uncertainty to estimate in prediction intervals.
+Must be one of \code{"none"}, \code{"aleatoric"}, \code{"epistemic"}, or \code{"both"}:
+\itemize{
+\item \code{"none"}: Do not build PIs.
+\item \code{"aleatoric"}: Use quantile regression loss to capture data-dependent (heteroscedastic) noise.
+\item \code{"epistemic"}: Use Monte Carlo Dropout with multiple forward passes to capture model uncertainty.
+\item \code{"both"}: Combine both quantile estimation and MC Dropout to estimate total predictive uncertainty.
+}}
 
 \item{...}{
   Arguments passed on to \code{\link[=neuralGAM]{neuralGAM}}
@@ -73,7 +75,20 @@ You can specify per-term network settings, e.g.:
     \item{\code{family}}{Response distribution: \code{"gaussian"}, \code{"binomial"}, \code{"poisson"}.}
     \item{\code{kernel_initializer,bias_initializer}}{Initializers for weights and biases.}
     \item{\code{kernel_regularizer,bias_regularizer,activity_regularizer}}{Optional Keras regularizers.}
-    \item{\code{validation_split}}{Fraction of training data used for validation.}
+    \item{\code{dropout_rate}}{Numeric in (0,1). Dropout probability applied to hidden layers of each
+smooth-term network (when \code{pi_method} is \code{"epistemic"} or \code{"both"}). It serves two purposes:
+\itemize{
+\item During training: acts as a regularizer to prevent overfitting.
+\item During prediction (when \code{pi_method = "epistemic"} or \code{"both"}):
+enables Monte Carlo Dropout sampling to approximate epistemic uncertainty.
+}
+Typical values are between \code{0.1} and \code{0.3}.}
+    \item{\code{inner_samples}}{Integer, number of draws per MC-dropout pass used when combining
+aleatoric and epistemic uncertainty (\code{pi_method = "both"}).
+For each dropout mask, \code{inner_samples} values are generated from the Normal
+approximation defined by the predicted quantile bounds.
+Larger values improve stability of the sampled prediction intervals at the cost of speed.}
+    \item{\code{validation_split}}{Optional fraction of training data used for validation.}
     \item{\code{w_train}}{Optional training weights.}
     \item{\code{bf_threshold,ls_threshold}}{Convergence thresholds for backfitting and local scoring.}
     \item{\code{max_iter_backfitting,max_iter_ls}}{Maximum iterations for backfitting and local scoring.}
@@ -82,8 +97,7 @@ You can specify per-term network settings, e.g.:
   }}
 }
 \value{
-A compiled \code{keras_model} object ready for training. When \code{build_pi = TRUE}, the
-model has three outputs; otherwise, it has one output.
+A compiled \code{keras_model} object ready for training.
 }
 \description{
 Builds and compiles a \code{keras} neural network for a single smooth term in a
@@ -93,14 +107,13 @@ The network can optionally be configured to output \strong{prediction intervals}
 (\code{make_quantile_loss()}), or a standard single-output point prediction using
 any user-specified loss function.
 
-When \code{build_pi = TRUE}, the model outputs three units corresponding to the
+When \code{pi_method} is \code{aleatoric} or \code{both} the model outputs three units corresponding to the
 lower bound, upper bound, and mean prediction, and is compiled with the
-\code{make_quantile_loss()} custom loss.
-When \code{build_pi = FALSE}, the model outputs a single unit (point prediction)
+\code{make_quantile_loss()} custom loss. In any other case, the model outputs a single unit (point prediction)
 and uses the loss function provided in \code{loss}.
 }
 \details{
-\strong{Prediction interval mode (\code{build_pi = TRUE})}:
+\strong{Prediction interval mode (\code{pi_method \%in\% c("aleatoric", "both")})}:
 \itemize{
 \item Output layer has 3 units:
 \itemize{
@@ -112,7 +125,7 @@ and uses the loss function provided in \code{loss}.
 (for lower and upper quantiles) with the chosen mean prediction loss.
 }
 
-\strong{Point prediction mode (\code{build_pi = FALSE})}:
+\strong{Point prediction mode (pi_method \%in\% c("none", "epistemic"))}:
 \itemize{
 \item Output layer has 1 unit: point prediction only.
 \item Loss function is the one passed in \code{loss}.

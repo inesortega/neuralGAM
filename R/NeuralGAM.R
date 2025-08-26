@@ -5,15 +5,7 @@
 #' The model can optionally output **prediction intervals** (lower bound, upper bound, and mean prediction)
 #' using a custom quantile loss (`make_quantile_loss()`), or a standard single-output point prediction
 #' using any user-specified loss function.
-#'
-#' When `build_pi = TRUE`, each smooth term's network outputs three units corresponding to the lower bound,
-#' upper bound, and mean prediction, and is compiled with the `make_quantile_loss()` custom loss.
-#' The `loss` argument in this case is passed to `mean_loss` inside `make_quantile_loss()` and can be
-#' `"mse"`, `"mae"`, or a custom Keras loss function.
-#'
-#' When `build_pi = FALSE`, each smooth term's network outputs a single unit (point prediction)
-#' and uses the `loss` argument directly in `compile()`.
-#'
+#''
 #' @param formula Model formula. Smooth terms must be wrapped in `s(...)`.
 #'   You can specify per-term network settings, e.g.:
 #'   `y ~ s(x1, num_units = 1024) + s(x3, num_units = c(1024, 512))`.
@@ -25,27 +17,40 @@
 #' @param activation Activation function for hidden layers.
 #' @param kernel_initializer,bias_initializer Initializers for weights and biases.
 #' @param kernel_regularizer,bias_regularizer,activity_regularizer Optional Keras regularizers.
-#' @param loss Loss function.
-#'   - If `build_pi = FALSE`: used directly for training.
-#'   - If `build_pi = TRUE`: must be `"mse"`, `"mae"`, or a custom Keras loss function (applies to mean prediction inside PI loss).
-#' @param build_pi Logical. If `TRUE`, trains networks to predict lower bound, upper bound, and mean.
 #' @param pi_method Character string indicating the type of uncertainty to estimate in prediction intervals.
-#'   Must be one of `"aleatoric"`, `"epistemic"`, or `"both"`:
+#'   Must be one of `"none"`, `"aleatoric"`, `"epistemic"`, or `"both"`:
 #'   \itemize{
+#'     \item \code{"none"}: None (default).
 #'     \item \code{"aleatoric"}: Use quantile regression loss to capture data-dependent (heteroscedastic) noise.
 #'     \item \code{"epistemic"}: Use MC Dropout with multiple forward passes to capture model uncertainty.
 #'     \item \code{"both"}: Combine both quantile estimation and MC Dropout to estimate total predictive uncertainty.
 #'   }
-#'   Only used when \code{build_pi = TRUE}. Defaults to \code{"aleatoric"}.
-#' @param alpha PI significance level (only used if `build_pi = TRUE`), e.g. `0.05` for 95% PI.
-#' @param validation_split Fraction of training data used for validation.
+#' @param loss Loss function.
+#'   - If `pi_method = "none"`: used directly for training.
+#'   - Else: must be `"mse"`, `"mae"`, or a custom Keras loss function (applies to mean prediction inside PI loss).
+#' @param alpha PI significance level, e.g. `0.05` for 95% PI.
+#' @param dropout_rate Numeric in (0,1). Dropout probability applied to hidden layers of each
+#'   smooth-term network (when \code{pi_method} is \code{"epistemic"} or \code{"both"}). It serves two purposes:
+#'   \itemize{
+#'     \item During training: acts as a regularizer to prevent overfitting.
+#'     \item During prediction (when \code{pi_method = "epistemic"} or \code{"both"}):
+#'           enables Monte Carlo Dropout sampling to approximate epistemic uncertainty.
+#'   }
+#'   Typical values are between \code{0.1} and \code{0.3}.
+#' @param forward_passess Integer, number of forward passess to run MC-dropout when computing
+#'   epistemic uncertainty (\code{pi_method = "epistemic"}) or both aleatoric and epistemic.
+#' @param inner_samples Integer, number of draws per MC-dropout pass used when combining
+#'   aleatoric and epistemic uncertainty (\code{pi_method = "both"}).
+#'   For each dropout mask, \code{inner_samples} values are generated from the Normal
+#'   approximation defined by the predicted quantile bounds.
+#'   Larger values improve stability of the sampled prediction intervals at the cost of speed.
+#' @param validation_split Optional fraction of training data used for validation.
 #' @param w_train Optional training weights.
 #' @param bf_threshold,ls_threshold Convergence thresholds for backfitting and local scoring.
 #' @param max_iter_backfitting,max_iter_ls Maximum iterations for backfitting and local scoring.
 #' @param seed Random seed.
 #' @param verbose Verbosity: `0` silent, `1` progress messages.
 #' @param ... Additional arguments passed to `keras::optimizer_adam()`.
-#'
 #' @return
 #' An object of class `"neuralGAM"`, which is a list containing:
 #' \describe{
@@ -53,8 +58,8 @@
 #'   \item{partial}{ List of partial contributions \eqn{g_j(x_j)} for each smooth term.}
 #'   \item{y}{ Observed response values.}
 #'   \item{eta}{ Numeric vector of the linear predictor \eqn{\eta = \eta_0 + \sum_j g_j(x_j)}.}
-#'   \item{lwr}{ Numeric vector of lower prediction interval bounds (if `build_pi = TRUE`), otherwise `NULL`.}
-#'   \item{upr}{ Numeric vector of upper prediction interval bounds (if `build_pi = TRUE`), otherwise `NULL`.}
+#'   \item{lwr}{ Numeric vector of lower prediction interval bounds if neuralGAM was trained with epistemic/aleatoric unecertainty, otherwise `NULL`.}
+#'   \item{upr}{ Numeric vector of upper prediction interval bounds if neuralGAM was trained with epistemic/aleatoric unecertainty, otherwise `NULL`.}
 #'   \item{x}{ List of model inputs (covariates) used in training.}
 #'   \item{model}{L ist of fitted Keras models, one per smooth term (plus `"linear"` if a linear component is present).}
 #'   \item{eta0}{ Intercept estimate \eqn{\eta_0}.}
@@ -64,8 +69,9 @@
 #'   \item{formula}{ The original model formula, as parsed by `get_formula_elements()`.}
 #'   \item{history}{ List of Keras training histories for each fitted term.}
 #'   \item{globals}{ List of global default hyperparameters used for architecture and training.}
-#'   \item{alpha}{ PI significance level (only relevant if `build_pi = TRUE`).}
-#'   \item{build_pi}{ Logical; whether the model was trained to produce prediction intervals.}
+#'   \item{alpha}{ PI significance level (only relevant when model was trained with uncertainty).}
+#'   \item{build_pi}{ Logical; whether the model was trained to produce prediction/confidence intervals.}
+#'   \item{pi_method}{ Character string: type of predictive uncertainty estimated}
 #' }
 #'
 #' @details
@@ -77,13 +83,51 @@
 #' ```
 #' Any term without its own setting will use the global defaults.
 #'
-#' **Prediction intervals (`build_pi = TRUE`)**
-#' - Output: lower bound, upper bound, mean.
-#' - Loss: combined quantile loss + mean prediction loss.
-#' - `alpha` controls coverage.
+#' **Prediction intervals **
+#' The package supports three PI mechanisms via `pi_method`:
+#' \itemize{
+#'   \item \code{"aleatoric"}: per-term networks output \emph{lower}, \emph{upper}, and \emph{mean}
+#'         using a combined quantile loss + mean loss. This captures data noise (heteroscedasticity).
+#'   \item \code{"epistemic"}: per-term networks output a single head for the mean; epistemic
+#'         uncertainty is obtained by Monte Carlo (MC) Dropout at prediction time. The line is the
+#'         deterministic prediction (dropout \emph{off}); the interval comes from empirical
+#'         quantiles across many stochastic forward passes (dropout \emph{on}).
+#'   \item \code{"both"}: combines aleatoric and epistemic by running MC Dropout with the
+#'         3-output (lower/upper/mean) head and sampling from the induced mixture of Gaussians
+#'         to form empirical prediction quantiles.
+#' }
+#' **Centering for partial effects**
+#' For identifiability, each smooth term \eqn{g_j(x_j)} is mean-centered after fitting. When plotting
+#' partial effects (e.g., `autoplot(ngam, "x1")`), the associated PI bounds are shifted by the \emph{same}
+#' centering constant so that the band and the smooth share the same baseline. (Widths/variances are
+#' unaffected by this shift.) Full-model predictions on the response scale are not centered.
 #'
-#' **Point prediction (`build_pi = FALSE`)**
-#' - Output: single value.
+#' **MC Dropout controls**
+#' \itemize{
+#'   \item \code{dropout_rate}: probability of dropping units in hidden layers. Used as a regularizer
+#'         during training and \emph{reused} at prediction time to approximate epistemic uncertainty.
+#'         Practical values are in \code{[0.1, 0.3]}.
+#'   \item \code{forward_passes}: number of stochastic forward passes with dropout \emph{on} when
+#'         \code{pi_method = "epistemic"} or \code{"both"}. Larger values yield smoother, more stable
+#'         envelopes (e.g., 300–1000).
+#'   \item \code{inner_samples}: only used for \code{pi_method = "both"}. For each dropout pass, the
+#'         lower/upper quantiles define a local Normal approximation from which \code{inner_samples}
+#'         draws are taken; final PIs are empirical quantiles of all draws across passes.
+#' }
+#'
+#' **Losses**
+#' - Aleatoric: lower/upper heads use the pinball (quantile) loss at \eqn{\alpha/2} and \eqn{1-\alpha/2};
+#'   the mean head uses the user-chosen mean loss (\code{"mse"} or \code{"mae"}).
+#' - Epistemic: any mean loss for the single-output head; uncertainty comes from MC Dropout only.
+#' - Both: quantile + mean losses (as in aleatoric) and MC Dropout; PIs are built by mixture sampling.
+#'
+#' **Coverage control**
+#' `alpha` sets the nominal coverage (e.g., `alpha = 0.05` for 95% PIs). If empirical coverage on a
+#' validation split deviates from target, a simple global scaling of the half-width (conformal-style
+#' calibration) can be applied post hoc.
+#'
+#' **Point prediction (`pi_method == "none"`)**
+#' - Output: single value per term (no intervals).
 #' - Loss: exactly as given in `loss`.
 #' @references
 #' Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
@@ -102,7 +146,7 @@
 #' @importFrom reticulate py_available
 #' @importFrom magrittr %>%
 #' @importFrom formula.tools lhs rhs
-#' @importFrom matrixStats colQuantiles colVars colMeans2
+#' @importFrom matrixStats colVars colMeans2
 #' @export
 #' @examples \dontrun{
 #' n <- 24500
@@ -146,7 +190,7 @@
 #'   y ~ s(x1) + x2,
 #'   num_units = 128,
 #'   data = train,
-#'   build_pi = TRUE, pi_method = "aleatoric",
+#'   pi_method = "aleatoric",
 #'   alpha = 0.05
 #' )
 #' # Visualize point prediction and prediction intervals using autoplot:
@@ -165,11 +209,11 @@ neuralGAM <-
            bias_initializer = 'zeros',
            activity_regularizer = NULL,
            loss = "mse",
-           pi_method = "none",
-           build_pi = FALSE,
+           pi_method = c("none", "aleatoric", "epistemic", "both"),
            alpha = 0.05,
            forward_passes = 30,
            dropout_rate = 0.1,
+           inner_samples = 20,
            validation_split = NULL,
            w_train = NULL,
            bf_threshold = 0.001,
@@ -180,6 +224,7 @@ neuralGAM <-
            verbose = 1,
            ...) {
 
+    pi_method <- match.arg(pi_method)
 
     global_defaults <- list(
       num_units          = num_units,          # still required globally unless every s(...) overrides
@@ -189,7 +234,8 @@ neuralGAM <-
       bias_initializer   = bias_initializer,
       kernel_regularizer = kernel_regularizer,
       bias_regularizer   = bias_regularizer,
-      activity_regularizer = activity_regularizer
+      activity_regularizer = activity_regularizer,
+      dropout_rate = dropout_rate
     )
 
     # --- Formula ---
@@ -202,12 +248,15 @@ neuralGAM <-
       stop("No smooth terms defined in formula. Use s() to define smooth terms.")
     }
 
-    if (!pi_method %in% c("aleatoric", "epistemic", "both")) {
-      stop("`pi_method` must be one of 'aleatoric', 'epistemic', or 'both'")
+    if (!pi_method %in% c("none", "aleatoric", "epistemic", "both")) {
+      stop("`pi_method` must be one of 'none', 'aleatoric', 'epistemic', or 'both'")
     }
 
-    if (!build_pi) {
-      pi_method <- "none"
+    if (pi_method == "none") {
+      build_pi <- FALSE
+    }
+    else{
+      build_pi <- TRUE
     }
 
     if (missing(num_units) || is.null(num_units)) {
@@ -268,17 +317,12 @@ neuralGAM <-
     }
     if (build_pi) {
       if (is.character(loss)) {
-        if (!loss %in% c("mse", "mae", "huber")) {
-          stop("When 'build_pi = TRUE', 'loss' must be 'mse', 'mae', or 'huber' to be used in make_quantile_loss().")
+        if (!loss %in% c("mse", "mae")) {
+          stop("When requesting PI/CI intervals, 'loss' must be 'mse' or 'mae' to be used in make_quantile_loss().")
         }
       } else {
-        stop("When 'build_pi = TRUE', 'loss' must be a supported character string ('mse', 'mae', 'huber').")
+        stop("When requesting PI/CI intervals, 'loss' must be a supported character string ('mse', 'mae').")
       }
-    }
-
-    # --- build_pi ---
-    if (!is.logical(build_pi) || length(build_pi) != 1) {
-      stop("Argument 'build_pi' must be a single logical value (TRUE or FALSE).")
     }
 
     # --- alpha ---
@@ -347,11 +391,17 @@ neuralGAM <-
     f <- g <- data.frame(matrix(0, nrow = nrow(x), ncol = ncol(x)))
     lwr <- upr <- data.frame(matrix(NA, nrow = nrow(x), ncol = ncol(x)))
     colnames(lwr) <- colnames(upr) <- colnames(f) <- colnames(g) <- colnames(x)
+    colnames(f) <- colnames(g) <- colnames(x)
 
 
     if(build_pi == TRUE){
       lwr <- upr <- f
     }
+    # Uncertainty holders on LINK scale (to keep components separate)
+    var_epistemic  <- data.frame(matrix(NA_real_, nrow = nrow(x), ncol = ncol(x)))
+    var_aleatoric  <- data.frame(matrix(NA_real_, nrow = nrow(x), ncol = ncol(x)))
+    var_total      <- data.frame(matrix(NA_real_, nrow = nrow(x), ncol = ncol(x)))
+    colnames(var_epistemic) <- colnames(var_aleatoric) <- colnames(var_total) <- colnames(x)
 
     epochs <- c()
     loss_metric <- c()
@@ -390,7 +440,6 @@ neuralGAM <-
         activity_regularizer = formula$np_architecture[[term]]$activity_regularizer,
         name = term,
         alpha = alpha,
-        build_pi = build_pi,
         pi_method = pi_method,
         dropout_rate = dropout_rate,
         ...
@@ -399,10 +448,10 @@ neuralGAM <-
     }
 
     muhat <- mean(y)
-    eta <- inv_link(family, muhat) #initially estimate eta as the mean of y
+    eta <- link(family, muhat) #initially estimate eta as the mean of y
 
     eta_prev <- eta
-    dev_new <- dev(muhat, y, w, family)
+    dev_new <- dev(muhat = muhat, y = y, family = family, w = w)
 
     # Start local scoring algorithm
     while (!converged & (it <= max_iter_ls)) {
@@ -432,19 +481,23 @@ neuralGAM <-
         f[formula$p_terms] <- predict(linear_model, type = "terms", verbose = verbose)
         eta <- eta0 + rowSums(f)
 
-        if(build_pi == TRUE){
-          # Update yL and yU with parametric component intervals:
+        # Do NOT create per-term PIs for parametric effects
+        # (prediction intervals are response-level; not meaningful per term)
 
-          fit <- suppressWarnings(data.frame(predict(linear_model, interval="prediction", level = 1-alpha)))
-
-          # Update prediction intervals
-          lwr[formula$p_terms] <- fit$lwr
-          upr[formula$p_terms] <- fit$upr
+        # Instead, store epistemic variance for CI of the mean contribution
+        # using predict.lm(type="terms", se.fit=TRUE)
+        for (tm in formula$p_terms) {
+          pr_tm <- stats::predict(linear_model,
+                                  newdata = parametric,
+                                  type = "terms",
+                                  terms = tm,
+                                  se.fit = TRUE)
+          var_epistemic[[tm]] <- (as.numeric(pr_tm$se.fit))^2
         }
 
       }
       else{
-        # if no parametric components, keep the mean of the adjusted dependen var.
+        # if no parametric components, keep the mean of the adjusted dependent var.
         eta0 <- mean(Z)
         eta <- eta0
       }
@@ -470,21 +523,20 @@ neuralGAM <-
                                                                  validation_split = validation_split,
                                                                  verbose = verbose,
                                                                  loss = loss, learning_rate = learning_rate,
-                                                                 build_pi = build_pi, alpha = alpha,
+                                                                 alpha = alpha,
                                                                  loss_weights = list(W),
+                                                                 build_pi = build_pi,
                                                                  pi_method = pi_method,
-                                                                 forward_passes = forward_passes,
+                                                                 forward_passes = forward_passes, inner_samples = inner_samples,
                                                                  ...)
 
           model <- nonparametric_update$model
           history <- nonparametric_update$history
           fit <- nonparametric_update$fit
 
-          # Update f with current learned function y_hat for predictor k
-          f[[term]] <- fit$fit # y_hat only
-
+          # Update f with current learned function for predictor k
+          f[[term]] <- fit$fit
           mean_val <- mean(f[[term]])
-
           f[[term]] <- f[[term]] - mean_val
           eta <- eta + f[[term]]
 
@@ -493,6 +545,10 @@ neuralGAM <-
             lwr[[term]] <- fit$lwr - mean_val
             upr[[term]] <- fit$upr - mean_val
           }
+          # store variances (centering does NOT change variance)
+          var_epistemic[[term]] <- fit$var_epistemic
+          var_aleatoric[[term]] <- fit$var_aleatoric
+          var_total[[term]]     <- fit$var_total
 
           ## Store training metrics for current backfitting iteration
           epochs <- c(epochs, it_back)
@@ -530,9 +586,9 @@ neuralGAM <-
 
       }
 
-      muhat <- link(family, eta)
+      muhat <- inv_link(family, eta)
       dev_old <- dev_new
-      dev_new <- dev(muhat, y, w, family)
+      dev_new <- dev(muhat = muhat, y = y, family = family, w = w)
 
       dev_delta <- abs((dev_old - dev_new) / dev_old)
       if (family == "binomial") {
@@ -568,6 +624,10 @@ neuralGAM <-
         muhat = muhat,
         partial = g,
         y = y,
+        w_train = w,
+        var_aleatoric = var_aleatoric,
+        var_epistemic = var_epistemic,
+        var_total = var_total,
         eta = eta,
         lwr = lwr,
         upr = upr,
@@ -594,7 +654,7 @@ neuralGAM <-
                                             validation_split, verbose, loss, learning_rate,
                                             build_pi, loss_weights, alpha,
                                             pi_method,
-                                            forward_passes, ...) {
+                                            forward_passes, inner_samples, ...) {
   # Remove the term's current contribution from eta
   eta <- eta - f[[term]]
   residuals <- Z - eta
@@ -669,7 +729,7 @@ neuralGAM <-
       upr_mat  = upr_mat,
       mean_mat = mean_mat,
       alpha    = alpha,
-      inner_samples = 50,
+      inner_samples = inner_samples,
       centerline = mu_det     # use deterministic for smooth plot
     )
   } else if (pi_method %in% c("aleatoric", "none")) {
@@ -701,7 +761,6 @@ neuralGAM <-
     }
   }
 
-  # Resultado final
   list(
     model = model,
     history = history,

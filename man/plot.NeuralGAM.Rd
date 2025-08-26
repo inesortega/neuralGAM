@@ -4,60 +4,40 @@
 \alias{plot.neuralGAM}
 \title{Visualization of \code{neuralGAM} object with base graphics}
 \usage{
-\method{plot}{neuralGAM}(x, select = NULL, xlab = NULL, ylab = NULL, ...)
+\method{plot}{neuralGAM}(
+  x,
+  select = NULL,
+  xlab = NULL,
+  ylab = NULL,
+  interval = c("none", "confidence", "prediction", "both"),
+  level = 0.95,
+  ...
+)
 }
 \arguments{
-\item{x}{a fitted \code{neuralGAM} object as produced by \code{neuralGAM()}.}
+\item{x}{A fitted \code{neuralGAM} object as produced by \code{neuralGAM()}.}
 
-\item{select}{allows to plot a set of selected terms. e.g. if you just want to plot the first term,
-select="X0"}
+\item{select}{Character vector of terms to plot. If \code{NULL} (default),
+all terms are plotted.}
 
-\item{xlab}{if supplied, this value will be used as the \code{x} label for all plots}
+\item{xlab}{Optional custom x-axis label(s).}
 
-\item{ylab}{if supplied, this value will be used as the \code{y} label for all plots}
+\item{ylab}{Optional custom y-axis label(s).}
 
-\item{...}{other graphics parameters to pass on to plotting commands.}
+\item{interval}{One of \code{c("none","confidence","prediction","both")}.
+Default \code{"none"}. Controls whether intervals are plotted.}
+
+\item{level}{Coverage level for intervals (e.g. \code{0.95}). Default \code{0.95}.}
+
+\item{...}{Additional graphical arguments passed to \code{plot()}.}
 }
 \value{
-Returns the partial effects plot.
+Produces plots on the current graphics device.
 }
 \description{
-Visualization of \code{neuralGAM} object. Plots the learned partial effects by the neuralGAM object.
-}
-\examples{
-\dontrun{
-
-n <- 24500
-
-seed <- 42
-set.seed(seed)
-
-x1 <- runif(n, -2.5, 2.5)
-x2 <- runif(n, -2.5, 2.5)
-x3 <- runif(n, -2.5, 2.5)
-
-f1 <-x1**2
-f2 <- 2*x2
-f3 <- sin(x3)
-f1 <- f1 - mean(f1)
-f2 <- f2 - mean(f2)
-f3 <- f3 - mean(f3)
-
-eta0 <- 2 + f1 + f2 + f3
-epsilon <- rnorm(n, 0.25)
-y <- eta0 + epsilon
-train <- data.frame(x1, x2, x3, y)
-
-library(neuralGAM)
-ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
-                 num_units = 1024, family = "gaussian",
-                 activation = "relu",
-                 learning_rate = 0.001, bf_threshold = 0.001,
-                 max_iter_backfitting = 10, max_iter_ls = 10,
-                 seed = seed
-                 )
-plot(ngam)
-}
+Visualization of a fitted \code{neuralGAM}. Plots learned partial effects, either as
+scatter/line plots for continuous covariates or boxplots for factor covariates.
+Confidence and/or prediction intervals can be added if available.
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.

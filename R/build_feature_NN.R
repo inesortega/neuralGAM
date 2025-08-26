@@ -8,12 +8,10 @@
 #' (`make_quantile_loss()`), or a standard single-output point prediction using
 #' any user-specified loss function.
 #'
-#' When `build_pi = TRUE`, the model outputs three units corresponding to the
+#' When `pi_method` is `aleatoric` or `both` the model outputs three units corresponding to the
 #' lower bound, upper bound, and mean prediction, and is compiled with the
-#' `make_quantile_loss()` custom loss.
-#' When `build_pi = FALSE`, the model outputs a single unit (point prediction)
+#' `make_quantile_loss()` custom loss. In any other case, the model outputs a single unit (point prediction)
 #' and uses the loss function provided in `loss`.
-#'
 #' @param num_units Integer or vector of integers. Number of units in the hidden
 #'   layer(s). If a vector is provided, multiple dense layers are added
 #'   sequentially.
@@ -27,31 +25,28 @@
 #'   bias terms.
 #' @param activity_regularizer Optional Keras regularizer for layer activations.
 #' @param loss Loss function to use.
-#'   - When `build_pi = TRUE`, this is passed as the mean prediction loss inside
+#'   - When `pi_method` is `aleatoric` or `both`, this is passed as the mean prediction loss inside
 #'     `make_quantile_loss()` (choose from `"mse"`, `"mae"`).
-#'   - When `build_pi = FALSE`, this is used directly in `compile()`. Can be any
+#'   - In any other case, this is used directly in `compile()`. Can be any
 #'     `keras` built-in loss or custom function.
 #' @param name Optional character string. Name assigned to the model.
-#' @param alpha Numeric. Desired PI significance level for prediction intervals when
-#'   `build_pi = TRUE`. Defaults to 0.05 (i.e., 95\% PI using 2.5\% and 97.5\%
+#' @param alpha Numeric. Desired significance level for prediction intervals when
+#'   builading Prediction Intervals. Defaults to 0.05 (i.e., 95\% PI using 2.5\% and 97.5\%
 #'   quantiles).
-#' @param build_pi Logical. If `TRUE`, builds a model with prediction intervals
-#'   (lower bound, upper bound, mean prediction). If `FALSE`, builds a single-output model with the specified loss.
 #' @param pi_method Character string indicating the type of uncertainty to estimate in prediction intervals.
-#'   Must be one of `"aleatoric"`, `"epistemic"`, or `"both"`:
+#'   Must be one of `"none"`, `"aleatoric"`, `"epistemic"`, or `"both"`:
 #'   \itemize{
+#'     \item \code{"none"}: Do not build PIs.
 #'     \item \code{"aleatoric"}: Use quantile regression loss to capture data-dependent (heteroscedastic) noise.
 #'     \item \code{"epistemic"}: Use Monte Carlo Dropout with multiple forward passes to capture model uncertainty.
 #'     \item \code{"both"}: Combine both quantile estimation and MC Dropout to estimate total predictive uncertainty.
 #'   }
-#'   Only used when \code{build_pi = TRUE}. Defaults to \code{"aleatoric"}.
 #' @param ... Additional arguments passed to `keras::optimizer_adam()`.
 #' @return
-#' A compiled `keras_model` object ready for training. When `build_pi = TRUE`, the
-#' model has three outputs; otherwise, it has one output.
+#' A compiled `keras_model` object ready for training.
 #'
 #' @details
-#' **Prediction interval mode (`build_pi = TRUE`)**:
+#' **Prediction interval mode (`pi_method %in% c("aleatoric", "both")`)**:
 #' \itemize{
 #'   \item Output layer has 3 units:
 #'     \itemize{
@@ -63,7 +58,7 @@
 #'         (for lower and upper quantiles) with the chosen mean prediction loss.
 #' }
 #'
-#' **Point prediction mode (`build_pi = FALSE`)**:
+#' **Point prediction mode (pi_method %in% c("none", "epistemic"))**:
 #' \itemize{
 #'   \item Output layer has 1 unit: point prediction only.
 #'   \item Loss function is the one passed in `loss`.
@@ -98,7 +93,6 @@ build_feature_NN <-
            loss = "mse",
            name = NULL,
            alpha = 0.05,
-           build_pi = FALSE,
            pi_method = "none",
            dropout_rate = 0.1,
            ...) {
@@ -130,23 +124,19 @@ build_feature_NN <-
       stop("Argument 'dropout_rate' must be a numeric value strictly between 0 and 1.")
     }
 
-    if (!is.logical(build_pi) || length(build_pi) != 1) {
-      stop("Argument 'build_pi' must be a single logical value (TRUE or FALSE).")
-    }
-
     if (!is.character(loss) && !is.function(loss)) {
       stop("Argument 'loss' must be a character string (keras built-in) or a custom loss function.")
     }
 
     # ---- Loss compatibility check for PI mode ----
 
-    if (build_pi) {
+    if (pi_method != "none") {
       if (is.character(loss)) {
         if (!loss %in% c("mse", "mae")) {
-          stop("When 'build_pi = TRUE', 'loss' must be either 'mse' or 'mae' to be used in make_quantile_loss().")
+          stop("When building PI/CI, 'loss' must be either 'mse' or 'mae' to be used in make_quantile_loss().")
         }
       } else {
-        stop("When 'build_pi = TRUE', 'loss' must be specified as 'mse' or 'mae' (custom loss functions are not supported for PI mode).")
+        stop("When building PI/CI, 'loss' must be specified as 'mse' or 'mae' (custom loss functions are not supported for PI mode).")
       }
     }
 
@@ -168,7 +158,7 @@ build_feature_NN <-
           activity_regularizer = activity_regularizer,
           activation = activation
         )
-        if(build_pi && pi_method %in% c("epistemic", "both")) model %>% keras::layer_dropout(rate = dropout_rate)
+        if(pi_method %in% c("epistemic", "both")) model %>% keras::layer_dropout(rate = dropout_rate)
       }
     } else {
       model %>% keras::layer_dense(
@@ -180,21 +170,21 @@ build_feature_NN <-
         bias_initializer = bias_initializer,
         activation = activation
       )
-      if(build_pi && pi_method %in% c("epistemic", "both")) model %>% keras::layer_dropout(rate = dropout_rate)
+      if(pi_method %in% c("epistemic", "both")) model %>% keras::layer_dropout(rate = dropout_rate)
     }
 
-    if (build_pi && pi_method %in% c("aleatoric", "both")) {
+    if (pi_method %in% c("aleatoric", "both")) {
       model %>% keras::layer_dense(units = 3, activation = 'linear')  # to return lwr, upr, fit
     } else {
       model %>% keras::layer_dense(units = 1)
     }
 
-    model <- set_compile(model, build_pi, pi_method, alpha, learning_rate, loss, ...)
+    model <- set_compile(model, pi_method, alpha, learning_rate, loss, ...)
   }
 
 
-set_compile <- function(model, build_pi, pi_method, alpha, learning_rate, loss, loss_weights = NULL, ...){
-  if(build_pi && pi_method == "aleatoric"){
+set_compile <- function(model, pi_method, alpha, learning_rate, loss, loss_weights = NULL, ...){
+  if(pi_method == "aleatoric"){
     model %>% compile(
       optimizer = optimizer_adam(learning_rate = learning_rate, ...),
       loss = make_quantile_loss(alpha = alpha,

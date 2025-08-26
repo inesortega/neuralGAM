@@ -2,86 +2,146 @@
 % Please edit documentation in R/autoplot.neuralGAM.R
 \name{autoplot.neuralGAM}
 \alias{autoplot.neuralGAM}
-\title{Plot smooth terms from a fitted \code{neuralGAM} model}
+\title{Autoplot method for \code{neuralGAM} objects}
 \usage{
-\method{autoplot}{neuralGAM}(object, select, xlab = NULL, ylab = NULL, ...)
+\method{autoplot}{neuralGAM}(
+  object,
+  newdata = NULL,
+  which = c("response", "link", "terms"),
+  interval = c("confidence", "none", "prediction", "both"),
+  level = 0.95,
+  term = NULL,
+  rug = TRUE,
+  ...
+)
 }
 \arguments{
 \item{object}{A fitted \code{neuralGAM} object.}
 
-\item{select}{Character string. Name of the smooth term to plot (e.g., \code{"x1"}).
-Must match a smooth term in the model.}
+\item{newdata}{Optional \code{data.frame}/list of covariates to evaluate.
+If omitted, training data stored in the object are used.}
 
-\item{xlab}{if supplied, this value will be used as the \code{x} label for all plots.}
+\item{which}{One of \code{c("response","link","terms")}. Default \code{"response"}.}
 
-\item{ylab}{if supplied, this value will be used as the \code{y} label for all plots.}
+\item{interval}{One of \code{c("none","confidence","prediction","both")}.
+Default \code{"confidence"}.
+\itemize{
+\item CI (confidence) is derived from epistemic SEs (\code{pi_method = 'epistemic'}.
+\item PI (prediction) is available only if the model was trained with \code{pi_method = 'aleatoric'}.
+}}
 
-\item{...}{Additional arguments passed to \code{\link{predict.neuralGAM}} or \code{ggplot2} layers.}
+\item{level}{Coverage level for intervals (e.g., \code{0.95}). Default \code{0.95}.}
+
+\item{term}{When \code{which = "terms"}, the \emph{single} term name to plot.
+Users must call \code{autoplot()} multiple times to visualize multiple terms.}
+
+\item{rug}{Logical; if \code{TRUE} (default), add rugs to continuous term plots.}
+
+\item{...}{Additional arguments passed to \code{predict.neuralGAM}.}
+
+\item{terms}{Character vector of term names to plot (for \code{which = "terms"}).
+If \code{NULL}, all terms are plotted.}
 }
 \value{
-A \code{ggplot} object showing:
-\itemize{
-\item The mean prediction for the smooth term (\code{y_hat}) as a line.
-\item If available, a ribbon showing the prediction interval between \code{lwr} and \code{upr}.
-}
+A single \code{ggplot} object.
+
+A single \code{ggplot} object.
 }
 \description{
-Produces a \code{ggplot} visualization of a smooth term from a fitted \code{neuralGAM} model.
-If the model was trained with prediction intervals (\code{BUILD_PI = TRUE}),
-the plot automatically includes a shaded ribbon showing the prediction interval
-between the lower (\code{lwr}) and upper (\code{upr}) bounds.
+Produce diagnostic and effect plots from a fitted \code{neuralGAM} model.
+Supported plot types:
+\itemize{
+\item \code{which = "response"}: Fitted response values vs. observation index,
+with optional confidence or prediction intervals.
+\item \code{which = "link"}: Linear predictor (link scale) vs. observation index,
+with optional confidence intervals.
+\item \code{which = "terms"}: Per-term contributions (on the link scale),
+displayed in a faceted plot:
+\itemize{
+\item For continuous covariates: line plot with optional ribbons
+for confidence intervals (CI) and/or prediction intervals (PI).
+\item For factor covariates: box plots of per-observation contributions
+by level, with optional mean ± z·SE error bars if available.
+}
+}
+
+Produce a single diagnostic/effect plot from a fitted \code{neuralGAM} model.
+Supported views:
+\itemize{
+\item \code{which = "response"}: Fitted response vs. index, with optional CI/PI.
+\item \code{which = "link"}: Linear predictor (link scale) vs. index, with optional CI.
+\item \code{which = "terms"}: \emph{One} per-term contribution (link scale).
+For a continuous covariate: line with optional CI/PI ribbons.
+For a factor covariate: boxplot by level with optional mean ± z·SE error bars.
+}
 }
 \details{
-The function automatically detects if prediction intervals are present in the model's output
-(i.e., when \code{BUILD_PI = TRUE}) and adds a ribbon layer to the plot.
-If intervals are not available, only the smooth function is plotted.
+Intervals:
+\itemize{
+\item \strong{Confidence intervals (CI):} Derived from epistemic SEs
+(like in \code{mgcv}) if the model was trained with \code{pi_method = 'epistemic'}.
+On the response scale they are propagated through the delta method.
+\item \strong{Prediction intervals (PI):} Capture aleatoric uncertainty
+if the model was trained with \code{pi_method = 'aleatoric'}. Constructed
+by combining per-term bounds on the link scale and applying the
+inverse link.
+}
 
-The \code{select} argument controls which smooth term is visualized.
-If you want to visualize all smooth terms at once, consider writing a loop or wrapper
-that calls \code{autoplot()} for each term.
+For factor terms, plots display the distribution of per-observation contributions
+as box plots. If SEs are available, group means are shown with error bars
+representing \eqn{\text{mean} \pm z \times SE}.
+
+Multiple terms are always combined into a single faceted plot (one panel per term).
+
+\strong{CI vs. PI:}
+\itemize{
+\item CI for the mean uses only epistemic variance (like \code{mgcv}).
+\item PI for a new observation uses the model’s PI machinery
+(sum per-term bounds on the link scale, then inverse-link). If per-term bounds
+are not present but total variance exists, a Normal fallback may be used by
+\code{predict.neuralGAM}.
+}
+
+When \code{which = "terms"}, this function requires exactly one \code{term}.
+This avoids mixing discrete and continuous x scales in a single \code{ggplot}.
 }
 \examples{
 \dontrun{
-n <- 24500
+set.seed(1)
+n <- 500
+x1 <- runif(n, -2, 2)
+x2 <- factor(sample(letters[1:3], n, TRUE))
+x3 <- runif(n, -2, 2)
 
-seed <- 42
-set.seed(seed)
-
-x1 <- runif(n, -2.5, 2.5)
-x2 <- runif(n, -2.5, 2.5)
-x3 <- runif(n, -2.5, 2.5)
-
-f1 <- x1 ** 2
-f2 <- 2 * x2
-f3 <- sin(x3)
-f1 <- f1 - mean(f1)
-f2 <- f2 - mean(f2)
-f3 <- f3 - mean(f3)
-
-eta0 <- 2 + f1 + f2 + f3
-epsilon <- rnorm(n, 0.25)
-y <- eta0 + epsilon
-train <- data.frame(x1, x2, x3, y)
+f1 <- sin(x1)
+f2 <- ifelse(x2 == "a", 1, ifelse(x2 == "b", -1, 0))
+f3 <- x3^2
+y <- 2 + f1 + f2 + f3 + rnorm(n, sd = 0.3)
+dat <- data.frame(x1, x2, x3, y)
 
 library(neuralGAM)
-ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
-                 num_units = 1024, family = "gaussian",
-                 activation = "relu",
-                 learning_rate = 0.001, bf_threshold = 0.001,
-                 max_iter_backfitting = 10, max_iter_ls = 10,
-                 seed = seed
-                 )
-autoplot(ngam, select="x1")
+ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3),
+                 data = dat, num_units = 128,
+                 family = "gaussian",
+                 build_pi = TRUE,
+                 pi_method = "both",
+                 seed = 1)
 
-# add custom title
-autoplot(ngam, select="x1") + ggplot2::ggtitle("Main Title")
-# add labels
-autoplot(ngam, select="x1") + ggplot2::xlab("test") + ggplot2::ylab("my y lab")
-# plot multiple terms:
-plots <- lapply(c("x1", "x2", "x3"), function(x) autoplot(ngam, select = x))
-gridExtra::grid.arrange(grobs = plots, ncol = 3, nrow = 1)
+# response with PI
+autoplot(ngam, which = "response", interval = "prediction")
+
+# link with CI
+autoplot(ngam, which = "link", interval = "confidence")
+
+# single term (continuous): x1
+autoplot(ngam, which = "terms", term = "x1", interval = "both")
+
+# single term (factor): x2
+autoplot(ngam, which = "terms", term = "x2", interval = "confidence")
+
+# user arranges multiple terms manually (pseudo-code)
+p1 <- autoplot(ngam, which = "terms", term = "x1")
+p2 <- autoplot(ngam, which = "terms", term = "x2")
+# arrange p1, p2 using your preferred layout tooling, for example using grid.arrange:
 }
-}
-\author{
-Ines Ortega-Fernandez, Marta Sestelo.
 }

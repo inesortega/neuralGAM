@@ -56,11 +56,11 @@ test_that("neuralGAM throws an error for invalid loss type", {
   expect_error(neuralGAM(formula, data, num_units = 10, loss = -1))
 })
 
-test_that("neuralGAM throws an error for incompatible loss when build_pi=TRUE", {
+test_that("neuralGAM throws an error for incompatible loss with PI aleatoric", {
   skip_if_no_keras()
   formula <- y ~ s(x)
   data <- data.frame(x = 1:10, y = rnorm(10))
-  expect_error(neuralGAM(formula, data, num_units = 10, build_pi = TRUE, loss = "binary_crossentropy"))
+  expect_error(neuralGAM(formula, data, num_units = 10, pi_method = "aleatoric", loss = "binary_crossentropy"))
 })
 
 test_that("neuralGAM throws an error for invalid kernel_initializer", {
@@ -90,8 +90,8 @@ test_that("neuralGAM throws an error for invalid alpha", {
   skip_if_no_keras()
   formula <- y ~ s(x)
   data <- data.frame(x = 1:10, y = rnorm(10))
-  expect_error(neuralGAM(formula, data, num_units = 10, build_pi = TRUE, alpha = -0.1))
-  expect_error(neuralGAM(formula, data, num_units = 10, build_pi = TRUE, alpha = 1.5))
+  expect_error(neuralGAM(formula, data, num_units = 10, pi_method = "aleatoric", alpha = -0.1))
+  expect_error(neuralGAM(formula, data, num_units = 10, pi_method = "aleatoric", alpha = 1.5))
 })
 
 test_that("neuralGAM throws an error for invalid validation_split", {
@@ -239,7 +239,7 @@ test_that("neuralGAM runs OK with Prediction Intervals and gaussian response", {
   set.seed(seed)
   data <- data.frame(x = 1:10, y = rnorm(10))
 
-  ngam <- neuralGAM(formula, data, num_units = 10, seed = seed, build_pi = TRUE, alpha = 0.05)
+  ngam <- neuralGAM(formula, data, num_units = 10, seed = seed, pi_method = "aleatoric", alpha = 0.05)
   expect_equal(round(ngam$mse,4), 0.7079)
 })
 
@@ -260,7 +260,7 @@ test_that("neuralGAM runs OK with Prediction Intervals and binomial response", {
                     num_units = 10,
                     seed = seed,
                     family = "binomial",
-                    build_pi = TRUE,
+                    pi_method = "aleatoric",
                     alpha = 0.05)
 
   expect_equal(round(ngam$mse,4), 0.2105)
@@ -284,7 +284,7 @@ test_that("neuralGAM runs OK with Prediction Intervals and poisson response", {
                     seed = seed,
                     family = "poisson", max_iter_backfitting = 1,
                     max_iter_ls = 1,
-                    build_pi = TRUE,
+                    pi_method = "aleatoric",
                     alpha = 0.05)
 
   expect_equal(round(ngam$mse,4), 4.4227)
@@ -308,7 +308,7 @@ test_that("neuralGAM runs OK with mixed neural-linear model architecture and PI"
     seed = seed,
     max_iter_backfitting = 1,
     max_iter_ls = 1,
-    build_pi = TRUE,
+    pi_method = "aleatoric",
     alpha = 0.05
   )
   expect_equal(round(ngam$mse,4), 0.5234)
@@ -348,12 +348,12 @@ test_that("neuralGAM accepts build_pi=TRUE with supported losses", {
   seed <- 10
   data <- data.frame(x = 1:10, y = rnorm(10))
 
-  ngam <- neuralGAM(formula, data, num_units = 5, seed = seed, max_iter_backfitting = 1, max_iter_ls = 1, build_pi = TRUE,
+  ngam <- neuralGAM(formula, data, num_units = 5, seed = seed, max_iter_backfitting = 1, max_iter_ls = 1, pi_method = "aleatoric",
                     alpha = 0.05, loss = "mse")
 
   expect_equal(round(ngam$mse, 4), 0.8739)
 
-  ngam <- neuralGAM(formula, data, num_units = 5, seed = seed, max_iter_backfitting = 1, max_iter_ls = 1, build_pi = TRUE,
+  ngam <- neuralGAM(formula, data, num_units = 5, seed = seed, max_iter_backfitting = 1, max_iter_ls = 1, pi_method = "aleatoric",
                     alpha = 0.05, loss = "mae")
 
   expect_equal(round(ngam$mse, 4), 0.8739)
@@ -470,7 +470,6 @@ test_that("neuralGAM accepts per-term num_units and default value for other smoo
       max_iter_backfitting = 1,
       max_iter_ls = 1,
       family = family,
-      build_pi = TRUE,
       pi_method = pi_method,
       alpha = alpha
     ),
@@ -496,7 +495,6 @@ test_that("neuralGAM rejects invalid pi_method", {
   expect_error(
     neuralGAM(formula, data,
               num_units = 5,
-              build_pi = TRUE,
               pi_method = "definitely_not_a_method",
               alpha = 0.05)
   )
@@ -565,7 +563,6 @@ test_that("predict(neuralGAM) returns lower/upper/mean and variances when built 
               seed = 10,
               max_iter_backfitting = 1,
               max_iter_ls = 1,
-              build_pi = TRUE,
               pi_method = "aleatoric",
               alpha = 0.05),
     silent = TRUE
@@ -582,15 +579,13 @@ test_that("predict(neuralGAM) returns lower/upper/mean and variances when built 
 
   # attempt prediction
   newx <- data.frame(x = seq(0, 1, length.out = 5))
-  pr <- try(predict(fit, newdata = newx, type = "response"), silent = TRUE)
+  pr <- try(predict(fit, newdata = newx, type = "response", se.fit = TRUE), silent = TRUE)
 
   if (inherits(pr, "try-error")) {
     skip("predict() with intervals not available in this build")
   } else {
-    # Accept either matrix/data.frame with 3 cols: lower, upper, mean
-    expect_true(is.matrix(pr) || is.data.frame(pr))
-    expect_true(ncol(pr) >= 3) # (lower, upper, mean) at minimum
-    expect_equal(nrow(pr), nrow(newx))
+    expect_equal(length(pr$fit), nrow(newx))
+    expect_equal(length(pr$se.fit), nrow(newx))
   }
 })
 

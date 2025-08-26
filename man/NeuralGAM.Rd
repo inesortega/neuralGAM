@@ -70,6 +70,9 @@ Must be one of \code{"none"}, \code{"aleatoric"}, \code{"epistemic"}, or \code{"
 
 \item{alpha}{PI significance level, e.g. \code{0.05} for 95\% PI.}
 
+\item{forward_passes}{Integer, number of forward passess to run MC-dropout when computing
+epistemic uncertainty (\code{pi_method = "epistemic"}) or both aleatoric and epistemic.}
+
 \item{dropout_rate}{Numeric in (0,1). Dropout probability applied to hidden layers of each
 smooth-term network (when \code{pi_method} is \code{"epistemic"} or \code{"both"}). It serves two purposes:
 \itemize{
@@ -98,9 +101,6 @@ Larger values improve stability of the sampled prediction intervals at the cost 
 \item{verbose}{Verbosity: \code{0} silent, \code{1} progress messages.}
 
 \item{...}{Additional arguments passed to \code{keras::optimizer_adam()}.}
-
-\item{forward_passess}{Integer, number of forward passess to run MC-dropout when computing
-epistemic uncertainty (\code{pi_method = "epistemic"}) or both aleatoric and epistemic.}
 }
 \value{
 An object of class \code{"neuralGAM"}, which is a list containing:
@@ -157,7 +157,7 @@ to form empirical prediction quantiles.
 }
 \strong{Centering for partial effects}
 For identifiability, each smooth term \eqn{g_j(x_j)} is mean-centered after fitting. When plotting
-partial effects (e.g., \code{autoplot(ngam, "x1")}), the associated PI bounds are shifted by the \emph{same}
+partial effects (e.g., \code{autoplot(ngam, type = "terms", term = "x1")}), the associated PI bounds are shifted by the \emph{same}
 centering constant so that the band and the smooth share the same baseline. (Widths/variances are
 unaffected by this shift.) Full-model predictions on the response scale are not centered.
 
@@ -240,7 +240,7 @@ ngam <- neuralGAM(
   alpha = 0.05
 )
 # Visualize point prediction and prediction intervals using autoplot:
-autoplot(ngam, "x1")
+autoplot(ngam, type = "terms", term = "x1", intervals = "prediction")
 }
 }
 \references{

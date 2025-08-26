@@ -1,4 +1,7 @@
-#' @title Autoplot method for \code{neuralGAM} objects
+#' @importFrom ggplot2 autoplot
+#' @export
+ggplot2::autoplot
+#' @title Autoplot method for \code{neuralGAM} objects. Produces a single plot.
 #'
 #' @description
 #' Produce diagnostic and effect plots from a fitted \code{neuralGAM} model.
@@ -31,8 +34,7 @@
 #'           represented as error bars around group means.
 #'   }
 #' @param level Coverage level for intervals (e.g., \code{0.95}). Default \code{0.95}.
-#' @param terms Character vector of term names to plot (for \code{which = "terms"}).
-#'   If \code{NULL}, all terms are plotted.
+#' @param term Term name to plot (for \code{which = "terms"}).
 #' @param rug Logical; if \code{TRUE} (default), add rugs to continuous term plots.
 #' @param ... Additional arguments passed to \code{predict.neuralGAM}.
 #'
@@ -60,8 +62,7 @@
 #' @importFrom ggplot2 autoplot ggplot aes geom_line geom_ribbon geom_rug geom_boxplot
 #'   stat_summary geom_errorbar geom_point labs theme_bw facet_wrap
 #' @importFrom stats qnorm
-#' @export
-#'
+#' @importFrom rlang .data
 #' @examples
 #' \dontrun{
 #' set.seed(1)
@@ -80,7 +81,6 @@
 #' ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3),
 #'                  data = dat, num_units = 128,
 #'                  family = "gaussian",
-#'                  build_pi = TRUE,
 #'                  pi_method = "both",
 #'                  seed = 1)
 #'
@@ -100,59 +100,14 @@
 #' p1 <- autoplot(ngam, which = "terms", term = "x1")
 #' p2 <- autoplot(ngam, which = "terms", term = "x2")
 #' # arrange p1, p2 using your preferred layout tooling, for example using grid.arrange:
+#' gridExtra::grid.arrange(grobs = list(p1,p2), ncol = 2)
 #' }
-#' @title Autoplot method for \code{neuralGAM} objects (single-plot)
-#'
-#' @description
-#' Produce a single diagnostic/effect plot from a fitted \code{neuralGAM} model.
-#' Supported views:
-#' \itemize{
-#'   \item \code{which = "response"}: Fitted response vs. index, with optional CI/PI.
-#'   \item \code{which = "link"}: Linear predictor (link scale) vs. index, with optional CI.
-#'   \item \code{which = "terms"}: \emph{One} per-term contribution (link scale).
-#'         For a continuous covariate: line with optional CI/PI ribbons.
-#'         For a factor covariate: boxplot by level with optional mean ± z·SE error bars.
-#' }
-#'
-#' @param object A fitted \code{neuralGAM} object.
-#' @param newdata Optional \code{data.frame}/list of covariates to evaluate.
-#'   If omitted, training data stored in the object are used.
-#' @param which One of \code{c("response","link","terms")}. Default \code{"response"}.
-#' @param interval One of \code{c("none","confidence","prediction","both")}.
-#'   Default \code{"confidence"}.
-#'   \itemize{
-#'     \item CI (confidence) is derived from epistemic SEs (\code{pi_method = 'epistemic'}.
-#'     \item PI (prediction) is available only if the model was trained with \code{pi_method = 'aleatoric'}.
-#'   }
-#' @param level Coverage level for intervals (e.g., \code{0.95}). Default \code{0.95}.
-#' @param term When \code{which = "terms"}, the \emph{single} term name to plot.
-#'   Users must call \code{autoplot()} multiple times to visualize multiple terms.
-#' @param rug Logical; if \code{TRUE} (default), add rugs to continuous term plots.
-#' @param ... Additional arguments passed to \code{predict.neuralGAM}.
-#'
-#' @return A single \code{ggplot} object.
-#'
-#' @details
-#' \strong{CI vs. PI:}
-#' \itemize{
-#'   \item CI for the mean uses only epistemic variance (like \code{mgcv}).
-#'   \item PI for a new observation uses the model’s PI machinery
-#'         (sum per-term bounds on the link scale, then inverse-link). If per-term bounds
-#'         are not present but total variance exists, a Normal fallback may be used by
-#'         \code{predict.neuralGAM}.
-#' }
-#'
-#' When \code{which = "terms"}, this function requires exactly one \code{term}.
-#' This avoids mixing discrete and continuous x scales in a single \code{ggplot}.
-#'
-#' @importFrom ggplot2 ggplot aes geom_line geom_ribbon geom_rug labs theme_bw
-#'   geom_boxplot stat_summary geom_errorbar geom_point
-#' @importFrom stats qnorm
+#' @method autoplot neuralGAM
 #' @export
 autoplot.neuralGAM <- function(object,
                      newdata = NULL,
                      which = c("response","link","terms"),
-                     interval = c("confidence","none","prediction","both"),
+                     interval = c("none","confidence", "prediction","both"),
                      level = 0.95,
                      term = NULL,
                      rug = TRUE,
@@ -175,7 +130,7 @@ autoplot.neuralGAM <- function(object,
       mu <- predict(object, newdata, type = "response", se.fit = FALSE, ...)
       if (length(mu) == 0L) stop("No data to plot.")
       df <- data.frame(.x = seq_along(mu), fit = as.numeric(mu))
-      p <- ggplot2::ggplot(df, ggplot2::aes(.x, fit)) +
+      p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$.x, .data$fit)) +
         ggplot2::geom_line() +
         ggplot2::labs(y = "Response", x = "Index") +
         ggplot2::theme_bw()
@@ -192,9 +147,9 @@ autoplot.neuralGAM <- function(object,
                        lwr = fit - z*se,
                        upr = fit + z*se)
       df_band <- .finite_band(df, "lwr", "upr")
-      p <- ggplot2::ggplot(df, ggplot2::aes(.x, fit)) +
+      p <- ggplot2::ggplot(df, ggplot2::aes(.data$.x, .data$fit)) +
         { if (nrow(df_band) > 0L)
-          ggplot2::geom_ribbon(data = df_band, ggplot2::aes(ymin = lwr, ymax = upr), alpha = 0.2)
+          ggplot2::geom_ribbon(data = df_band, ggplot2::aes(ymin = .data$lwr, ymax = .data$upr), alpha = 0.2)
           else { warning("Confidence band unavailable (missing SEs)."); ggplot2::geom_blank() } } +
         ggplot2::geom_line() +
         ggplot2::labs(y = "Response", x = "Index") +
@@ -208,10 +163,10 @@ autoplot.neuralGAM <- function(object,
       if (nrow(df) == 0L) stop("No data to plot.")
       df$.x <- seq_len(nrow(df))
       df_band <- .finite_band(df, "lwr", "upr")
-      p <- ggplot2::ggplot(df, ggplot2::aes(.x, fit)) +
+      p <- ggplot2::ggplot(df, ggplot2::aes(.data$.x, .data$fit)) +
         { if (nrow(df_band) > 0L)
-          ggplot2::geom_ribbon(data = df_band, ggplot2::aes(ymin = lwr, ymax = upr), alpha = 0.15)
-          else { warning("Prediction band unavailable (build_pi=FALSE or NA bands)."); ggplot2::geom_blank() } } +
+          ggplot2::geom_ribbon(data = df_band, ggplot2::aes(ymin = .data$lwr, ymax = .data$upr), alpha = 0.15)
+          else { warning("Prediction band unavailable."); ggplot2::geom_blank() } } +
         ggplot2::geom_line() +
         ggplot2::labs(y = "Response", x = "Index") +
         ggplot2::theme_bw()
@@ -226,12 +181,12 @@ autoplot.neuralGAM <- function(object,
       df$.x <- seq_len(nrow(df))
       df_ci <- .finite_band(df, "lwr_ci", "upr_ci")
       df_pi <- .finite_band(df, "lwr_pi", "upr_pi")
-      p <- ggplot2::ggplot(df, ggplot2::aes(.x, fit)) +
+      p <- ggplot2::ggplot(df, ggplot2::aes(.data$.x, .data$fit)) +
         { if (nrow(df_pi) > 0L)
-          ggplot2::geom_ribbon(data = df_pi, ggplot2::aes(ymin = lwr_pi, ymax = upr_pi), alpha = 0.10)
-          else { warning("Prediction band unavailable (build_pi=FALSE or NA bands)."); ggplot2::geom_blank() } } +
+          ggplot2::geom_ribbon(data = df_pi, ggplot2::aes(ymin = .data$lwr_pi, ymax = .data$upr_pi), alpha = 0.10)
+          else { warning("Prediction band unavailable."); ggplot2::geom_blank() } } +
         { if (nrow(df_ci) > 0L)
-          ggplot2::geom_ribbon(data = df_ci, ggplot2::aes(ymin = lwr_ci, ymax = upr_ci), alpha = 0.20)
+          ggplot2::geom_ribbon(data = df_ci, ggplot2::aes(ymin = .data$lwr_ci, ymax = .data$upr_ci), alpha = 0.20)
           else { warning("Confidence band unavailable (missing SEs)."); ggplot2::geom_blank() } } +
         ggplot2::geom_line() +
         ggplot2::labs(y = "Response", x = "Index") +
@@ -254,9 +209,9 @@ autoplot.neuralGAM <- function(object,
                      lwr = fit - z*se,
                      upr = fit + z*se)
     df_band <- .finite_band(df, "lwr", "upr")
-    p <- ggplot2::ggplot(df, ggplot2::aes(.x, fit)) +
+    p <- ggplot2::ggplot(df, ggplot2::aes(.data$.x, .data$fit)) +
       { if (nrow(df_band) > 0L)
-        ggplot2::geom_ribbon(data = df_band, ggplot2::aes(ymin = lwr, ymax = upr), alpha = 0.2)
+        ggplot2::geom_ribbon(data = df_band, ggplot2::aes(ymin = .data$lwr, ymax = .data$upr), alpha = 0.2)
         else { warning("Confidence band unavailable (missing SEs)."); ggplot2::geom_blank() } } +
       ggplot2::geom_line() +
       ggplot2::labs(y = "Link", x = "Index") +
@@ -296,7 +251,7 @@ autoplot.neuralGAM <- function(object,
     if (is.factor(xv)) {
       # -------- factor term: boxplot + mean ± z·SE (if available)
       df_box <- data.frame(level = xv, fit = term_fit)
-      p <- ggplot2::ggplot(df_box, ggplot2::aes(x = level, y = fit)) +
+      p <- ggplot2::ggplot(df_box, ggplot2::aes(x = .data$level, y = .data$fit)) +
         ggplot2::geom_boxplot(outlier.shape = NA, alpha = 0.15)
 
       # SE bars around group means if SEs are finite
@@ -318,14 +273,14 @@ autoplot.neuralGAM <- function(object,
 
         p <- p + ggplot2::geom_point(
           data = df_levels,
-          ggplot2::aes(x = level, y = fit)
+          ggplot2::aes(x = .data$level, y = .data$fit)
         )
         if (nrow(df_levels)) {
           if(!interval %in% c("none"))
           p <- p +
             ggplot2::geom_errorbar(
               data = df_levels,
-              ggplot2::aes(x = level, ymin = lwr, ymax = upr),
+              ggplot2::aes(x = .data$level, ymin = .data$lwr, ymax = .data$upr),
               width = 0.2
             )
         } else {
@@ -358,14 +313,14 @@ autoplot.neuralGAM <- function(object,
       df$lwr_pi <- lwr_pi[ord]; df$upr_pi <- upr_pi[ord]
     }
 
-    p <- ggplot2::ggplot(df, ggplot2::aes(x = x, y = fit)) +
+    p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$x, y = .data$fit)) +
       { if (!is.null(df$lwr_pi) && !is.null(df$upr_pi)) {
         df_pi <- df[is.finite(df$lwr_pi) & is.finite(df$upr_pi), , drop = FALSE]
-        if (nrow(df_pi)) ggplot2::geom_ribbon(data = df_pi, ggplot2::aes(ymin = lwr_pi, ymax = upr_pi), alpha = 0.10)
+        if (nrow(df_pi)) ggplot2::geom_ribbon(data = df_pi, ggplot2::aes(ymin = .data$lwr_pi, ymax = .data$upr_pi), alpha = 0.10)
       } } +
       { if (!is.null(df$lwr_ci) && !is.null(df$upr_ci)) {
         df_ci <- df[is.finite(df$lwr_ci) & is.finite(df$upr_ci), , drop = FALSE]
-        if (nrow(df_ci)) ggplot2::geom_ribbon(data = df_ci, ggplot2::aes(ymin = lwr_ci, ymax = upr_ci), alpha = 0.20)
+        if (nrow(df_ci)) ggplot2::geom_ribbon(data = df_ci, ggplot2::aes(ymin = .data$lwr_ci, ymax = .data$upr_ci), alpha = 0.20)
       } } +
       ggplot2::geom_line() +
       { if (rug) ggplot2::geom_rug(sides = "b", alpha = 0.3) } +
@@ -376,7 +331,7 @@ autoplot.neuralGAM <- function(object,
     if (interval %in% c("confidence","both") && !add_ci)
       warning(sprintf("Confidence band unavailable for term '%s' (missing SEs).", term))
     if (interval %in% c("prediction","both") && !add_pi)
-      warning(sprintf("Prediction band unavailable for term '%s' (build_pi=FALSE or NA bands).", term))
+      warning(sprintf("Prediction band unavailable for term '%s'.", term))
 
     return(p)
   }

@@ -1,5 +1,4 @@
-#' Predictions from a fitted \code{neuralGAM} object
-#'
+#' Produces predictions from a fitted \code{neuralGAM} object
 #' @description
 #' Generate predictions from a fitted \code{neuralGAM} model:
 #' \itemize{
@@ -37,7 +36,6 @@
 #'   For each dropout mask, \code{inner_samples} values are generated from the Normal
 #'   approximation defined by the predicted quantile bounds.
 #'   Larger values improve stability of the sampled prediction intervals at the cost of speed.
-#' @param validation_split Optional fraction of training data used for validation.
 #' @param verbose Integer (0/1). Default \code{1}.
 #' @return
 #' - If \code{interval == "none"}:

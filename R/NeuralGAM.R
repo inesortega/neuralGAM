@@ -37,7 +37,7 @@
 #'           enables Monte Carlo Dropout sampling to approximate epistemic uncertainty.
 #'   }
 #'   Typical values are between \code{0.1} and \code{0.3}.
-#' @param forward_passess Integer, number of forward passess to run MC-dropout when computing
+#' @param forward_passes Integer, number of forward passess to run MC-dropout when computing
 #'   epistemic uncertainty (\code{pi_method = "epistemic"}) or both aleatoric and epistemic.
 #' @param inner_samples Integer, number of draws per MC-dropout pass used when combining
 #'   aleatoric and epistemic uncertainty (\code{pi_method = "both"}).
@@ -98,7 +98,7 @@
 #' }
 #' **Centering for partial effects**
 #' For identifiability, each smooth term \eqn{g_j(x_j)} is mean-centered after fitting. When plotting
-#' partial effects (e.g., `autoplot(ngam, "x1")`), the associated PI bounds are shifted by the \emph{same}
+#' partial effects (e.g., `autoplot(ngam, type = "terms", term = "x1")`), the associated PI bounds are shifted by the \emph{same}
 #' centering constant so that the band and the smooth share the same baseline. (Widths/variances are
 #' unaffected by this shift.) Full-model predictions on the response scale are not centered.
 #'
@@ -194,7 +194,7 @@
 #'   alpha = 0.05
 #' )
 #' # Visualize point prediction and prediction intervals using autoplot:
-#' autoplot(ngam, "x1")
+#' autoplot(ngam, type = "terms", term = "x1", intervals = "prediction")
 #' }
 neuralGAM <-
   function(formula,
@@ -525,7 +525,6 @@ neuralGAM <-
                                                                  loss = loss, learning_rate = learning_rate,
                                                                  alpha = alpha,
                                                                  loss_weights = list(W),
-                                                                 build_pi = build_pi,
                                                                  pi_method = pi_method,
                                                                  forward_passes = forward_passes, inner_samples = inner_samples,
                                                                  ...)
@@ -652,7 +651,7 @@ neuralGAM <-
 
 .update_nonparametric_component <- function(model, family, term, eta, f, W, Z, x_np,
                                             validation_split, verbose, loss, learning_rate,
-                                            build_pi, loss_weights, alpha,
+                                            loss_weights, alpha,
                                             pi_method,
                                             forward_passes, inner_samples, ...) {
   # Remove the term's current contribution from eta
@@ -670,7 +669,7 @@ neuralGAM <-
   } else {
     # Compile for non-gaussian families
     model[[term]] <- set_compile(
-      model[[term]], build_pi, pi_method, alpha, learning_rate, loss,
+      model[[term]], pi_method, alpha, learning_rate, loss,
       loss_weights = loss_weights, ...
     )
 
@@ -695,7 +694,7 @@ neuralGAM <-
   if (is.null(dim(x))) x <- matrix(x, ncol = 1L)
 
   if (pi_method == "epistemic") {
-    # Compute only epistemic uncertainty by using `forward_passess` with Dropout layer
+    # Compute only epistemic uncertainty by using `forward_passes` with Dropout layer
     mu_det <- as.numeric(model[[term]] %>% predict(x, verbose = 0))
 
     # stochastic passes for uncertainty (dropout ON)
@@ -715,7 +714,7 @@ neuralGAM <-
       var_total     = y_var
     )
   } else if (pi_method == "both") {
-    # Compute only epistemic uncertainty by using `forward_passess` with Dropout layer
+    # Compute only epistemic uncertainty by using `forward_passes` with Dropout layer
     mu_det <- as.numeric(model[[term]] %>% predict(x, verbose = 0))
 
     # 2) MC-dropout forward: 3 outputs per pass

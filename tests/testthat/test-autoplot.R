@@ -98,7 +98,7 @@ test_that("autoplot: response/link basic", {
   )
   expect_s3_class(p_link_pi, "ggplot")
 
-  # Terms PI -> warn (no PI ribbons for terms without build_pi)
+  # Terms PI -> warn (no PI ribbons for terms without PI)
   expect_warning(
     p_term_pi <- autoplot(ngam_no_pi, which = "terms",
                           term = "x1", interval = "prediction", level = 0.95)

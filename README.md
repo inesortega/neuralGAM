@@ -184,13 +184,14 @@ summary(ngam)
 
 ### Prediction Intervals
 
-Enable predictive intervals by setting `build_pi = TRUE` and specifying a confidence level via `alpha`:
+Enable predictive intervals by setting `pi_method` and specifying a confidence level via `alpha`:
 
 ```r
 ngam <- neuralGAM(
   y ~ s(x1) + s(x2),
   data = train,
-  build_pi = TRUE,
+  pi_method = "epistemic",
+  forward_passes = 30,
   alpha = 0.95,
   num_units = 1024,
   seed = seed

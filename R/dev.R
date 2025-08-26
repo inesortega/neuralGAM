@@ -72,8 +72,8 @@ dev <- function(muhat, y, family, w = NULL) {
   # null mean on response scale
   mu0 <- rep(mean(y), length(y))
 
-  dev_model <- neuralGAM:::dev(muhat = mu, y = y, family = fam, w = w)
-  dev_null  <- neuralGAM:::dev(muhat = mu0, y = y, family = fam, w = w)
+  dev_model <- dev(muhat = mu, y = y, family = fam, w = w)
+  dev_null  <- dev(muhat = mu0, y = y, family = fam, w = w)
 
   # guard against degenerate null deviance
   if (dev_null <= .Machine$double.eps) return(NA_real_)

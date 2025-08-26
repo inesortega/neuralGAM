@@ -1,3 +1,7 @@
+#' Internal helper functions to compute MC dropout samples
+#' @importFrom stats rnorm
+#' @keywords internal
+
 .mc_dropout_forward <- function(model, x, passes, output_dim) {
   if (!is.matrix(x)) x <- as.matrix(x)
   n <- nrow(x)

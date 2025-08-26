@@ -240,7 +240,9 @@ make_quantile_loss <- function(alpha = 0.05,
     }
 
     # Total loss
-    total_loss <- loss_low + loss_up + mean_loss_value
+    w_mean <- 0.1
+
+    total_loss <- loss_low + loss_up + w_mean * mean_loss_value
     total_loss
   }
 }

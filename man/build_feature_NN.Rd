@@ -83,6 +83,8 @@ smooth-term network (when \code{pi_method} is \code{"epistemic"} or \code{"both"
 enables Monte Carlo Dropout sampling to approximate epistemic uncertainty.
 }
 Typical values are between \code{0.1} and \code{0.3}.}
+    \item{\code{forward_passes}}{Integer, number of forward passess to run MC-dropout when computing
+epistemic uncertainty (\code{pi_method = "epistemic"}) or both aleatoric and epistemic.}
     \item{\code{inner_samples}}{Integer, number of draws per MC-dropout pass used when combining
 aleatoric and epistemic uncertainty (\code{pi_method = "both"}).
 For each dropout mask, \code{inner_samples} values are generated from the Normal

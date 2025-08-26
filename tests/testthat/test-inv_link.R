@@ -10,26 +10,28 @@ skip_if_no_keras <- function() {
   ) skip("keras not available for testing...")
 }
 
-test_that("Inverse link for gaussian family should be equal to muhat", {
+test_that("inv_link function for gaussian family should be equal to muhat", {
   skip_if_no_keras()
 
   family <- "gaussian"
   muhat <- c(0.1, 0.5, 0.9)
   expected_output <- muhat
-  actual_output <- neuralGAM:::inv_link(family, muhat)
+  actual_output <- inv_link(family, muhat)
   expect_equal(actual_output, expected_output)
 })
 
-test_that("Inverse link for binomial family should be correctly calculated", {
+# Check the inv_link function for binomial family
+test_that("inv_link function for binomial family should be correctly calculated", {
   skip_if_no_keras()
 
   family <- "binomial"
   muhat <- c(0.2, 0.7, 0.99)
-  expected_output <- log(muhat / (1 - muhat))
-  actual_output <- neuralGAM:::inv_link(family, muhat)
+  expected_output <- exp(muhat) / (1 + exp(muhat))
+  actual_output <- inv_link(family, muhat)
   expect_equal(actual_output, expected_output)
 })
 
+# Check for missing 'muhat' argument
 test_that("Function should throw an error for missing 'muhat' argument", {
   skip_if_no_keras()
 
@@ -37,6 +39,7 @@ test_that("Function should throw an error for missing 'muhat' argument", {
   expect_error(inv_link(family))
 })
 
+# Check for missing 'family' argument
 test_that("Function should throw an error for missing 'family' argument", {
   skip_if_no_keras()
 
@@ -44,11 +47,22 @@ test_that("Function should throw an error for missing 'family' argument", {
   expect_error(inv_link(muhat = muhat))
 })
 
-
+# Check for unsupported family
 test_that("Function should throw an error for unsupported 'family'", {
-  skip_if_no_keras()
-
   family <- "unknown"
   muhat <- c(0.1, 0.5, 0.9)
   expect_error(inv_link(family, muhat))
+})
+
+# Check that large positive / negative values of muhat are capped for binomial family
+test_that("Function should cap large positive values of muhat at 10 for binomial family", {
+  skip_if_no_keras()
+
+  family <- "binomial"
+  muhat <- c(500, 300, -300)
+  expected_cap_muhat <- pmin(pmax(muhat, -300), 300)
+  exp_eta <- exp(expected_cap_muhat)
+  expected_output <- exp_eta / (1 + exp_eta)
+  actual_output <- inv_link(family, muhat)
+  testthat::expect_equal(expected_output, actual_output)
 })

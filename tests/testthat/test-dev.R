@@ -1,126 +1,110 @@
 library(testthat)
-library(reticulate)
 
-skip_if_no_keras <- function() {
+# --- Gaussian ---------------------------------------------------------------
 
-  if (!tryCatch(
-    reticulate::py_module_available("keras"),
-    error = function(e) return(FALSE)
-  )
-  ) skip("keras not available for testing...")
-}
-
-# Check the neuralGAM:::deviance for gaussian family
-test_that("neuralGAM:::deviance for gaussian family should be correctly calculated", {
-  skip_if_no_keras()
-
+test_that("dev for gaussian family is sum of squared residuals (with weights)", {
   family <- "gaussian"
   muhat <- c(0.1, 0.5, 0.9)
-  w <- c(1, 1, 1)
   y <- c(0.2, 0.6, 0.8)
-  expected_output <- mean((y - muhat)^2)
-  actual_output <- neuralGAM:::dev(muhat, y, w, family)
-  expect_equal(actual_output, expected_output)
+
+  # unweighted -> weights default to 1
+  expected_unw <- sum((y - muhat)^2)
+  actual_unw <- dev(muhat = muhat, y = y, family = family)
+  expect_equal(actual_unw, expected_unw, tolerance = 1e-12)
+
+  # with weights
+  w <- c(1, 2, 3)
+  expected_w <- sum(w * (y - muhat)^2)
+  actual_w <- dev(muhat = muhat, y = y, family = family, w = w)
+  expect_equal(actual_w, expected_w, tolerance = 1e-12)
 })
 
-# Check the neuralGAM:::deviance for binomial family
-test_that("neuralGAM:::deviance for binomial family should be correctly calculated", {
-  skip_if_no_keras()
+# --- Binomial ---------------------------------------------------------------
 
+test_that("dev for binomial family matches analytic form and is finite", {
   family <- "binomial"
   muhat <- c(0.2, 0.7, 0.99)
-  w <- c(1, 1, 1)
   y <- c(0, 1, 1)
 
-  muhat[muhat < 0.0001] <- 0.0001
-  muhat[muhat > 0.9999] <- 0.9999
+  # Expected using the same stabilized formula as implementation
+  eps <- 1e-12
+  mu_c <- pmin(pmax(muhat, eps), 1 - eps)
+  y_c  <- pmin(pmax(y,     eps), 1 - eps)
+  expected <- sum(2 * ( y_c * log(y_c / mu_c) + (1 - y_c) * log((1 - y_c) / (1 - mu_c)) ))
 
-  entrop <- rep(0, length(y))
-  ii <- (1 - y) * y > 0
-  if (sum(ii, na.rm = TRUE) > 0) {
-    entrop[ii] <- 2 * (y[ii] * log(y[ii])) +
-      ((1 - y[ii]) * log(1 - y[ii]))
-  } else {
-    entrop <- 0
-  }
-  entadd <- 2 * (y * log(muhat)) + ((1 - y) * log(1 - muhat))
-  expected_output <- sum(entrop - entadd, na.rm = TRUE)
-
-  actual_output <- neuralGAM:::dev(muhat, y, w, family)
-  expect_equal(actual_output, expected_output)
+  actual <- dev(muhat = muhat, y = y, family = family)
+  expect_equal(actual, expected, tolerance = 1e-10)
+  expect_true(is.finite(actual))
 })
 
-# Check the neuralGAM:::deviance for poisson family
-test_that("neuralGAM:::deviance for poisson family returns correct value for known inputs", {
-  # Test case 1
+test_that("binomial deviance handles extreme fits and zeros safely", {
+  family <- "binomial"
+  y <- c(0, 1, 0, 1)
+  muhat <- c(1e-20, 1 - 1e-20, 1e-8, 1 - 1e-8)
+
+  res <- dev(muhat, y, family = family)
+  expect_true(is.numeric(res) && length(res) == 1L && is.finite(res))
+})
+
+# --- Poisson ----------------------------------------------------------------
+
+test_that("dev for poisson family returns correct value for known inputs", {
   y <- c(1, 2, 0)
   muhat <- c(1, 2, 1)
   w <- c(1, 1, 1)
   family <- "poisson"
 
-  # Manually compute deviance
-  # obs 1: 2 * (1 * log(1/1) - (1 - 1)) = 0
-  # obs 2: 2 * (2 * log(2/2) - (2 - 2)) = 0
-  # obs 3: 2 * (-0 * log(1) - (0 - 1)) + 0 = 2 * (0 - (-1)) = 2
+  # Manually: obs1=0, obs2=0, obs3=2
   expected <- 2.0
-
-  result <- neuralGAM:::dev(muhat, y, w, family)
+  result <- dev(muhat, y, family = family, w = w)
   expect_equal(result, expected, tolerance = 1e-8)
 })
 
-test_that("poisson_deviance handles small fits and zeros safely", {
-  y <- c(0, 5)
-  muhat <- c(0.00001, 5)
-  w <- c(1, 1)
-  family <- "binomial"
-
-  # Should not return NA/Inf
-  result <- neuralGAM:::dev(muhat, y, w, family)
-  expect_true(is.finite(result))
+test_that("poisson deviance is finite for small fits and zeros", {
+  y <- c(0, 5, 0)
+  muhat <- c(1e-12, 5, 1e-9)
+  res <- dev(muhat, y, family = "poisson")
+  expect_true(is.finite(res))
 })
 
-# Check for missing 'muhat' argument
-test_that("Function should throw an error for missing 'muhat' argument", {
-  skip_if_no_keras()
+# --- Argument validation ----------------------------------------------------
 
-  family <- "gaussian"
+test_that("dev() errors on missing required args but not on missing weights", {
   y <- c(0.2, 0.6, 0.8)
-  expect_error(neuralGAM:::dev(y = y, family = family))
-})
-
-# Check for missing 'y' argument
-test_that("Function should throw an error for missing 'y' argument", {
-  skip_if_no_keras()
-
-  family <- "gaussian"
   muhat <- c(0.1, 0.5, 0.9)
-  expect_error(neuralGAM:::dev(muhat = muhat, family = family))
+
+  expect_error(dev(y = y, family = "gaussian"))
+  expect_error(dev(muhat = muhat, family = "gaussian"))
+  expect_error(dev(muhat = muhat, y = y))
+
+  # Missing w should be OK (defaults to 1's)
+  expect_silent({
+    res <- dev(muhat = muhat, y = y, family = "gaussian")
+    expect_true(is.numeric(res) && length(res) == 1L)
+  })
 })
 
-# Check for missing 'family' argument
-test_that("Function should throw an error for missing 'family' argument", {
-  skip_if_no_keras()
-
+test_that("dev() errors on unsupported family", {
   muhat <- c(0.1, 0.5, 0.9)
   y <- c(0.2, 0.6, 0.8)
-  expect_error(neuralGAM:::dev(muhat = muhat, y = y))
+  expect_error(dev(muhat, y, "gamma"))
 })
 
-# Check for missing 'w' argument
-test_that("Function should throw an error for missing 'w' argument", {
-  skip_if_no_keras()
+# --- Deviance explained -----------------------------------------------------
 
-  muhat <- c(0.1, 0.5, 0.9)
-  y <- c(0.2, 0.6, 0.8)
-  expect_error(neuralGAM:::dev(muhat = muhat, y = y, family = "poisson"))
-})
+test_that(".deviance_explained.neuralGAM returns sensible value and attributes", {
+  # toy perfectly-fit gaussian model -> dev explained = 1
+  y <- c(1, 2, 3, 4)
+  obj <- structure(list(
+    y = y,
+    muhat = y,                 # perfect fit
+    family = "gaussian"
+  ), class = "neuralGAM")
 
-# Check for unsupported family
-test_that("Function should throw an error for unsupported 'family'", {
-  skip_if_no_keras()
-
-  family <- "gamma"
-  muhat <- c(0.1, 0.5, 0.9)
-  y <- c(0.2, 0.6, 0.8)
-  expect_error(neuralGAM:::dev(muhat, y, family))
+  out <- .deviance_explained.neuralGAM(obj)
+  expect_true(!is.na(attr(out, "percent")))
+  expect_true(!is.na(attr(out, "dev_model")))
+  expect_true(!is.na(attr(out, "dev_null")))
+  expect_identical(attr(out, "family"), "gaussian")
+  expect_s3_class(out, "neuralGAM_devexp")
 })

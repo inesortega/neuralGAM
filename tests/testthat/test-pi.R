@@ -1,10 +1,12 @@
-testthat::skip_on_cran()
-testthat::skip_if_not_installed("ggplot2")
-testthat::skip_if_not_installed("neuralGAM")
-
 library(testthat)
 library(ggplot2)
 library(neuralGAM)
+
+
+skip_if_no_keras <- function() {
+  if (!reticulate::py_module_available("keras")) skip("keras not available")
+  if (!reticulate::py_module_available("tensorflow")) skip("tensorflow not available")
+}
 
 has_geom <- function(p, geom_class) {
   # geom_class e.g. "GeomRibbon", "GeomLine", "GeomErrorbar", "GeomPoint", "GeomRug"
@@ -52,6 +54,8 @@ setup_local_data_and_fit <- function(seed = 42L, n = 1500L) {
 }
 
 test_that("autoplot returns ggplot and basic geoms for numeric smooth", {
+  skip_if_no_keras()
+
   obj <- setup_local_data_and_fit()
   ngam <- obj$fit
 
@@ -69,10 +73,12 @@ test_that("autoplot returns ggplot and basic geoms for numeric smooth", {
 })
 
 test_that("autoplot adds error bars for parametric factor term", {
+  skip_if_no_keras()
+
   obj <- setup_local_data_and_fit()
   ngam <- obj$fit
 
-  p <- autoplot(ngam, which = "terms", term = "x2")
+  p <- autoplot(ngam, which = "terms", term = "x2", interval = "confidence")
   expect_s3_class(p, "ggplot")
   expect_true(has_geom(p, "GeomPoint"))
   # parametric factor terms should have SE via predict.lm -> expect error bars
@@ -85,6 +91,8 @@ test_that("autoplot adds error bars for parametric factor term", {
 })
 
 test_that("labels and CI level are properly constructed", {
+  skip_if_no_keras()
+
   obj <- setup_local_data_and_fit()
   ngam <- obj$fit
 
@@ -98,6 +106,8 @@ test_that("labels and CI level are properly constructed", {
 })
 
 test_that("factor x scale is discrete and rotated", {
+  skip_if_no_keras()
+
   obj <- setup_local_data_and_fit()
   ngam <- obj$fit
 

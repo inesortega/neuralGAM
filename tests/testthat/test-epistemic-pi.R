@@ -36,7 +36,7 @@ test_that(".mc_dropout_forward returns [passes, n_obs, output_dim] (odim=1)", {
   arr <- neuralGAM:::.mc_dropout_forward(mdl, x, passes, 1L)
 
   expect_true(is.array(arr))
-  expect_equal(dim(arr), c(1L, passes, n))
+  expect_equal(dim(arr), c(passes, n, 1L))
   # Variance across passes should be non-zero for at least some obs
   y_mat <- arr[, , 1]
   v <- var(y_mat)
@@ -55,7 +55,7 @@ test_that(".mc_dropout_forward returns [passes, n_obs, output_dim] (odim=3)", {
   arr <- neuralGAM:::.mc_dropout_forward(mdl, x, passes, 3L)
 
   expect_true(is.array(arr))
-  expect_equal(dim(arr), c(3L, passes, n))
+  expect_equal(dim(arr), c(passes, n, 3L))
 })
 
 test_that("Quantile/mean sanity with MC dropout samples", {
@@ -74,7 +74,7 @@ test_that("Quantile/mean sanity with MC dropout samples", {
   upper_q <- 0.975
   low  <- matrixStats::colQuantiles(y_mat, probs = lower_q)
   up   <- matrixStats::colQuantiles(y_mat, probs = upper_q)
-  mean <- Matrix::colMeans(y_mat)
+  mean <- matrixStats::colMeans2(y_mat)
 
   # monotonicity and containment
   expect_true(all(low <= up + 1e-12))
@@ -84,7 +84,7 @@ test_that("Quantile/mean sanity with MC dropout samples", {
   expect_true(any(up - low > 0))
 })
 
-test_that(".combine_uncertainties: decomposition and bounds look sane", {
+test_that(".combine_uncertainties_sampling: decomposition and bounds look sane", {
   skip_if_no_keras()
 
   set.seed(999)
@@ -99,7 +99,7 @@ test_that(".combine_uncertainties: decomposition and bounds look sane", {
   lwr_mat <- sweep(mean_mat, 2, z * sigma_ale, FUN = "-") # same width each pass
   upr_mat <- sweep(mean_mat, 2, z * sigma_ale, FUN = "+")
 
-  out <- neuralGAM:::.combine_uncertainties(lwr_mat, upr_mat, mean_mat, alpha)
+  out <- neuralGAM:::.combine_uncertainties_sampling(lwr_mat, upr_mat, mean_mat, alpha)
 
   expect_true(is.data.frame(out))
   expect_equal(nrow(out), n)

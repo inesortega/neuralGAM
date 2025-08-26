@@ -2,13 +2,13 @@
 % Please edit documentation in R/autoplot.neuralGAM.R
 \name{autoplot.neuralGAM}
 \alias{autoplot.neuralGAM}
-\title{Autoplot method for \code{neuralGAM} objects}
+\title{Autoplot method for \code{neuralGAM} objects. Produces a single plot.}
 \usage{
 \method{autoplot}{neuralGAM}(
   object,
   newdata = NULL,
   which = c("response", "link", "terms"),
-  interval = c("confidence", "none", "prediction", "both"),
+  interval = c("none", "confidence", "prediction", "both"),
   level = 0.95,
   term = NULL,
   rug = TRUE,
@@ -19,32 +19,28 @@
 \item{object}{A fitted \code{neuralGAM} object.}
 
 \item{newdata}{Optional \code{data.frame}/list of covariates to evaluate.
-If omitted, training data stored in the object are used.}
+If omitted, the training data stored in the model are used.}
 
 \item{which}{One of \code{c("response","link","terms")}. Default \code{"response"}.}
 
 \item{interval}{One of \code{c("none","confidence","prediction","both")}.
 Default \code{"confidence"}.
 \itemize{
-\item CI (confidence) is derived from epistemic SEs (\code{pi_method = 'epistemic'}.
-\item PI (prediction) is available only if the model was trained with \code{pi_method = 'aleatoric'}.
+\item Confidence intervals (CI) are derived from epistemic SEs when the model was trained with \code{pi_method \%in\% c("epistemic", "both")}.
+\item Prediction intervals (PI) are available only if the model was trained with \code{pi_method \%in\% c("aleatoric", "both")}.
+\item For \code{which = "terms"} and factor covariates, interval bands are
+represented as error bars around group means.
 }}
 
 \item{level}{Coverage level for intervals (e.g., \code{0.95}). Default \code{0.95}.}
 
-\item{term}{When \code{which = "terms"}, the \emph{single} term name to plot.
-Users must call \code{autoplot()} multiple times to visualize multiple terms.}
+\item{term}{Term name to plot (for \code{which = "terms"}).}
 
 \item{rug}{Logical; if \code{TRUE} (default), add rugs to continuous term plots.}
 
 \item{...}{Additional arguments passed to \code{predict.neuralGAM}.}
-
-\item{terms}{Character vector of term names to plot (for \code{which = "terms"}).
-If \code{NULL}, all terms are plotted.}
 }
 \value{
-A single \code{ggplot} object.
-
 A single \code{ggplot} object.
 }
 \description{
@@ -64,16 +60,6 @@ for confidence intervals (CI) and/or prediction intervals (PI).
 by level, with optional mean ± z·SE error bars if available.
 }
 }
-
-Produce a single diagnostic/effect plot from a fitted \code{neuralGAM} model.
-Supported views:
-\itemize{
-\item \code{which = "response"}: Fitted response vs. index, with optional CI/PI.
-\item \code{which = "link"}: Linear predictor (link scale) vs. index, with optional CI.
-\item \code{which = "terms"}: \emph{One} per-term contribution (link scale).
-For a continuous covariate: line with optional CI/PI ribbons.
-For a factor covariate: boxplot by level with optional mean ± z·SE error bars.
-}
 }
 \details{
 Intervals:
@@ -92,18 +78,6 @@ as box plots. If SEs are available, group means are shown with error bars
 representing \eqn{\text{mean} \pm z \times SE}.
 
 Multiple terms are always combined into a single faceted plot (one panel per term).
-
-\strong{CI vs. PI:}
-\itemize{
-\item CI for the mean uses only epistemic variance (like \code{mgcv}).
-\item PI for a new observation uses the model’s PI machinery
-(sum per-term bounds on the link scale, then inverse-link). If per-term bounds
-are not present but total variance exists, a Normal fallback may be used by
-\code{predict.neuralGAM}.
-}
-
-When \code{which = "terms"}, this function requires exactly one \code{term}.
-This avoids mixing discrete and continuous x scales in a single \code{ggplot}.
 }
 \examples{
 \dontrun{
@@ -123,7 +97,6 @@ library(neuralGAM)
 ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3),
                  data = dat, num_units = 128,
                  family = "gaussian",
-                 build_pi = TRUE,
                  pi_method = "both",
                  seed = 1)
 
@@ -143,5 +116,6 @@ autoplot(ngam, which = "terms", term = "x2", interval = "confidence")
 p1 <- autoplot(ngam, which = "terms", term = "x1")
 p2 <- autoplot(ngam, which = "terms", term = "x2")
 # arrange p1, p2 using your preferred layout tooling, for example using grid.arrange:
+gridExtra::grid.arrange(grobs = list(p1,p2), ncol = 2)
 }
 }

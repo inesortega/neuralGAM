@@ -2,7 +2,7 @@
 % Please edit documentation in R/predict.NeuralGAM.R
 \name{predict.neuralGAM}
 \alias{predict.neuralGAM}
-\title{Predictions from a fitted \code{neuralGAM} object}
+\title{Produces predictions from a fitted \code{neuralGAM} object}
 \usage{
 \method{predict}{neuralGAM}(
   object,
@@ -45,8 +45,6 @@ approximation defined by the predicted quantile bounds.
 Larger values improve stability of the sampled prediction intervals at the cost of speed.}
 
 \item{verbose}{Integer (0/1). Default \code{1}.}
-
-\item{validation_split}{Optional fraction of training data used for validation.}
 }
 \value{
 \itemize{

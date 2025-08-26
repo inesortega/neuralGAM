@@ -15,6 +15,12 @@
 library(testthat)
 library(reticulate)
 
+
+skip_if_no_keras <- function() {
+  if (!reticulate::py_module_available("keras")) skip("keras not available")
+  if (!reticulate::py_module_available("tensorflow")) skip("tensorflow not available")
+}
+
 set.seed(42)
 n <- 400
 x1 <- runif(n, -2.5, 2.5)

@@ -14,7 +14,7 @@
 \item{passes}{Number of stochastic passes (>=2).}
 
 \item{output_dim}{Expected number of outputs per observation
-(e.g., 1 = mean only, 3 = quantile heads \link{lwr,upr,mean}).}
+(e.g., 1 = mean only, 3 = quantile heads (lwr, upr, mean)).}
 }
 \value{
 A numeric array of shape \code{[passes, n_obs, output_dim]}.

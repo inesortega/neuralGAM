@@ -137,8 +137,6 @@
 #' #'
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
 #'
-#' @keywords internal
-#'
 #' @importFrom keras fit
 #' @importFrom keras compile
 #' @importFrom tensorflow set_random_seed tf

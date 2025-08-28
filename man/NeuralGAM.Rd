@@ -253,4 +253,3 @@ Koenker, R., & Bassett, G. (1978). Regression quantiles.
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.
 }
-\keyword{internal}

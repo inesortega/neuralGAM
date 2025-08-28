@@ -1,60 +1,85 @@
 #' Produces predictions from a fitted \code{neuralGAM} object
+#'
 #' @description
-#' Generate predictions from a fitted \code{neuralGAM} model:
+#' Generate predictions from a fitted \code{neuralGAM} model. Supported types:
+#'
 #' \itemize{
 #'   \item \code{type = "link"} (default): linear predictor on the link scale.
 #'   \item \code{type = "response"}: predictions on the response scale.
 #'   \item \code{type = "terms"}: per-term contributions to the linear predictor (no intercept).
 #' }
 #'
-#' If \code{se.fit = TRUE}, standard errors (SE) of the \emph{fitted mean} are returned
-#' (epistemic only; mgcv-style). For \code{type="response"} the SE is mapped with the
-#' delta method: \eqn{se_\mu = |d\mu/d\eta| \cdot se_\eta}.
+#' \strong{Standard errors and intervals}
 #'
-#' Optional interval bands can be requested via \code{interval}:
-#' \describe{
-#'   \item{\code{"confidence"}}{Confidence interval (CI) for the mean, built from SEs (epistemic).}
-#'   \item{\code{"prediction"}}{Prediction interval (PI) for a new observation, available only if
-#'   the model was trained with `pi_method %in% c("aleatoric", "both")`. Bands are formed
-#'   by summing per-term bounds on the link scale and mapping through the inverse link.}
-#'   \item{\code{"both"}}{Return both CI and PI if available.}
+#' \itemize{
+#'   \item If \code{se.fit = TRUE}, standard errors (SE) of the \emph{fitted mean} are returned
+#'         (epistemic only; mgcv-style via MC Dropout).
+#'   \item For \code{type = "response"}, SEs are mapped by the delta method:
+#'         \eqn{se_\mu = |d\mu/d\eta| \cdot se_\eta}.
+#'   \item Confidence intervals (CI) always reflect epistemic uncertainty about the fitted mean
+#'         (as in \pkg{mgcv}).
+#'   \item Prediction intervals (PI) are available only on the \emph{response scale}, and only if
+#'         the model was trained with \code{pi_method \%in\% c("aleatoric", "both")}.
 #' }
+#'
+#' \strong{Important implementation details}
+#'
+#' \itemize{
+#'   \item \emph{Epistemic SEs (CIs)} are obtained via Monte Carlo Dropout: multiple stochastic
+#'         forward passes provide an across-pass variance. For full-model CIs, uncertainty is
+#'         aggregated jointly by summing per-pass smooth contributions and taking the
+#'         across-pass variance (implicitly accounting for cross-term covariance). For
+#'         \code{type="terms"}, SEs are returned per smooth.
+#'   \item \emph{Prediction intervals (PIs)} reflect aleatoric uncertainty (and, for
+#'         \code{pi_method="both"}, combined effects). PIs are provided \emph{only} on the
+#'         response scale.
+#'   \item For \code{type = "terms"}, only \emph{confidence intervals for the smooth effect}
+#'         are meaningful (from SEs). \strong{Prediction intervals are not defined for terms}
+#'         because partial effects are fitted functions, not noisy observations.
+#'   \item For \code{type = "link"}, only confidence intervals are provided;
+#'         prediction intervals are not defined on the link scale.
+#' }
+#'
 #' @param object A fitted \code{neuralGAM} object.
 #' @param newdata Optional \code{data.frame}/list of covariates at which to predict.
 #'   If omitted, the training data cached in the object are used.
 #' @param type One of \code{c("link","response","terms")}. Default \code{"link"}.
 #' @param terms If \code{type = "terms"}, character vector of term names to include.
-#'   If \code{NULL}, all terms are returned. Intercept is not included (as in \code{mgcv}).
+#'   If \code{NULL}, all terms are returned. Intercept is not included (as in \pkg{mgcv}).
 #' @param se.fit Logical; if \code{TRUE}, return SEs of the fitted mean (mgcv-style). Default \code{FALSE}.
 #'   For \code{type="terms"}, returns a matrix of per-term SEs (epistemic) when available.
 #' @param interval One of \code{c("none","confidence","prediction","both")}. Default \code{"none"}.
+#'   Ignored when \code{type = "terms"} (prediction intervals are not defined for terms).
 #' @param level Coverage level for intervals (e.g., \code{0.95}). Default \code{0.95}.
-#' @param forward_passes Integer, number of forward passess to run MC-dropout when computing
-#'   epistemic uncertainty (\code{pi_method = "epistemic"}) or both aleatoric and epistemic.
-#' @param inner_samples Integer, number of draws per MC-dropout pass used when combining
-#'   aleatoric and epistemic uncertainty (\code{pi_method = "both"}).
-#'   For each dropout mask, \code{inner_samples} values are generated from the Normal
-#'   approximation defined by the predicted quantile bounds.
-#'   Larger values improve stability of the sampled prediction intervals at the cost of speed.
+#' @param forward_passes Integer; number of MC-dropout forward passes when computing
+#'   epistemic uncertainty (used when \code{pi_method \%in\% c("epistemic","both")}).
+#' @param inner_samples Integer; number of draws per MC-dropout pass used when combining
+#'   aleatoric and epistemic uncertainty (\code{pi_method = "both"}). For each dropout mask,
+#'   \code{inner_samples} draws come from a Normal approximation induced by the predicted
+#'   quantile bounds. Larger values improve stability at the cost of speed.
 #' @param verbose Integer (0/1). Default \code{1}.
-#' @param \ldots Other options.
+#' @param \ldots Other options (passed on to internal predictors).
+#'
 #' @return
-#' - If \code{interval == "none"}:
-#'   \itemize{
-#'     \item \code{se.fit = FALSE}: vector (link/response) or matrix (terms).
-#'     \item \code{se.fit = TRUE}: \code{list(fit, se.fit)} for link/response; for terms,
-#'           \code{list(fit = terms_matrix, se.fit = se_terms_matrix)}.
-#'   }
-#' - If \code{interval != "none"}:
-#'   \itemize{
-#'     \item \code{type="link"}: data frame with CI columns (\code{lwr}, \code{upr});
-#'                               PIs are not provided on the link scale.
-#'     \item \code{type="response"}: data frame with CI, PI, or both (when available).
-#'     \item \code{type="terms"}: intervals are not returned; same as \code{interval = "none"}.
-#'   }
+#' \itemize{
+#'   \item If \code{interval == "none"}:
+#'     \itemize{
+#'       \item \code{se.fit = FALSE}: a numeric vector (link/response) or a numeric matrix (terms).
+#'       \item \code{se.fit = TRUE}: a list with \code{$fit} and \code{$se.fit} for link/response;
+#'             for \code{type="terms"}, \code{list(fit = terms_matrix, se.fit = se_terms_matrix)}.
+#'     }
+#'   \item If \code{interval != "none"}:
+#'     \itemize{
+#'       \item \code{type="link"}: a data frame with CI columns \code{lwr}, \code{upr}
+#'             (PIs are not provided on the link scale).
+#'       \item \code{type="response"}: a data frame with CI, PI, or both (when available).
+#'       \item \code{type="terms"}: same as \code{interval = "none"} (intervals not returned).
+#'     }
+#' }
 #'
 #' @importFrom stats predict qnorm
 #' @export
+#'
 #' @examples
 #' \dontrun{
 #' set.seed(42)
@@ -62,106 +87,50 @@
 #' x1 <- runif(n, -2.5, 2.5)
 #' x2 <- runif(n, -2.5, 2.5)
 #' x3 <- runif(n, -2.5, 2.5)
-#' f1 <- x1^2
-#' f2 <- 2 * x2
-#' f3 <- sin(x3)
+#' f1 <- x1^2; f2 <- 2 * x2; f3 <- sin(x3)
 #' y  <- 2 + f1 + f2 + f3 + rnorm(n, 0.25)
 #' train <- data.frame(x1, x2, x3, y)
 #'
 #' library(neuralGAM)
 #'
-#' ## -------------------------
-#' ## 1) Model without PIs
-#' ## -------------------------
+#' # 1) Model without PIs
 #' ngam0 <- neuralGAM(
 #'   y ~ s(x1) + x2 + s(x3),
-#'   data = train,
-#'   family = "gaussian",
-#'   num_units = 128
+#'   data = train, family = "gaussian", num_units = 128
 #' )
-#'
-#' # a) Linear predictor (link scale)
 #' eta <- predict(ngam0, type = "link")
-#'
-#' # b) Response scale predictions
 #' mu  <- predict(ngam0, type = "response")
-#'
-#' # c) Per-term contributions (link scale)
 #' trm <- predict(ngam0, type = "terms")
-#'
-#' # d) Standard errors (CI for the mean) via se.fit = TRUE
 #' pr_link <- predict(ngam0, type = "link", se.fit = TRUE)
 #' pr_resp <- predict(ngam0, type = "response", se.fit = TRUE)
-#'
-#' # e) Terms with SEs (matrix)
 #' pr_terms <- predict(ngam0, type = "terms", se.fit = TRUE)
 #'
-#' # f) Newdata predictions
-#' newx <- data.frame(
-#'   x1 = seq(-2.5, 2.5, length.out = 200),
-#'   x2 = 0,
-#'   x3 = 0
-#' )
+#' newx <- data.frame(x1 = seq(-2.5, 2.5, length.out = 200), x2 = 0, x3 = 0)
 #' mu_new <- predict(ngam0, newdata = newx, type = "response")
 #'
-#' ## -------------------------
-#' ## 2) Model with PIs (aleatoric)
-#' ## -------------------------
+#' # 2) Model with PIs (aleatoric)
 #' ngam_ale <- neuralGAM(
 #'   y ~ s(x1) + x2 + s(x3),
-#'   data = train,
-#'   family = "gaussian",
-#'   num_units = 128,
-#'   pi_method = "aleatoric",
-#'   alpha = 0.05
+#'   data = train, family = "gaussian", num_units = 128,
+#'   pi_method = "aleatoric", alpha = 0.05
 #' )
-#'
-#' # a) Response predictions + CI for the mean (from SEs)
-#' ci_df <- predict(ngam_ale, type = "response",
-#'                  interval = "confidence", level = 0.95)
-#'
-#' # b) Response predictions + PI (from quantile heads)
-#' pi_df <- predict(ngam_ale, type = "response",
-#'                  interval = "prediction", level = 0.95)
-#'
-#' # c) Both CI and PI
-#' both_df <- predict(ngam_ale, type = "response",
-#'                    interval = "both", level = 0.95)
-#'
-#' # d) Terms: contributions (no intercept). CIs if SEs are available.
+#' ci_df  <- predict(ngam_ale, type = "response", interval = "confidence", level = 0.95)
+#' pi_df  <- predict(ngam_ale, type = "response", interval = "prediction", level = 0.95)
+#' both_df <- predict(ngam_ale, type = "response", interval = "both", level = 0.95)
 #' trm_ci <- predict(ngam_ale, type = "terms", se.fit = TRUE)
-#'
-#' # e) Subset of terms
 #' trm_x1x2 <- predict(ngam_ale, type = "terms", terms = c("x1", "x2"))
 #'
-#' # f) Newdata with intervals
-#' newx2 <- data.frame(
-#'   x1 = seq(-2.5, 2.5, length.out = 300),
-#'   x2 = 0.5,
-#'   x3 = 0
-#' )
-#' both_new <- predict(ngam_ale, newdata = newx2, type = "response",
-#'                     interval = "both", level = 0.95)
+#' newx2 <- data.frame(x1 = seq(-2.5, 2.5, length.out = 300), x2 = 0.5, x3 = 0)
+#' both_new <- predict(ngam_ale, newdata = newx2, type = "response", interval = "both", level = 0.95)
 #'
-#' ## -------------------------
-#' ## 3) Model with PIs (both: aleatoric + epistemic)
-#' ## -------------------------
+#' # 3) Model with PIs (both: aleatoric + epistemic)
 #' ngam_both <- neuralGAM(
 #'   y ~ s(x1) + x2 + s(x3),
-#'   data = train,
-#'   family = "gaussian",
-#'   num_units = 128,
-#'   pi_method = "both",
-#'   alpha = 0.05,
-#'   forward_passes = 50,      # increase for smoother bands
-#'   inner_samples = 20
+#'   data = train, family = "gaussian", num_units = 128,
+#'   pi_method = "both", alpha = 0.05, forward_passes = 50, inner_samples = 20
 #' )
-#'
-#' # Response predictions with PI and CI
-#' res_both <- predict(ngam_both, type = "response", interval = "both")
-#'
-#' # Link-scale CI (PI is not defined on the link scale)
-#' link_ci_both <- predict(ngam_both, type = "link", interval = "confidence")
+#' res_both   <- predict(ngam_both, type = "response", interval = "both")
+#' link_ci    <- predict(ngam_both, type = "link", interval = "confidence")
 #' }
 predict.neuralGAM <- function(object,
                               newdata = NULL,
@@ -322,8 +291,22 @@ predict.neuralGAM <- function(object,
   eta  <- eta0 + rowSums(term_fit, na.rm = FALSE)
 
   # epistemic SE on link
-  row_var_epi <- .row_sum_var(var_epi)  # NA-propagating
-  se_eta      <- sqrt(pmax(row_var_epi, 0))
+
+  # prefer joint MC for epistemic SE when using dropout-based uncertainty -> makes the CI more faithful when smooths are correlated
+  # under the data distribution.
+  use_joint_mc <- need_se_req && length(ngam$formula$np_terms %||% character(0L)) > 0L
+
+  if (isTRUE(use_joint_mc)) {
+    se_eta <- .joint_se_eta_mcdropout(
+      ngam, x,
+      forward_passes = forward_passes,   # pass through user arg
+      verbose = 0
+    )
+  } else {
+    # fallback: sum of per-term variances (no cross-term covariance)
+    row_var_epi <- .row_sum_var(var_epi)
+    se_eta      <- sqrt(pmax(row_var_epi, 0))
+  }
 
   # ---- type="terms" ----
   if (type == "terms") {
@@ -412,10 +395,9 @@ predict.neuralGAM <- function(object,
   }
 }
 
-# ---- helper: per-term prediction on LINK scale for newdata ------------------
 .ngam_predict_term <- function(ngam, xvec, term_name,
-                               want_pi = FALSE,     # return deterministic lwr/upr if available
-                               want_se = FALSE,     # compute MC-dropout epistemic variance
+                               want_pi = FALSE,     # return PI ingredients/bounds
+                               want_se = FALSE,     # compute epistemic variance
                                verbose = 1, level = 0.95,
                                forward_passes = 30, inner_samples = 20) {
 
@@ -423,9 +405,11 @@ predict.neuralGAM <- function(object,
   X <- xvec; if (is.null(dim(X))) X <- matrix(X, ncol = 1L)
 
   alpha <- 1 - level
+  pm <- ngam$pi_method %||% "none"
 
-  y_hat <- try(as.matrix(mdl$predict(X, verbose = 0)), silent = TRUE)
-  if (inherits(y_hat, "try-error") || is.null(dim(y_hat))) {
+  # deterministic forward (dropout OFF) to get a clean centerline
+  y_det <- try(as.matrix(mdl$predict(X, verbose = 0)), silent = TRUE)
+  if (inherits(y_det, "try-error") || is.null(dim(y_det))) {
     fit <- as.numeric(mdl$predict(X, verbose = 0))
     return(list(fit = fit,
                 var_epistemic = rep(NA_real_, length(fit)),
@@ -434,38 +418,106 @@ predict.neuralGAM <- function(object,
                 upr = rep(NA_real_, length(fit))))
   }
 
-  nout <- ncol(y_hat)
-  mean_col <- if (nout >= 3L) 3L else 1L  # assume [lwr,upr,mean] for 3-head nets
-  mu_det <- y_hat[, mean_col]
+  nout <- ncol(y_det)
+  mean_col <- if (nout >= 3L) 3L else 1L
+  mu_det <- y_det[, mean_col]
 
-  pm <- ngam$pi_method %||% "none"
+  # ---------- CASE A: pm == "both" ----------
+  if (pm == "both") {
+    # Need per-pass 3-head outputs to be consistent with .combine_uncertainties_sampling
+    passes <- max(2L, forward_passes)
+    # y_arr: [passes, n_obs, nout]
+    y_arr  <- .mc_dropout_forward(mdl, X, passes = passes, output_dim = max(nout, 3L))
 
-  # --- (1) Optional: deterministic aleatoric bounds for PIs
-  lwr_det <- upr_det <- var_ale <- rep(NA_real_, length(mu_det))
-  if (want_pi && pm %in% c("aleatoric","both") && nout >= 2L) {
-    lwr_det <- y_hat[, 1L]; upr_det <- y_hat[, 2L]
-    # sd_ale from 2-sided Normal approx if you want to expose it
-    z <- stats::qnorm(1 - alpha/2)
-    width <- pmax(upr_det - lwr_det, 0)
-    var_ale <- if (z > 0) (width/(2*z))^2 else rep(NA_real_, length(width))
+    # If the model really has <3 outputs, fall back gracefully
+    if (length(dim(y_arr)) == 3L && dim(y_arr)[3] >= 3L) {
+      lwr_mat  <- y_arr[, , 1, drop = FALSE]
+      upr_mat  <- y_arr[, , 2, drop = FALSE]
+      mean_mat <- y_arr[, , 3, drop = FALSE]
+      # squeeze to matrices: [passes, n]
+      lwr_mat  <- lwr_mat[, , 1]
+      upr_mat  <- upr_mat[, , 1]
+      mean_mat <- mean_mat[, , 1]
+
+      # Combine via mixture sampling; centerline = deterministic mean head
+      comb <- .combine_uncertainties_sampling(
+        lwr_mat = lwr_mat, upr_mat = upr_mat, mean_mat = mean_mat,
+        alpha = alpha, inner_samples = inner_samples,
+        centerline = mu_det
+      )
+      # fit: deterministic mean head for smooth plotting
+      return(list(
+        fit = as.numeric(mu_det),
+        var_epistemic = as.numeric(comb$var_epistemic),
+        var_aleatoric = as.numeric(comb$var_aleatoric),
+        lwr = as.numeric(comb$lwr),
+        upr = as.numeric(comb$upr)
+      ))
+    } else {
+      # Fallback if 3-head not available per pass:
+      # - Epistemic from MC on single mean head
+      # - Aleatoric from deterministic 2-quantile heads (if provided)
+      passes <- max(2L, forward_passes)
+      y_mean <- .mc_dropout_forward(mdl, X, passes = passes, output_dim = mean_col)
+      y_mat  <- if (length(dim(y_mean)) == 2L) y_mean else y_mean[, , mean_col, drop = TRUE]
+      var_ep <- matrixStats::colVars(y_mat)
+
+      lwr_det <- upr_det <- rep(NA_real_, length(mu_det))
+      var_ale <- rep(NA_real_, length(mu_det))
+      if (nout >= 2L) {
+        lwr_det <- y_det[, 1]; upr_det <- y_det[, 2]
+        z <- stats::qnorm(1 - alpha/2)
+        width <- pmax(upr_det - lwr_det, 0)
+        var_ale <- if (z > 0) (width/(2*z))^2 else rep(NA_real_, length(width))
+      }
+      return(list(
+        fit = as.numeric(mu_det),
+        var_epistemic = as.numeric(var_ep),
+        var_aleatoric = as.numeric(var_ale),
+        lwr = as.numeric(lwr_det),
+        upr = as.numeric(upr_det)
+      ))
+    }
   }
 
-  # --- (2) Optional: epistemic variance via MC-dropout on the mean head
-  var_ep <- rep(NA_real_, length(mu_det))
+  # ---------- CASE B: pm == "aleatoric" ----------
+  if (pm == "aleatoric") {
+    lwr_det <- upr_det <- rep(NA_real_, length(mu_det))
+    var_ale <- rep(NA_real_, length(mu_det))
+    if (nout >= 3L) {
+      lwr_det <- y_det[, 1]; upr_det <- y_det[, 2]
+      z <- stats::qnorm(1 - alpha/2)
+      width <- pmax(upr_det - lwr_det, 0)
+      var_ale <- if (z > 0) (width/(2*z))^2 else rep(NA_real_, length(width))
+    }
+    return(list(
+      fit = as.numeric(mu_det),
+      var_epistemic = rep(NA_real_, length(mu_det)),
+      var_aleatoric = as.numeric(var_ale),
+      lwr = as.numeric(lwr_det),
+      upr = as.numeric(upr_det)
+    ))
+  }
+
+  # ---------- CASE C: pm == "epistemic" or "none" ----------
   if (isTRUE(want_se)) {
     passes <- max(2L, forward_passes)
-    y_arr  <- .mc_dropout_forward(mdl, X, passes = passes, output_dim = nout)
+    y_arr  <- .mc_dropout_forward(mdl, X, passes = passes, output_dim = mean_col)
     y_mat  <- if (length(dim(y_arr)) == 2L) y_arr else y_arr[, , mean_col, drop = TRUE]
     var_ep <- matrixStats::colVars(y_mat)
-    # (we could also expose epistemic-only quantiles for term ribbons on demand)
+  } else {
+    var_ep <- rep(NA_real_, length(mu_det))
   }
 
-  list(fit = as.numeric(mu_det),
-       var_epistemic = var_ep,
-       var_aleatoric = var_ale,
-       lwr = as.numeric(lwr_det),
-       upr = as.numeric(upr_det))
+  list(
+    fit = as.numeric(mu_det),
+    var_epistemic = as.numeric(var_ep),
+    var_aleatoric = rep(NA_real_, length(mu_det)),
+    lwr = rep(NA_real_, length(mu_det)),
+    upr = rep(NA_real_, length(mu_det))
+  )
 }
+
 
 # row-sum variance with NA propagation
 .row_sum_var <- function(var_mat) {

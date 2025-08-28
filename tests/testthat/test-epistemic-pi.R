@@ -99,11 +99,11 @@ test_that(".combine_uncertainties_sampling: decomposition and bounds look sane",
   lwr_mat <- sweep(mean_mat, 2, z * sigma_ale, FUN = "-") # same width each pass
   upr_mat <- sweep(mean_mat, 2, z * sigma_ale, FUN = "+")
 
-  out <- neuralGAM:::.combine_uncertainties_sampling(lwr_mat, upr_mat, mean_mat, alpha)
+  out <- .combine_uncertainties_sampling(lwr_mat, upr_mat, mean_mat, alpha)
 
   expect_true(is.data.frame(out))
   expect_equal(nrow(out), n)
-  expect_true(all(c("fit","lwr","upr","var_epistemic","var_aleatoric","var_total") %in% names(out)))
+  expect_true(all(c("lwr","upr","var_epistemic","var_aleatoric","var_total") %in% names(out)))
 
   # variance additivity (within numerical tolerance)
   expect_lt(max(abs(out$var_total - (out$var_epistemic + out$var_aleatoric))), 1e-8)

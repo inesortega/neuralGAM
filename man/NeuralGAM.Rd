@@ -240,7 +240,7 @@ ngam <- neuralGAM(
   alpha = 0.05
 )
 # Visualize point prediction and prediction intervals using autoplot:
-autoplot(ngam, type = "terms", term = "x1", intervals = "prediction")
+autoplot(ngam, which = "terms", term = "x1", intervals = "prediction")
 }
 }
 \references{

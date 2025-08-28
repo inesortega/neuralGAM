@@ -1,4 +1,3 @@
-
 # tests/testthat/test-predict-neuralGAM.R
 # ------------------------------------------------------------
 # Coverage:
@@ -7,14 +6,15 @@
 # - interval = "none", "confidence", "prediction", "both"
 # - cache path (training data) vs newdata
 # - term selection and error handling
-# - link-scale PI warning
+# - link-scale PI warning (returns CI)
 # - missing columns error
 # - helper .row_sum_var NA propagation
+# - terms ignore `interval`
+# - response "both" without PI machinery -> CI + NA PIs (+ warning)
 # ------------------------------------------------------------
 
 library(testthat)
 library(reticulate)
-
 
 skip_if_no_keras <- function() {
   if (!reticulate::py_module_available("keras")) skip("keras not available")
@@ -61,11 +61,10 @@ test_that("predict() basic types without PIs", {
 
   # terms
   trm <- predict(ngam0, type = "terms")
-  # don't assume a specific column order
-  expect_setequal(colnames(trm), c("x2","x1","x3"))
+  expect_setequal(colnames(trm), c("x1","x2","x3"))
 
   # sum of terms + intercept equals link
-  eta0 <- if (is.null(ngam0$eta0)) 0 else ngam0$eta0   # avoid %||%
+  eta0 <- if (is.null(ngam0$eta0)) 0 else ngam0$eta0
   eta_recon <- eta0 + rowSums(trm)
   expect_equal(eta, eta_recon, tolerance = 1e-6)
 
@@ -85,13 +84,13 @@ test_that("predict() basic types without PIs", {
   pr_terms <- predict(ngam0, type = "terms", se.fit = TRUE)
   expect_equal(dim(pr_terms$fit), dim(pr_terms$se.fit))
 
-  # intervals: confidence on link -> explicitly request interval
+  # intervals: confidence on link (explicit)
   ci_link <- predict(ngam0, type = "link", interval = "confidence")
   expect_s3_class(ci_link, "data.frame")
   expect_true(all(c("fit","lwr","upr") %in% names(ci_link)))
   expect_true(any(is.finite(ci_link$lwr)) && any(is.finite(ci_link$upr)))
 
-  # intervals: confidence on response -> with on-demand SEs, should be available w/o warning
+  # intervals: confidence on response
   ci_resp <- predict(ngam0, type = "response", interval = "confidence")
   expect_s3_class(ci_resp, "data.frame")
   expect_true(all(c("fit","lwr","upr") %in% names(ci_resp)))
@@ -101,12 +100,13 @@ test_that("predict() basic types without PIs", {
   expect_warning(pi_resp <- predict(ngam0, type = "response", interval = "prediction"))
   expect_true(all(is.na(pi_resp$lwr) | is.na(pi_resp$upr)))
 
-  # link + prediction -> warning (two times, one for CI and another for PI), but returns fit
+  # link + prediction -> warning (PI not defined on link), returns CI columns with finite values if SEs exist
   expect_warning(pi_on_link <- predict(ngam0, type = "link", interval = "prediction"))
   expect_true(all(c("fit","lwr","upr") %in% names(pi_on_link)))
+  expect_true(any(is.finite(pi_on_link$lwr)) && any(is.finite(pi_on_link$upr)))
 })
 
-test_that("term selection and errors", {
+test_that("term selection, interval ignored for terms, and errors", {
   skip_if_no_keras()
 
   ngam0 <- neuralGAM(
@@ -126,6 +126,16 @@ test_that("term selection and errors", {
 
   # newdata missing columns should error
   expect_error(predict(ngam0, newdata = newx_bad, type = "response"))
+
+  # interval argument is ignored for terms
+  pr_terms_none <- predict(ngam0, type = "terms")
+  pr_terms_conf <- predict(ngam0, type = "terms", interval = "confidence")
+  expect_equal(colnames(pr_terms_none), colnames(pr_terms_conf))
+
+  pr_terms_se_none <- predict(ngam0, type = "terms", se.fit = TRUE, interval = "none")
+  pr_terms_se_conf <- predict(ngam0, type = "terms", se.fit = TRUE, interval = "confidence")
+  expect_equal(colnames(pr_terms_se_none$fit), colnames(pr_terms_se_conf))
+  expect_equal(colnames(pr_terms_se_none$se.fit), colnames(pr_terms_se_conf))
 })
 
 test_that("pi_method aleatoric: PIs available on response, not link", {
@@ -140,7 +150,7 @@ test_that("pi_method aleatoric: PIs available on response, not link", {
     alpha = 0.05
   )
 
-  # response + prediction interval (from quantile heads summed on link, then inverse-link)
+  # response + prediction interval (from per-term quantile heads)
   pi_df <- predict(ngam_ale, type = "response", interval = "prediction", level = 0.95)
   expect_s3_class(pi_df, "data.frame")
   expect_true(all(c("fit","lwr","upr") %in% names(pi_df)))
@@ -152,30 +162,22 @@ test_that("pi_method aleatoric: PIs available on response, not link", {
   expect_true(any(is.finite(both_df$lwr_ci)) && any(is.finite(both_df$upr_ci)))
   expect_true(any(is.finite(both_df$lwr_pi)) && any(is.finite(both_df$upr_pi)))
 
-  # both CI and PI
-  both_df <- predict(ngam_ale, type = "response", interval = "both", level = 0.95)
-  expect_true(all(c("fit","lwr_ci","upr_ci","lwr_pi","upr_pi") %in% names(both_df)))
-  expect_true(any(is.finite(both_df$lwr_ci)) && any(is.finite(both_df$upr_ci)))
-  expect_true(any(is.finite(both_df$lwr_pi)) && any(is.finite(both_df$upr_pi)))
-
-  # on link, PI not defined => warning on PI, but return CI (finite if SEs available)
+  # on link, PI not defined => warning; returns CI
   expect_warning(link_pred <- predict(ngam_ale, type = "link", interval = "prediction"))
   expect_true(all(c("fit","lwr","upr") %in% names(link_pred)))
   expect_true(any(is.finite(link_pred$lwr)) && any(is.finite(link_pred$upr)))
-
 })
 
-test_that("pi_method = both (aleatoric + epistemic): MC-dropout path works (tiny passes)", {
+test_that("pi_method = both: MC-dropout path works (tiny passes)", {
   skip_if_no_keras()
 
-  # keep tiny units + passes so test stays fast
   ngam_both <- neuralGAM(
     y ~ s(x1) + x2 + s(x3),
     data = train,
     family = "gaussian",
     num_units = 32,
     pi_method = "both",
-    alpha = 0.10,           # widen bands a bit
+    alpha = 0.10,           # wider bands
     forward_passes = 5,     # tiny for speed
     inner_samples = 5
   )
@@ -184,56 +186,63 @@ test_that("pi_method = both (aleatoric + epistemic): MC-dropout path works (tiny
   expect_s3_class(res_both, "data.frame")
   expect_true(all(c("fit","lwr_ci","upr_ci","lwr_pi","upr_pi") %in% names(res_both)))
 
-  # verify that link CI exists and PI on link warns
+  # link CI exists; "prediction" on link warns and returns CI
   link_ci <- predict(ngam_both, type = "link", interval = "confidence")
   expect_s3_class(link_ci, "data.frame")
   expect_warning(
     link_pi <- predict(ngam_both, type = "link", interval = "prediction")
   )
+  expect_true(all(c("fit","lwr","upr") %in% names(link_pi)))
 })
 
-test_that("newdata path works with no PI ", {
+test_that("newdata path works with/without PI", {
   skip_if_no_keras()
 
-  dat <- train
-  dat$z <- with(dat, 2*x1 - 0.5*x2 + rnorm(nrow(dat), 0, 0.2))
+  dat2 <- train
+  dat2$z <- with(dat2, 2*x1 - 0.5*x2 + rnorm(nrow(dat2), 0, 0.2))
+
+  # no PI
   ngam_lin <- neuralGAM(
-    z ~ x1 + s(x2),             # purely parametric
-    data = dat,
+    z ~ x1 + s(x2),
+    data = dat2,
     num_units = 128,
     family = "gaussian"
   )
-
-  # newdata should go through the cached linear and NN piece
   newdf <- data.frame(x1 = c(-1, 0, 1), x2 = c(0.1, -0.2, 0.3))
   pr_nd <- predict(ngam_lin, newdata = newdf, type = "link", se.fit = TRUE)
   expect_type(pr_nd$fit, "double")
   expect_type(pr_nd$se.fit, "double")
   expect_length(pr_nd$se.fit, nrow(newdf))
   expect_true(any(is.finite(pr_nd$se.fit)))
-})
 
-test_that("newdata path works with PI ", {
-  skip_if_no_keras()
-
-  dat <- train
-  dat$z <- with(dat, 2*x1 - 0.5*x2 + rnorm(nrow(dat), 0, 0.2))
-  ngam_lin <- neuralGAM(
-    z ~ x1 + s(x2),             # purely parametric
-    data = dat,
+  # with PI machinery (aleatoric)
+  ngam_lin_pi <- neuralGAM(
+    z ~ x1 + s(x2),
+    data = dat2,
     num_units = 128,
     family = "gaussian",
     pi_method = "aleatoric"
   )
-
-  # newdata should go through the cached linear and NN piece
-  newdf <- data.frame(x1 = c(-1, 0, 1), x2 = c(0.1, -0.2, 0.3))
-  pr_nd <- predict(ngam_lin, newdata = newdf, type = "link", se.fit = TRUE)
-  expect_type(pr_nd$fit, "double")
-  expect_type(pr_nd$se.fit, "double")
-  expect_length(pr_nd$fit, nrow(newdf))
+  pr_nd2 <- predict(ngam_lin_pi, newdata = newdf, type = "link", se.fit = TRUE)
+  expect_type(pr_nd2$fit, "double")
+  expect_type(pr_nd2$se.fit, "double")
+  expect_length(pr_nd2$fit, nrow(newdf))
 })
 
+test_that("response 'both' without PI returns CI + NA PIs (with warning)", {
+  skip_if_no_keras()
+
+  ngam0 <- neuralGAM(
+    y ~ s(x1) + x2 + s(x3),
+    data = train,
+    family = "gaussian",
+    num_units = 64
+  )
+  expect_warning(both_none <- predict(ngam0, type = "response", interval = "both"))
+  expect_true(all(c("fit","lwr_ci","upr_ci","lwr_pi","upr_pi") %in% names(both_none)))
+  expect_true(any(is.finite(both_none$lwr_ci)) && any(is.finite(both_none$upr_ci)))
+  expect_true(all(is.na(both_none$lwr_pi) | is.na(both_none$upr_pi)))
+})
 
 test_that(".row_sum_var NA-propagates per row", {
   var_mat <- rbind(

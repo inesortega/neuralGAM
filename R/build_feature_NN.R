@@ -206,7 +206,7 @@ set_compile <- function(model, pi_method, alpha, learning_rate, loss, loss_weigh
 
 make_quantile_loss <- function(alpha = 0.05,
                                mean_loss = "mse") {
-  # Quantile values - Convert miscoverage to central-interval quantiles
+  # Quantile values - Convert significance to interval quantiles
   tau_low <- alpha / 2
   tau_up  <- 1 - alpha / 2
 

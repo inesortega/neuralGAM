@@ -27,64 +27,83 @@ If omitted, the training data cached in the object are used.}
 \item{type}{One of \code{c("link","response","terms")}. Default \code{"link"}.}
 
 \item{terms}{If \code{type = "terms"}, character vector of term names to include.
-If \code{NULL}, all terms are returned. Intercept is not included (as in \code{mgcv}).}
+If \code{NULL}, all terms are returned. Intercept is not included (as in \pkg{mgcv}).}
 
 \item{se.fit}{Logical; if \code{TRUE}, return SEs of the fitted mean (mgcv-style). Default \code{FALSE}.
 For \code{type="terms"}, returns a matrix of per-term SEs (epistemic) when available.}
 
-\item{interval}{One of \code{c("none","confidence","prediction","both")}. Default \code{"none"}.}
+\item{interval}{One of \code{c("none","confidence","prediction","both")}. Default \code{"none"}.
+Ignored when \code{type = "terms"} (prediction intervals are not defined for terms).}
 
 \item{level}{Coverage level for intervals (e.g., \code{0.95}). Default \code{0.95}.}
 
-\item{forward_passes}{Integer, number of forward passess to run MC-dropout when computing
-epistemic uncertainty (\code{pi_method = "epistemic"}) or both aleatoric and epistemic.}
+\item{forward_passes}{Integer; number of MC-dropout forward passes when computing
+epistemic uncertainty (used when \code{pi_method \%in\% c("epistemic","both")}).}
 
-\item{inner_samples}{Integer, number of draws per MC-dropout pass used when combining
-aleatoric and epistemic uncertainty (\code{pi_method = "both"}).
-For each dropout mask, \code{inner_samples} values are generated from the Normal
-approximation defined by the predicted quantile bounds.
-Larger values improve stability of the sampled prediction intervals at the cost of speed.}
+\item{inner_samples}{Integer; number of draws per MC-dropout pass used when combining
+aleatoric and epistemic uncertainty (\code{pi_method = "both"}). For each dropout mask,
+\code{inner_samples} draws come from a Normal approximation induced by the predicted
+quantile bounds. Larger values improve stability at the cost of speed.}
 
 \item{verbose}{Integer (0/1). Default \code{1}.}
 
-\item{\ldots}{Other options.}
+\item{\ldots}{Other options (passed on to internal predictors).}
 }
 \value{
 \itemize{
 \item If \code{interval == "none"}:
 \itemize{
-\item \code{se.fit = FALSE}: vector (link/response) or matrix (terms).
-\item \code{se.fit = TRUE}: \code{list(fit, se.fit)} for link/response; for terms,
-\code{list(fit = terms_matrix, se.fit = se_terms_matrix)}.
+\item \code{se.fit = FALSE}: a numeric vector (link/response) or a numeric matrix (terms).
+\item \code{se.fit = TRUE}: a list with \code{$fit} and \code{$se.fit} for link/response;
+for \code{type="terms"}, \code{list(fit = terms_matrix, se.fit = se_terms_matrix)}.
 }
 \item If \code{interval != "none"}:
 \itemize{
-\item \code{type="link"}: data frame with CI columns (\code{lwr}, \code{upr});
-PIs are not provided on the link scale.
-\item \code{type="response"}: data frame with CI, PI, or both (when available).
-\item \code{type="terms"}: intervals are not returned; same as \code{interval = "none"}.
+\item \code{type="link"}: a data frame with CI columns \code{lwr}, \code{upr}
+(PIs are not provided on the link scale).
+\item \code{type="response"}: a data frame with CI, PI, or both (when available).
+\item \code{type="terms"}: same as \code{interval = "none"} (intervals not returned).
 }
 }
 }
 \description{
-Generate predictions from a fitted \code{neuralGAM} model:
+Generate predictions from a fitted \code{neuralGAM} model. Supported types:
+
 \itemize{
 \item \code{type = "link"} (default): linear predictor on the link scale.
 \item \code{type = "response"}: predictions on the response scale.
 \item \code{type = "terms"}: per-term contributions to the linear predictor (no intercept).
 }
 
-If \code{se.fit = TRUE}, standard errors (SE) of the \emph{fitted mean} are returned
-(epistemic only; mgcv-style). For \code{type="response"} the SE is mapped with the
-delta method: \eqn{se_\mu = |d\mu/d\eta| \cdot se_\eta}.
+\strong{Standard errors and intervals}
 
-Optional interval bands can be requested via \code{interval}:
-\describe{
-\item{\code{"confidence"}}{Confidence interval (CI) for the mean, built from SEs (epistemic).}
-\item{\code{"prediction"}}{Prediction interval (PI) for a new observation, available only if
-the model was trained with \code{pi_method \%in\% c("aleatoric", "both")}. Bands are formed
-by summing per-term bounds on the link scale and mapping through the inverse link.}
-\item{\code{"both"}}{Return both CI and PI if available.}
+\itemize{
+\item If \code{se.fit = TRUE}, standard errors (SE) of the \emph{fitted mean} are returned
+(epistemic only; mgcv-style via MC Dropout).
+\item For \code{type = "response"}, SEs are mapped by the delta method:
+\eqn{se_\mu = |d\mu/d\eta| \cdot se_\eta}.
+\item Confidence intervals (CI) always reflect epistemic uncertainty about the fitted mean
+(as in \pkg{mgcv}).
+\item Prediction intervals (PI) are available only on the \emph{response scale}, and only if
+the model was trained with \code{pi_method \%in\% c("aleatoric", "both")}.
+}
+
+\strong{Important implementation details}
+
+\itemize{
+\item \emph{Epistemic SEs (CIs)} are obtained via Monte Carlo Dropout: multiple stochastic
+forward passes provide an across-pass variance. For full-model CIs, uncertainty is
+aggregated jointly by summing per-pass smooth contributions and taking the
+across-pass variance (implicitly accounting for cross-term covariance). For
+\code{type="terms"}, SEs are returned per smooth.
+\item \emph{Prediction intervals (PIs)} reflect aleatoric uncertainty (and, for
+\code{pi_method="both"}, combined effects). PIs are provided \emph{only} on the
+response scale.
+\item For \code{type = "terms"}, only \emph{confidence intervals for the smooth effect}
+are meaningful (from SEs). \strong{Prediction intervals are not defined for terms}
+because partial effects are fitted functions, not noisy observations.
+\item For \code{type = "link"}, only confidence intervals are provided;
+prediction intervals are not defined on the link scale.
 }
 }
 \examples{
@@ -94,105 +113,49 @@ n <- 2000
 x1 <- runif(n, -2.5, 2.5)
 x2 <- runif(n, -2.5, 2.5)
 x3 <- runif(n, -2.5, 2.5)
-f1 <- x1^2
-f2 <- 2 * x2
-f3 <- sin(x3)
+f1 <- x1^2; f2 <- 2 * x2; f3 <- sin(x3)
 y  <- 2 + f1 + f2 + f3 + rnorm(n, 0.25)
 train <- data.frame(x1, x2, x3, y)
 
 library(neuralGAM)
 
-## -------------------------
-## 1) Model without PIs
-## -------------------------
+# 1) Model without PIs
 ngam0 <- neuralGAM(
   y ~ s(x1) + x2 + s(x3),
-  data = train,
-  family = "gaussian",
-  num_units = 128
+  data = train, family = "gaussian", num_units = 128
 )
-
-# a) Linear predictor (link scale)
 eta <- predict(ngam0, type = "link")
-
-# b) Response scale predictions
 mu  <- predict(ngam0, type = "response")
-
-# c) Per-term contributions (link scale)
 trm <- predict(ngam0, type = "terms")
-
-# d) Standard errors (CI for the mean) via se.fit = TRUE
 pr_link <- predict(ngam0, type = "link", se.fit = TRUE)
 pr_resp <- predict(ngam0, type = "response", se.fit = TRUE)
-
-# e) Terms with SEs (matrix)
 pr_terms <- predict(ngam0, type = "terms", se.fit = TRUE)
 
-# f) Newdata predictions
-newx <- data.frame(
-  x1 = seq(-2.5, 2.5, length.out = 200),
-  x2 = 0,
-  x3 = 0
-)
+newx <- data.frame(x1 = seq(-2.5, 2.5, length.out = 200), x2 = 0, x3 = 0)
 mu_new <- predict(ngam0, newdata = newx, type = "response")
 
-## -------------------------
-## 2) Model with PIs (aleatoric)
-## -------------------------
+# 2) Model with PIs (aleatoric)
 ngam_ale <- neuralGAM(
   y ~ s(x1) + x2 + s(x3),
-  data = train,
-  family = "gaussian",
-  num_units = 128,
-  pi_method = "aleatoric",
-  alpha = 0.05
+  data = train, family = "gaussian", num_units = 128,
+  pi_method = "aleatoric", alpha = 0.05
 )
-
-# a) Response predictions + CI for the mean (from SEs)
-ci_df <- predict(ngam_ale, type = "response",
-                 interval = "confidence", level = 0.95)
-
-# b) Response predictions + PI (from quantile heads)
-pi_df <- predict(ngam_ale, type = "response",
-                 interval = "prediction", level = 0.95)
-
-# c) Both CI and PI
-both_df <- predict(ngam_ale, type = "response",
-                   interval = "both", level = 0.95)
-
-# d) Terms: contributions (no intercept). CIs if SEs are available.
+ci_df  <- predict(ngam_ale, type = "response", interval = "confidence", level = 0.95)
+pi_df  <- predict(ngam_ale, type = "response", interval = "prediction", level = 0.95)
+both_df <- predict(ngam_ale, type = "response", interval = "both", level = 0.95)
 trm_ci <- predict(ngam_ale, type = "terms", se.fit = TRUE)
-
-# e) Subset of terms
 trm_x1x2 <- predict(ngam_ale, type = "terms", terms = c("x1", "x2"))
 
-# f) Newdata with intervals
-newx2 <- data.frame(
-  x1 = seq(-2.5, 2.5, length.out = 300),
-  x2 = 0.5,
-  x3 = 0
-)
-both_new <- predict(ngam_ale, newdata = newx2, type = "response",
-                    interval = "both", level = 0.95)
+newx2 <- data.frame(x1 = seq(-2.5, 2.5, length.out = 300), x2 = 0.5, x3 = 0)
+both_new <- predict(ngam_ale, newdata = newx2, type = "response", interval = "both", level = 0.95)
 
-## -------------------------
-## 3) Model with PIs (both: aleatoric + epistemic)
-## -------------------------
+# 3) Model with PIs (both: aleatoric + epistemic)
 ngam_both <- neuralGAM(
   y ~ s(x1) + x2 + s(x3),
-  data = train,
-  family = "gaussian",
-  num_units = 128,
-  pi_method = "both",
-  alpha = 0.05,
-  forward_passes = 50,      # increase for smoother bands
-  inner_samples = 20
+  data = train, family = "gaussian", num_units = 128,
+  pi_method = "both", alpha = 0.05, forward_passes = 50, inner_samples = 20
 )
-
-# Response predictions with PI and CI
-res_both <- predict(ngam_both, type = "response", interval = "both")
-
-# Link-scale CI (PI is not defined on the link scale)
-link_ci_both <- predict(ngam_both, type = "link", interval = "confidence")
+res_both   <- predict(ngam_both, type = "response", interval = "both")
+link_ci    <- predict(ngam_both, type = "link", interval = "confidence")
 }
 }

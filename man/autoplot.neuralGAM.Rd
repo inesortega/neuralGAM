@@ -2,7 +2,7 @@
 % Please edit documentation in R/autoplot.neuralGAM.R
 \name{autoplot.neuralGAM}
 \alias{autoplot.neuralGAM}
-\title{Autoplot method for \code{neuralGAM} objects. Produces a single plot.}
+\title{Autoplot method for \code{neuralGAM} objects (single plot)}
 \usage{
 \method{autoplot}{neuralGAM}(
   object,
@@ -18,23 +18,24 @@
 \arguments{
 \item{object}{A fitted \code{neuralGAM} object.}
 
-\item{newdata}{Optional \code{data.frame}/list of covariates to evaluate.
-If omitted, the training data stored in the model are used.}
+\item{newdata}{Optional \code{data.frame}/list of covariates. If omitted, training data are used.}
 
 \item{which}{One of \code{c("response","link","terms")}. Default \code{"response"}.}
 
-\item{interval}{One of \code{c("none","confidence","prediction","both")}.
-Default \code{"confidence"}.
+\item{interval}{One of \code{c("none","confidence","prediction","both")}. Default \code{"confidence"}.
 \itemize{
-\item Confidence intervals (CI) are derived from epistemic SEs when the model was trained with \code{pi_method \%in\% c("epistemic", "both")}.
-\item Prediction intervals (PI) are available only if the model was trained with \code{pi_method \%in\% c("aleatoric", "both")}.
-\item For \code{which = "terms"} and factor covariates, interval bands are
-represented as error bars around group means.
+\item \strong{Response scale:} CI reflect epistemic uncertainty about the mean (from SEs;
+delta-method on the response). PI reflect aleatoric (and, when \code{pi_method="both"},
+combined) uncertainty for a \emph{new observation}.
+\item \strong{Link scale:} CI only (PI not defined). If \code{interval} requests PI, it is
+coerced to \code{"confidence"} with a warning.
+\item \strong{Terms:} \emph{CI only} for the smooth \eqn{g_j(x_j)} (SE-based, epistemic).
+If \code{interval} requests PI, it is coerced to \code{"confidence"} with a warning.
 }}
 
 \item{level}{Coverage level for intervals (e.g., \code{0.95}). Default \code{0.95}.}
 
-\item{term}{Term name to plot (for \code{which = "terms"}).}
+\item{term}{Single term name to plot when \code{which = "terms"}.}
 
 \item{rug}{Logical; if \code{TRUE} (default), add rugs to continuous term plots.}
 
@@ -47,37 +48,24 @@ A single \code{ggplot} object.
 Produce diagnostic and effect plots from a fitted \code{neuralGAM} model.
 Supported plot types:
 \itemize{
-\item \code{which = "response"}: Fitted response values vs. observation index,
-with optional confidence or prediction intervals.
-\item \code{which = "link"}: Linear predictor (link scale) vs. observation index,
-with optional confidence intervals.
-\item \code{which = "terms"}: Per-term contributions (on the link scale),
-displayed in a faceted plot:
-\itemize{
-\item For continuous covariates: line plot with optional ribbons
-for confidence intervals (CI) and/or prediction intervals (PI).
-\item For factor covariates: box plots of per-observation contributions
-by level, with optional mean ± z·SE error bars if available.
-}
+\item \code{which = "response"}: Fitted response vs. index, with optional
+\emph{confidence intervals} (CI) and/or \emph{prediction intervals} (PI).
+\item \code{which = "link"}: Linear predictor (link scale) vs. index,
+with optional CI (PI are not defined on the link scale).
+\item \code{which = "terms"}: Single per-term contribution \eqn{g_j(x_j)} on the link scale.
+For continuous covariates: line with optional CI ribbon (SE-based).
+For factor covariates: boxplots per level with optional mean \eqn{\pm z \cdot SE} error bars.
 }
 }
 \details{
-Intervals:
+\strong{Uncertainty semantics}
 \itemize{
-\item \strong{Confidence intervals (CI):} Derived from epistemic SEs
-(like in \code{mgcv}) if the model was trained with \code{pi_method = 'epistemic'}.
-On the response scale they are propagated through the delta method.
-\item \strong{Prediction intervals (PI):} Capture aleatoric uncertainty
-if the model was trained with \code{pi_method = 'aleatoric'}. Constructed
-by combining per-term bounds on the link scale and applying the
-inverse link.
+\item \strong{CI (epistemic)}: uncertainty about the \emph{fitted mean}.
+For terms, bands are \eqn{\hat g_j \pm z \cdot SE(\hat g_j)} on the link scale.
+For response, SEs are mapped via the delta method.
+\item \strong{PI (aleatoric / both)}: width reflects data noise (and model uncertainty
+when \code{pi_method="both"}). PIs are provided \emph{only} on the response scale.
 }
-
-For factor terms, plots display the distribution of per-observation contributions
-as box plots. If SEs are available, group means are shown with error bars
-representing \eqn{\text{mean} \pm z \times SE}.
-
-Multiple terms are always combined into a single faceted plot (one panel per term).
 }
 \examples{
 \dontrun{
@@ -107,14 +95,14 @@ autoplot(ngam, which = "response", interval = "prediction")
 autoplot(ngam, which = "link", interval = "confidence")
 
 # single term (continuous): x1
-autoplot(ngam, which = "terms", term = "x1", interval = "both")
+autoplot(ngam, which = "terms", term = "x1", interval = "confidence")
 
 # single term (factor): x2
 autoplot(ngam, which = "terms", term = "x2", interval = "confidence")
 
-# user arranges multiple terms manually (pseudo-code)
+# user arranges multiple terms manually
 p1 <- autoplot(ngam, which = "terms", term = "x1")
 p2 <- autoplot(ngam, which = "terms", term = "x2")
-# arrange p1, p2 using your preferred layout tooling, for example using: gridExtra::grid.arrange(grobs = list(p1,p2), ncol = 2)
+# arrange p1, p2 using your preferred layout tooling, such as grid.arrange
 }
 }

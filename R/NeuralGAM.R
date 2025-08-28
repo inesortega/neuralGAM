@@ -194,7 +194,7 @@
 #'   alpha = 0.05
 #' )
 #' # Visualize point prediction and prediction intervals using autoplot:
-#' autoplot(ngam, type = "terms", term = "x1", intervals = "prediction")
+#' autoplot(ngam, which = "terms", term = "x1", intervals = "prediction")
 #' }
 neuralGAM <-
   function(formula,
@@ -534,20 +534,10 @@ neuralGAM <-
           fit <- nonparametric_update$fit
 
           # Update f with current learned function for predictor k
-          f[[term]] <- fit$fit
+          f[[term]] <- fit
           mean_val <- mean(f[[term]])
           f[[term]] <- f[[term]] - mean_val
           eta <- eta + f[[term]]
-
-          if(build_pi == TRUE){
-            # Update prediction intervals
-            lwr[[term]] <- fit$lwr - mean_val
-            upr[[term]] <- fit$upr - mean_val
-          }
-          # store variances (centering does NOT change variance)
-          var_epistemic[[term]] <- fit$var_epistemic
-          var_aleatoric[[term]] <- fit$var_aleatoric
-          var_total[[term]]     <- fit$var_total
 
           ## Store training metrics for current backfitting iteration
           epochs <- c(epochs, it_back)
@@ -608,6 +598,28 @@ neuralGAM <-
         }
       }
       it <- it + 1
+    }
+
+    #### Compute uncertainty when all models are fitted
+    for (k in 1:ncol(x_np)) {
+      term <- colnames(x_np)[[k]]
+      mdl <- model[[term]]
+      mean_val <- mean(g[[term]])
+
+      preds <- .compute_uncertainty(model = mdl,
+                                    x = x[[term]],
+                                    pi_method = pi_method, alpha = alpha,
+                                    forward_passes = forward_passes,
+                                    inner_samples = inner_samples)
+      if(build_pi == TRUE){
+        # Update prediction intervals
+        lwr[[term]] <- preds$lwr - mean_val
+        upr[[term]] <- preds$upr - mean_val
+      }
+      # store variances (centering does NOT change variance)
+      var_epistemic[[term]] <- preds$var_epistemic
+      var_aleatoric[[term]] <- preds$var_aleatoric
+      var_total[[term]]     <- preds$var_total
     }
 
     stats <-
@@ -683,90 +695,19 @@ neuralGAM <-
     )
   }
 
-  # ---- Prediction and uncertainty estimation ----
-  preds <- NULL
-  y_hat_var <- NULL
+  mu_hat <- model[[term]] %>% predict(x_np[[term]], verbose = verbose)
 
-  lower_q <- alpha / 2
-  upper_q <- 1 - alpha / 2
-
-  x <- x_np[[term]]
-  if (is.null(dim(x))) x <- matrix(x, ncol = 1L)
-
-  if (pi_method == "epistemic") {
-    # Compute only epistemic uncertainty by using `forward_passes` with Dropout layer
-
-    # Deterministic behaviour at each backfitting iteration - on the last iteration we compute the MC Dropout
-    mu_det <- as.numeric(model[[term]] %>% predict(x, verbose = 0))
-
-    # stochastic passes for uncertainty (dropout ON)
-    y_array <- .mc_dropout_forward(model[[term]], x, forward_passes, output_dim = 1L)
-    y_mat   <- y_array[, , 1]
-
-    ci_lower <- matrixStats::colQuantiles(y_mat, probs = lower_q)
-    ci_upper <- matrixStats::colQuantiles(y_mat, probs = upper_q)
-    y_var    <- matrixStats::colVars(y_mat)
-
-    preds <- data.frame(
-      lwr = ci_lower,
-      fit = mu_det,              # <- smooth, deterministic
-      upr = ci_upper,
-      var_epistemic = y_var,
-      var_aleatoric = NA_real_,
-      var_total     = y_var
-    )
-  } else if (pi_method == "both") {
-    # Compute only epistemic uncertainty by using `forward_passes` with Dropout layer
-    mu_det <- as.numeric(model[[term]] %>% predict(x, verbose = 0))
-
-    # 2) MC-dropout forward: 3 outputs per pass
-    y_array <- .mc_dropout_forward(model[[term]], x, forward_passes, output_dim = 3L)
-    # y_array: [passes, n_obs, 3]
-    lwr_mat  <- y_array[, , 1]
-    upr_mat  <- y_array[, , 2]
-    mean_mat <- y_array[, , 3]
-    preds <- .combine_uncertainties_sampling(
-      lwr_mat  = lwr_mat,
-      upr_mat  = upr_mat,
-      mean_mat = mean_mat,
-      alpha    = alpha,
-      inner_samples = inner_samples,
-      centerline = mu_det     # use deterministic for smooth plot
-    )
-  } else if (pi_method %in% c("aleatoric", "none")) {
-    y_hat <- model[[term]] %>% predict(x, verbose = 0)
-
-    if (ncol(y_hat) == 3) {
-      lwr <- y_hat[, 1]; upr <- y_hat[, 2]; mu <- y_hat[, 3]
-      z_val <- stats::qnorm(1 - alpha / 2)
-      width <- pmax(upr - lwr, 0)
-      sd_ale <- if (z_val > 0) width / (2 * z_val) else rep(NA_real_, length(width))
-      var_ale <- sd_ale^2
-      preds <- data.frame(
-        lwr = lwr,
-        upr = upr,
-        fit = mu,
-        var_epistemic = NA_real_,
-        var_aleatoric = var_ale,
-        var_total = var_ale
-      )
-    } else {
-      preds <- data.frame(
-        fit = y_hat[, 1],
-        lwr = NA_real_,
-        upr = NA_real_,
-        var_epistemic = NA_real_,
-        var_aleatoric = NA_real_,
-        var_total = NA_real_
-      )
-    }
+  if(pi_method %in% c("aleatoric", "both")){
+    mu_hat <- mu_hat[, 3]  # obtain mean prediction only
+  }
+  else{
+    mu_hat <- as.numeric(mu_hat)
   }
 
   list(
     model = model,
     history = history,
-    fit = preds,
-    var = y_hat_var
+    fit = mu_hat
   )
 }
 

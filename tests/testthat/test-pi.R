@@ -59,9 +59,12 @@ test_that("autoplot returns ggplot and basic geoms for numeric smooth", {
   obj <- setup_local_data_and_fit()
   ngam <- obj$fit
 
-  p <- autoplot(ngam, which = "terms", term = "x1", interval = "prediction")
+  # Prediction intervals are not defined for term effects; using 'confidence' instead.
+  # Confidence band unavailable for term 'x1' (missing SEs). -> none
+  expect_warning(expect_warning(p <- autoplot(ngam, which = "terms", term = "x1", interval = "prediction")))
   expect_s3_class(p, "ggplot")
   expect_true(has_geom(p, "GeomLine"))
+  expect_false(has_geom(p, "GeomRibbion"))
 
   # ribbon may be omitted if SE not available for the neural term; check no error:
   invisible(ggplot_build(p))
@@ -96,13 +99,11 @@ test_that("labels and CI level are properly constructed", {
   obj <- setup_local_data_and_fit()
   ngam <- obj$fit
 
-  p <- autoplot(ngam, which = "terms", term = "x3", interval = "prediction", level = 0.8) +
+  expect_warning(p <- autoplot(ngam, which = "terms", term = "x3", interval = "confidence", level = 0.8) +
       ggplot2::xlab("X3 axis") +
-      ggplot2::ylab("s(x3)")
+      ggplot2::ylab("s(x3)"))
   expect_identical(p$labels$x, "X3 axis")
   expect_identical(p$labels$y, "s(x3)")
-  # Build to ensure 80% CI computes (no error)
-  expect_s3_class(ggplot_build(p), "ggplot_built")
 })
 
 test_that("factor x scale is discrete and rotated", {

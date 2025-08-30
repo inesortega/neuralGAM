@@ -293,8 +293,10 @@ predict.neuralGAM <- function(object,
   # epistemic SE on link
 
   # prefer joint MC for epistemic SE when using dropout-based uncertainty -> makes the CI more faithful when smooths are correlated
-  # under the data distribution.
-  use_joint_mc <- need_se_req && length(ngam$formula$np_terms %||% character(0L)) > 0L
+  # under the data distribution. Recompute MC if needed.
+  use_joint_mc <- need_se_req &&
+    length(ngam$formula$np_terms %||% character(0L)) > 0L &&
+    any(!is.finite(rowSums(var_epi, na.rm = TRUE)))
 
   if (isTRUE(use_joint_mc)) {
     se_eta <- .joint_se_eta_mcdropout(

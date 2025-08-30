@@ -35,7 +35,7 @@ install_neuralGAM()
 In the following example, we use synthetic data to showcase the performance of neuralGAM by fitting a model with a single layer with 1024 units.
 
 ```r
-n <- 24500
+n <- 5000
 seed <- 42
 set.seed(seed)
 
@@ -57,10 +57,11 @@ train <- data.frame(x1, x2, x3, y)
 ngam <- neuralGAM(
   y ~ s(x1) + x2 + s(x3), 
   data = train,
-  num_units = 1024, family = "gaussian",
+  num_units = 128, family = "gaussian",
   activation = "relu",
   learning_rate = 0.001, bf_threshold = 0.001,
   max_iter_backfitting = 10, max_iter_ls = 10,
+  pi_method = "epistemic", forward_passes = 100,
   seed = seed
 )
 
@@ -72,10 +73,10 @@ You can then use the `plot` function to visualize the learnt partial effects:
 ```r
 plot(ngam)
 ```
-Or the custom `autoplot` function for more advanced graphics using the ggplot2 library, including Prediction Intervals (if available)
+Or the custom `autoplot` function for more advanced graphics using the ggplot2 library, including Confidence / Prediction Intervals (if available)
 
 ```r
-autoplot(ngam, select="x1")
+autoplot(ngam, which="terms", term = "x1", interval = "confidence")
 ```
 To obtain predictions from new data, use the `predict` function: 
 
@@ -88,16 +89,19 @@ x3 <- runif(n, -2.5, 2.5)
 test <- data.frame(x1, x2, x3)
 
 # Obtain linear predictor
-eta <- predict(ngam, test, type = "link")
+eta <- predict(ngam, newdata = test, type = "link")
 
-# Obtain predicted response
-yhat <- predict(ngam, test, type = "response")
+# Obtain predicted response using se.fit = TRUE to obtain standard errors:
+yhat <- predict(ngam, newdata = test, type = "response", se.fit = TRUE)
+
+head(yhat$fit)
+head(yhat$se.fit)
 
 # Obtain each component of the linear predictor 
-terms <- predict(ngam, test, type = "terms")
+terms <- predict(ngam, newdata = test, type = "terms")
 
 # Obtain only certain terms: 
-terms <- predict(ngam, test, type = "terms", terms = c("x1", "x2"))
+terms <- predict(ngam, newdata = test, type = "terms", terms = c("x1", "x2"))
 ```
 
 ### Per-term configuration
@@ -106,7 +110,7 @@ terms <- predict(ngam, test, type = "terms", terms = c("x1", "x2"))
 
 ```r
 ngam <- neuralGAM(
-  y ~ s(x1, num_units = 32, activation = "tanh") + s(x2), 
+  y ~ s(x1, num_units = 32) + x2 + s(x3, activation = "tanh"), 
   data = train,
   num_units = 64,  # default for terms without explicit num_units
   seed = seed
@@ -114,7 +118,7 @@ ngam <- neuralGAM(
 ```
 
 Per-term configuration supports custom initializers and regularizers for both weights and biases, enabling fine control over model complexity and stability. 
-For example, you can set one of the neural networks to use L2 regularization and He initialization using Keras functions directly. 
+For example, you can set one of the neural networks to use L2 regularization and He initialization using Keras functions directly (i.e. `keras::regularizer_l1()`). 
 
 This is useful for:
 
@@ -143,14 +147,14 @@ The `summary()` now prints each smooth terms configuration and the essential par
 
 ### Prediction Intervals
 
-Enable predictive intervals by setting `pi_method` and specifying a confidence level via `alpha`:
+Enable predictive intervals by setting `pi_method` and specifying a confidence level via `alpha`. For epistemic variance, `forward_passes > 100` is recommended.
 
 ```r
 ngam <- neuralGAM(
   y ~ s(x1) + s(x2),
   data = train,
   pi_method = "epistemic",
-  forward_passes = 30,
+  forward_passes = 100,
   alpha = 0.95,
   num_units = 1024,
   seed = seed
@@ -161,7 +165,7 @@ head(pred)
 
 ### Cross-validation and Training History
 
-You can monitor the validation loss during training using the `validation_split` parameter. You can then visualize the backfitting loss history using the `plot_history()` function. 
+You can monitor the validation loss during training using the `validation_split` parameter. You can then visualize the how the loss evolves per backfitting iteration using the `plot_history()` function. 
 
 ```r
 ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3),
@@ -183,11 +187,46 @@ plot_history(ngam, metric = "val_loss") # Plot only validation loss
 
 The enhanced summary() shows:
 
-- Family, formula, sample size, intercept, MSE
+- Family, formula, sample size, intercept, deviance explained, MSE
 - Per-term hyperparameters (units, activation, learning rate, initializers, regularizers)
 - Layer configuration for each Keras model
 - Linear coefficients (if a parametric part exists)
 - Compact training history
+
+Moreover, after fitting a `neuralGAM` model, it is important to evaluate whether the model assumptions are reasonable and whether predictions are well calibrated.  
+
+The helper function `diagnose()` provides a **2×2 diagnostic panel** similar to `gratia::appraise()` for `mgcv` models.
+
+The four panels are:
+
+1. **QQ plot of residuals** (top-left)  
+   Compares sample residuals to theoretical quantiles. A straight line indicates a good fit.  
+   Deviations suggest skewness, heavy tails, or outliers.
+
+2. **Residuals vs linear predictor η** (top-right)  
+   Shows residuals against the fitted linear predictor, with a LOESS smoother.  
+   A flat trend near 0 is ideal. Systematic curvature means the model missed a trend; funnel shapes suggest heteroscedasticity.
+
+3. **Histogram of residuals** (bottom-left)  
+   Displays the distribution of residuals. Ideally symmetric and centered at 0.  
+   Skewness or multimodality may indicate model misspecification.
+
+4. **Observed vs fitted** (bottom-right)  
+   Compares predicted values with observed outcomes. For continuous data, points should align with the 45° line.  
+   For binary outcomes, this acts as a calibration plot: predicted probabilities should match observed frequencies.
+
+**Notes** 
+
+1. `residual_type` can be `deviance` (default), `pearson`, or `quantile`.
+Quantile residuals (Dunn–Smyth) are recommended for discrete families (binomial, Poisson) because they are continuous and approximately normal.
+
+2. `qq_method` controls reference quantiles: 
+
+    - `uniform`: fast and default. 
+    - `simulate`: most faithful and provides bands, but slower
+    - `normal`: fallback
+
+Together, these diagnosis plots help assess whether residuals behave like noise, whether systematic trends remain and if predictions are unbiased and calibrated. 
 
 ## Citation
 

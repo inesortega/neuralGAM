@@ -76,7 +76,6 @@ print.neuralGAM <- function(x, ...) {
     } else {
       cat("Pred. / Conf. Int. : disabled\n")
     }
-    cat(rep("-", 72), sep = "", "\n")
 
     invisible(x)
   } else{

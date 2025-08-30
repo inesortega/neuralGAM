@@ -38,20 +38,22 @@ plot.neuralGAM <- function(x, select = NULL,
     if (!all(select %in% colnames(X)))
       stop("Invalid select argument. Valid options are: ",
            paste(colnames(X), collapse = ", "))
-    X <- X[, select, drop = FALSE]
-    f <- f[, select, drop = FALSE]
   }
 
   # compute SEs and/or PIs if requested
   se_mat <- lwr_mat <- upr_mat <- NULL
   if (interval %in% c("confidence","both")) {
-    pr <- predict(ngam, newdata = X, type = "terms", se.fit = TRUE)
+    pr <- predict(ngam, newdata = X, type = "terms", terms = select, se.fit = TRUE)
     se_mat <- pr$se.fit
   }
   if (interval %in% c("prediction","both") && isTRUE(ngam$build_pi) && is.null(select)) {
     lwr_mat <- ngam$lwr[, colnames(X), drop = FALSE]
     upr_mat <- ngam$upr[, colnames(X), drop = FALSE]
   }
+
+  # Filter after predict, since predict with newdata requires all covariates to be present
+  X <- X[, select, drop = FALSE]
+  f <- f[, select, drop = FALSE]
 
   plot_names <- colnames(X)
   z <- stats::qnorm(1 - (1 - level)/2)

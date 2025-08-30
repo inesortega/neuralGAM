@@ -34,7 +34,7 @@ estimates according to the \code{pi_method}.
 \itemize{
 \item \code{"epistemic"}: estimates only epistemic variance (via MC Dropout passes).
 \item \code{"aleatoric"}: uses deterministic quantile heads to estimate aleatoric variance.
-\item \code{"both"}: combines aleatoric and epistemic via MC Dropout with quantile heads.
+\item \code{"both"}: combines aleatoric and epistemic using variance decomposition.
 \item Otherwise: returns \code{NA} placeholders.
 }
 }

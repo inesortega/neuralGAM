@@ -93,8 +93,7 @@
 #'         deterministic prediction (dropout \emph{off}); the interval comes from empirical
 #'         quantiles across many stochastic forward passes (dropout \emph{on}).
 #'   \item \code{"both"}: combines aleatoric and epistemic by running MC Dropout with the
-#'         3-output (lower/upper/mean) head and sampling from the induced mixture of Gaussians
-#'         to form empirical prediction quantiles.
+#'         3-output (lower/upper/mean) head and combining them via variance decomposition.
 #' }
 #' **Centering for partial effects**
 #' For identifiability, each smooth term \eqn{g_j(x_j)} is mean-centered after fitting. When plotting
@@ -109,7 +108,7 @@
 #'         Practical values are in \code{[0.1, 0.3]}.
 #'   \item \code{forward_passes}: number of stochastic forward passes with dropout \emph{on} when
 #'         \code{pi_method = "epistemic"} or \code{"both"}. Larger values yield smoother, more stable
-#'         envelopes (e.g., 300–1000).
+#'         envelopes (e.g., 300-1000).
 #'   \item \code{inner_samples}: only used for \code{pi_method = "both"}. For each dropout pass, the
 #'         lower/upper quantiles define a local Normal approximation from which \code{inner_samples}
 #'         draws are taken; final PIs are empirical quantiles of all draws across passes.
@@ -119,7 +118,7 @@
 #' - Aleatoric: lower/upper heads use the pinball (quantile) loss at \eqn{\alpha/2} and \eqn{1-\alpha/2};
 #'   the mean head uses the user-chosen mean loss (\code{"mse"} or \code{"mae"}).
 #' - Epistemic: any mean loss for the single-output head; uncertainty comes from MC Dropout only.
-#' - Both: quantile + mean losses (as in aleatoric) and MC Dropout; PIs are built by mixture sampling.
+#' - Both: quantile + mean losses (as in aleatoric) and MC Dropout; PIs are built by variance decomposition.
 #'
 #' **Coverage control**
 #' `alpha` sets the nominal coverage (e.g., `alpha = 0.05` for 95% PIs). If empirical coverage on a
@@ -209,7 +208,7 @@ neuralGAM <-
            loss = "mse",
            pi_method = c("none", "aleatoric", "epistemic", "both"),
            alpha = 0.05,
-           forward_passes = 30,
+           forward_passes = 100,
            dropout_rate = 0.1,
            inner_samples = 20,
            validation_split = NULL,
@@ -604,6 +603,9 @@ neuralGAM <-
       mdl <- model[[term]]
       mean_val <- mean(g[[term]])
 
+      if (verbose == 1) {
+        sprintf("Computing CI/PI using pi_method = %s, at α = %s", pi_method, alpha)
+      }
       preds <- .compute_uncertainty(model = mdl,
                                     x = x[[term]],
                                     pi_method = pi_method, alpha = alpha,
@@ -640,7 +642,7 @@ neuralGAM <-
         eta = eta,
         lwr = lwr,
         upr = upr,
-        x = x,
+        x = data[formula$terms],
         model = model,
         eta0 = eta0,
         family = family,

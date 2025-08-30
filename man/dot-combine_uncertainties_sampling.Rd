@@ -2,7 +2,7 @@
 % Please edit documentation in R/uncertainty_estimation.R
 \name{.combine_uncertainties_sampling}
 \alias{.combine_uncertainties_sampling}
-\title{Internal helper: combine epistemic and aleatoric uncertainties via sampling}
+\title{Internal helper: combine epistemic and aleatoric uncertainties via mixture sampling}
 \usage{
 .combine_uncertainties_sampling(
   lwr_mat,

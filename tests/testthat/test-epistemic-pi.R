@@ -33,7 +33,7 @@ test_that(".mc_dropout_forward returns [passes, n_obs, output_dim] (odim=1)", {
   x <- matrix(seq(-1, 1, length.out = n), ncol = 1)
 
   mdl <- .build_dropout_model(output_dim = 1L, rate = 0.2)
-  arr <- neuralGAM:::.mc_dropout_forward(mdl, x, passes, 1L)
+  arr <- .mc_dropout_forward(mdl, x, passes, 1L)
 
   expect_true(is.array(arr))
   expect_equal(dim(arr), c(passes, n, 1L))
@@ -52,7 +52,7 @@ test_that(".mc_dropout_forward returns [passes, n_obs, output_dim] (odim=3)", {
   x <- matrix(runif(n, -1, 1), ncol = 1)
 
   mdl <- .build_dropout_model(output_dim = 3L, rate = 0.2)
-  arr <- neuralGAM:::.mc_dropout_forward(mdl, x, passes, 3L)
+  arr <- .mc_dropout_forward(mdl, x, passes, 3L)
 
   expect_true(is.array(arr))
   expect_equal(dim(arr), c(passes, n, 3L))
@@ -67,7 +67,7 @@ test_that("Quantile/mean sanity with MC dropout samples", {
   x <- matrix(seq(-2, 2, length.out = n), ncol = 1)
 
   mdl <- .build_dropout_model(output_dim = 3L, rate = 0.25)
-  arr <- neuralGAM:::.mc_dropout_forward(mdl, x, passes, 3L)
+  arr <- .mc_dropout_forward(mdl, x, passes, 3L)
   y_mat <- arr[, , 1]  # [passes, n]
 
   lower_q <- 0.025
@@ -115,3 +115,54 @@ test_that(".combine_uncertainties_sampling: decomposition and bounds look sane",
   # aleatoric variance ~ sigma_ale^2
   expect_lt(mean(abs(out$var_aleatoric - sigma_ale^2)), 1e-2)
 })
+
+test_that(".combine_uncertainties_variance: decomposition and bounds look sane", {
+  skip_if_no_keras()
+
+  set.seed(999)
+  n <- 11
+  passes <- 50L
+  alpha <- 0.05
+  z <- qnorm(1 - alpha/2)
+
+  # Synthetic MC means (epistemic) and fixed aleatoric widths per obs
+  mean_mat  <- matrix(rnorm(passes * n, sd = 0.6), nrow = passes, ncol = n)
+  sigma_ale <- runif(n, 0.1, 0.4)                          # per-observation aleatoric sd
+  lwr_mat   <- sweep(mean_mat, 2, z * sigma_ale, FUN = "-") # same width each pass
+  upr_mat   <- sweep(mean_mat, 2, z * sigma_ale, FUN = "+")
+
+  out <- .combine_uncertainties_variance(lwr_mat, upr_mat, mean_mat, alpha = alpha)
+
+  # Basic structure
+  expect_true(is.data.frame(out))
+  expect_equal(nrow(out), n)
+  expect_true(all(c("lwr","upr","var_epistemic","var_aleatoric","var_total") %in% names(out)))
+
+  # Variance additivity (numerical tolerance)
+  expect_lt(max(abs(out$var_total - (out$var_epistemic + out$var_aleatoric))), 1e-10)
+
+  # Bounds should contain the natural centerline (across-pass mean of mean_mat)
+  mu_hat <- matrixStats::colMeans2(mean_mat)
+  expect_true(all(out$lwr <= mu_hat + 1e-12))
+  expect_true(all(mu_hat <= out$upr + 1e-12))
+
+  # Epistemic variance should match variance across passes of mean_mat
+  expect_lt(mean(abs(out$var_epistemic - matrixStats::colVars(mean_mat))), 1e-10)
+
+  # Aleatoric variance ~ sigma_ale^2 (since width encodes sd per pass)
+  expect_lt(mean(abs(out$var_aleatoric - sigma_ale^2)), 1e-10)
+
+  # Centerline override: intervals should be centered exactly at 'centerline'
+  centerline <- rnorm(n)
+  out2 <- .combine_uncertainties_variance(lwr_mat, upr_mat, mean_mat,
+                                          alpha = alpha, centerline = centerline)
+  mid <- 0.5 * (out2$lwr + out2$upr)
+  expect_lt(max(abs(mid - centerline)), 1e-10)
+
+  # Monotonicity w.r.t. alpha: 90% PIs should be narrower than 95% PIs
+  out90 <- .combine_uncertainties_variance(lwr_mat, upr_mat, mean_mat, alpha = 0.10)
+  width95 <- out$upr  - out$lwr
+  width90 <- out90$upr - out90$lwr
+  expect_gt(mean(width95), mean(width90))
+})
+

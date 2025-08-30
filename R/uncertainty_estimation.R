@@ -6,7 +6,7 @@
 #'
 #' - \code{"epistemic"}: estimates only epistemic variance (via MC Dropout passes).
 #' - \code{"aleatoric"}: uses deterministic quantile heads to estimate aleatoric variance.
-#' - \code{"both"}: combines aleatoric and epistemic via MC Dropout with quantile heads.
+#' - \code{"both"}: combines aleatoric and epistemic using variance decomposition.
 #' - Otherwise: returns \code{NA} placeholders.
 #'
 #' @param model Fitted Keras model for a single smooth term.
@@ -39,7 +39,6 @@
   if (is.null(dim(x))) x <- matrix(x, ncol = 1L)
 
   if (pi_method == "epistemic") {
-    mu_det <- as.numeric(mu_det)
     # Compute only epistemic uncertainty by using `forward_passes` with Dropout layer -> output_dim = 1L
     y_array <- .mc_dropout_forward(model, x, forward_passes, output_dim = 1L)
     y_mat   <- y_array[, , 1]
@@ -56,7 +55,6 @@
       var_total     = y_var
     )
   } else if (pi_method == "both") {
-    mu_det <- as.numeric(mu_det)
     # MC-dropout forward + aleatoric uncertainty: 3 outputs per pass -> output_dim = 3L
     y_array <- .mc_dropout_forward(model, x, forward_passes, output_dim = 3L)
 
@@ -65,14 +63,26 @@
     upr_mat  <- y_array[, , 2]
     mean_mat <- y_array[, , 3]
 
-    preds <- .combine_uncertainties_sampling(
-      lwr_mat  = lwr_mat,
-      upr_mat  = upr_mat,
-      mean_mat = mean_mat,
-      alpha    = alpha,
-      inner_samples = inner_samples,
-      centerline = mu_det
-    )
+    combiner = "variance"
+
+    preds <- if (combiner == "sampling") {
+      .combine_uncertainties_sampling(
+        lwr_mat  = lwr_mat,
+        upr_mat  = upr_mat,
+        mean_mat = mean_mat,
+        alpha    = alpha,
+        inner_samples = inner_samples,
+        centerline = mu_det[, 3] # mean is the third dimension
+      )
+    } else if (combiner == "variance"){
+      .combine_uncertainties_variance(
+        lwr_mat  = lwr_mat,
+        upr_mat  = upr_mat,
+        mean_mat = mean_mat,
+        alpha    = alpha,
+        centerline = mu_det[, 3]
+      )
+    }
   } else if (pi_method == "aleatoric") {
       lwr <- mu_det[, 1]; upr <- mu_det[, 2]; mu <- mu_det[, 3]
       z_val <- stats::qnorm(1 - alpha / 2)
@@ -128,7 +138,7 @@
   out
 }
 
-#' Internal helper: combine epistemic and aleatoric uncertainties via sampling
+#' Internal helper: combine epistemic and aleatoric uncertainties via mixture sampling
 #'
 #' @description
 #' Combine uncertainty estimates from multiple MC Dropout passes where each pass
@@ -188,6 +198,87 @@
     var_epistemic = var_epistemic,                 # across passes
     var_aleatoric = var_aleatoric,
     var_total     = var_epistemic + var_aleatoric
+  )
+}
+
+#' Internal helper: combine epistemic and aleatoric via variance decomposition
+#'
+#' @description
+#' Classical combination of uncertainties without sampling. Assumes the same
+#' input shapes as `.combine_uncertainties_sampling`: each argument is a matrix
+#' of shape [passes, n_obs], where rows index MC-Dropout passes and columns
+#' index observations.
+#'
+#' For each observation (column):
+#' - Epistemic variance = variance across passes of the mean head.
+#' - Aleatoric variance = average (across passes) of per-pass variance
+#'   estimated from quantile width via Normal approximation.
+#' - Total variance = epistemic + aleatoric.
+#' - Predictive interval = Normal-theory interval around the chosen centerline.
+#'
+#' @param lwr_mat `[passes, n_obs]` lower-quantile predictions per pass.
+#' @param upr_mat `[passes, n_obs]` upper-quantile predictions per pass.
+#' @param mean_mat `[passes, n_obs]` mean-head predictions per pass.
+#' @param alpha Coverage level (default 0.05).
+#' @param centerline Optional numeric vector (length n_obs) of deterministic
+#'   mean predictions to use as the PI center. If NULL, uses the across-pass mean.
+#'
+#' @return data.frame with columns:
+#'   - lwr, upr: lower/upper predictive interval (Normal-theory)
+#'   - var_epistemic: variance across passes of mean predictions
+#'   - var_aleatoric: average per-pass aleatoric variance (from quantile width)
+#'   - var_total: sum of epistemic and aleatoric variances
+#'
+#' @importFrom stats qnorm
+#' @keywords internal
+.combine_uncertainties_variance <- function(lwr_mat, upr_mat, mean_mat,
+                                            alpha = 0.05, centerline = NULL) {
+  # ---- shape checks: expect [passes, n_obs] everywhere ----
+  if (!is.matrix(lwr_mat))  lwr_mat  <- as.matrix(lwr_mat)
+  if (!is.matrix(upr_mat))  upr_mat  <- as.matrix(upr_mat)
+  if (!is.matrix(mean_mat)) mean_mat <- as.matrix(mean_mat)
+
+  same_dim <- function(a, b) identical(dim(a), dim(b))
+  stopifnot(
+    same_dim(lwr_mat, upr_mat),
+    same_dim(lwr_mat, mean_mat),
+    nrow(mean_mat) >= 2L  # need >= 2 passes for variance
+  )
+
+  passes <- nrow(mean_mat)
+  n_obs  <- ncol(mean_mat)
+
+  z <- stats::qnorm(1 - alpha / 2)
+
+  # ---- Aleatoric variance from per-pass quantile width ----
+  # sd^(b) = (upr - lwr) / (2 z); then var_ale = mean_b sd^(b)^2
+  width   <- pmax(upr_mat - lwr_mat, 0)
+  sd_mat  <- width / (2 * z)
+  var_ale <- matrixStats::colMeans2(sd_mat^2)   # length n_obs
+
+  # ---- Epistemic variance: variance across passes of the mean head ----
+  var_epi <- matrixStats::colVars(mean_mat)     # length n_obs
+
+  # ---- Centerline for the PI ----
+  mu_hat <- if (!is.null(centerline)) {
+    stopifnot(length(centerline) == n_obs)
+    as.numeric(centerline)
+  } else {
+    matrixStats::colMeans2(mean_mat)            # across-pass mean, length n_obs
+  }
+
+  # ---- Total variance and Normal-theory interval ----
+  var_tot <- var_epi + var_ale
+  se_tot  <- sqrt(pmax(var_tot, 0))
+  lwr     <- mu_hat - z * se_tot
+  upr     <- mu_hat + z * se_tot
+
+  data.frame(
+    lwr = lwr,
+    upr = upr,
+    var_epistemic = var_epi,
+    var_aleatoric = var_ale,
+    var_total     = var_tot
   )
 }
 
@@ -289,4 +380,3 @@
   var_eta <- var_ep_joint + var_param
   sqrt(pmax(var_eta, 0))
 }
-

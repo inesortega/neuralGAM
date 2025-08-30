@@ -19,7 +19,7 @@ neuralGAM(
   loss = "mse",
   pi_method = c("none", "aleatoric", "epistemic", "both"),
   alpha = 0.05,
-  forward_passes = 30,
+  forward_passes = 100,
   dropout_rate = 0.1,
   inner_samples = 20,
   validation_split = NULL,
@@ -152,8 +152,7 @@ uncertainty is obtained by Monte Carlo (MC) Dropout at prediction time. The line
 deterministic prediction (dropout \emph{off}); the interval comes from empirical
 quantiles across many stochastic forward passes (dropout \emph{on}).
 \item \code{"both"}: combines aleatoric and epistemic by running MC Dropout with the
-3-output (lower/upper/mean) head and sampling from the induced mixture of Gaussians
-to form empirical prediction quantiles.
+3-output (lower/upper/mean) head and combining them via variance decomposition.
 }
 \strong{Centering for partial effects}
 For identifiability, each smooth term \eqn{g_j(x_j)} is mean-centered after fitting. When plotting
@@ -168,7 +167,7 @@ during training and \emph{reused} at prediction time to approximate epistemic un
 Practical values are in \code{[0.1, 0.3]}.
 \item \code{forward_passes}: number of stochastic forward passes with dropout \emph{on} when
 \code{pi_method = "epistemic"} or \code{"both"}. Larger values yield smoother, more stable
-envelopes (e.g., 300–1000).
+envelopes (e.g., 300-1000).
 \item \code{inner_samples}: only used for \code{pi_method = "both"}. For each dropout pass, the
 lower/upper quantiles define a local Normal approximation from which \code{inner_samples}
 draws are taken; final PIs are empirical quantiles of all draws across passes.
@@ -179,7 +178,7 @@ draws are taken; final PIs are empirical quantiles of all draws across passes.
 \item Aleatoric: lower/upper heads use the pinball (quantile) loss at \eqn{\alpha/2} and \eqn{1-\alpha/2};
 the mean head uses the user-chosen mean loss (\code{"mse"} or \code{"mae"}).
 \item Epistemic: any mean loss for the single-output head; uncertainty comes from MC Dropout only.
-\item Both: quantile + mean losses (as in aleatoric) and MC Dropout; PIs are built by mixture sampling.
+\item Both: quantile + mean losses (as in aleatoric) and MC Dropout; PIs are built by variance decomposition.
 }
 
 \strong{Coverage control}

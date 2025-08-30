@@ -174,16 +174,33 @@ autoplot.neuralGAM <- function(object,
       df$.x <- seq_len(nrow(df))
       df_ci <- .finite_band(df, "lwr_ci", "upr_ci")
       df_pi <- .finite_band(df, "lwr_pi", "upr_pi")
+
       p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$.x, y = .data$fit)) +
+        # PI first (underneath)
         { if (nrow(df_pi) > 0L)
-          ggplot2::geom_ribbon(data = df_pi, ggplot2::aes(ymin = .data$lwr_pi, ymax = .data$upr_pi), alpha = 0.10)
+          ggplot2::geom_ribbon(
+            data = df_pi,
+            ggplot2::aes(ymin = .data$lwr_pi, ymax = .data$upr_pi, fill = "Prediction interval"),
+            alpha = 0.10,
+            show.legend = TRUE
+          )
           else { warning("Prediction band unavailable."); ggplot2::geom_blank() } } +
+        # CI on top
         { if (nrow(df_ci) > 0L)
-          ggplot2::geom_ribbon(data = df_ci, ggplot2::aes(ymin = .data$lwr_ci, ymax = .data$upr_ci), alpha = 0.20)
+          ggplot2::geom_ribbon(
+            data = df_ci,
+            ggplot2::aes(ymin = .data$lwr_ci, ymax = .data$upr_ci, fill = "Confidence interval"),
+            alpha = 0.20,
+            show.legend = TRUE
+          )
           else { warning("Confidence band unavailable (missing SEs)."); ggplot2::geom_blank() } } +
         ggplot2::geom_line() +
-        ggplot2::labs(y = "Response", x = "Index") +
+        ggplot2::labs(y = "Response", x = "Index", fill = "Interval") +
+        ggplot2::scale_fill_manual(
+          values = c("Prediction interval" = "grey60", "Confidence interval" = "grey80")
+        ) +
         ggplot2::theme_bw()
+
       return(p)
     }
   }

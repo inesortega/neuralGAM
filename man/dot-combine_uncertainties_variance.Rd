@@ -13,11 +13,11 @@
 )
 }
 \arguments{
-\item{lwr_mat}{\verb{[passes, n_obs]} lower-quantile predictions per pass.}
+\item{lwr_mat}{\code{[passes, n_obs]} lower-quantile predictions per pass.}
 
-\item{upr_mat}{\verb{[passes, n_obs]} upper-quantile predictions per pass.}
+\item{upr_mat}{\code{[passes, n_obs]} upper-quantile predictions per pass.}
 
-\item{mean_mat}{\verb{[passes, n_obs]} mean-head predictions per pass.}
+\item{mean_mat}{\code{[passes, n_obs]} mean-head predictions per pass.}
 
 \item{alpha}{Coverage level (default 0.05).}
 
@@ -36,7 +36,7 @@ data.frame with columns:
 \description{
 Classical combination of uncertainties without sampling. Assumes the same
 input shapes as \code{.combine_uncertainties_sampling}: each argument is a matrix
-of shape \link{passes, n_obs}, where rows index MC-Dropout passes and columns
+of shape \code{[passes, n_obs]}, where rows index MC-Dropout passes and columns
 index observations.
 
 For each observation (column):

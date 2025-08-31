@@ -102,28 +102,6 @@ For Poisson models, include offsets for exposure in the linear predictor
 Requires \pkg{ggplot2} and \pkg{patchwork}.
 }
 
-\examples{
-\dontrun{
-library(neuralGAM)
-# Gaussian example
-fit_g <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = dat, family = "gaussian", num_units = 64)
-diagnose_neuralGAM(fit_g)
-
-# Binomial example (y in {0,1})
-fit_b <- neuralGAM(y ~ s(x1) + x2, data = dat, family = "binomial", num_units = 64)
-diagnose_neuralGAM(fit_b)
-
-# Proportion + trials
-diagnose_neuralGAM(fit_b, data = newdat, response = "prop",
-                   weights = newdat$trials)
-
-# Poisson example (counts with log-exposure offset)
-fit_p <- neuralGAM(count ~ offset(log(E)) + s(x1) + s(x2), num_units = 64,
-                   data = dat_pois, family = "poisson")
-diagnose_neuralGAM(fit_p, qq_method = "simulate", n_simulate = 400)
-}
-
-}
 \references{
 Augustin, N.H., Sauleau, E.A., Wood, S.N. (2012). On quantile-quantile plots
 for generalized linear models. \emph{Computational Statistics & Data Analysis},

@@ -206,7 +206,7 @@
 #' @description
 #' Classical combination of uncertainties without sampling. Assumes the same
 #' input shapes as `.combine_uncertainties_sampling`: each argument is a matrix
-#' of shape [passes, n_obs], where rows index MC-Dropout passes and columns
+#' of shape \code{[passes, n_obs]}, where rows index MC-Dropout passes and columns
 #' index observations.
 #'
 #' For each observation (column):
@@ -216,9 +216,9 @@
 #' - Total variance = epistemic + aleatoric.
 #' - Predictive interval = Normal-theory interval around the chosen centerline.
 #'
-#' @param lwr_mat `[passes, n_obs]` lower-quantile predictions per pass.
-#' @param upr_mat `[passes, n_obs]` upper-quantile predictions per pass.
-#' @param mean_mat `[passes, n_obs]` mean-head predictions per pass.
+#' @param lwr_mat \code{[passes, n_obs]} lower-quantile predictions per pass.
+#' @param upr_mat \code{[passes, n_obs]} upper-quantile predictions per pass.
+#' @param mean_mat \code{[passes, n_obs]} mean-head predictions per pass.
 #' @param alpha Coverage level (default 0.05).
 #' @param centerline Optional numeric vector (length n_obs) of deterministic
 #'   mean predictions to use as the PI center. If NULL, uses the across-pass mean.

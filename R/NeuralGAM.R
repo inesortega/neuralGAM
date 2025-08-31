@@ -604,7 +604,7 @@ neuralGAM <-
       mean_val <- mean(g[[term]])
 
       if (verbose == 1) {
-        sprintf("Computing CI/PI using pi_method = %s, at α = %s", pi_method, alpha)
+        sprintf("Computing CI/PI using pi_method = %s, at alpha = %s", pi_method, alpha)
       }
       preds <- .compute_uncertainty(model = mdl,
                                     x = x[[term]],

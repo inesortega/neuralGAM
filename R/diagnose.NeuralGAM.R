@@ -73,27 +73,6 @@
 #' @import patchwork
 #' @importFrom ggplot2 ggplot geom_point geom_ribbon geom_abline labs geom_hline geom_smooth geom_histogram
 #' @importFrom stats pbinom pnorm ppoints ppois qbinom qpois quantile rbinom rpois runif sd
-#' @examples
-#' \dontrun{
-#' library(neuralGAM)
-#' # Gaussian example
-#' fit_g <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = dat, family = "gaussian", num_units = 64)
-#' diagnose_neuralGAM(fit_g)
-#'
-#' # Binomial example (y in {0,1})
-#' fit_b <- neuralGAM(y ~ s(x1) + x2, data = dat, family = "binomial", num_units = 64)
-#' diagnose_neuralGAM(fit_b)
-#'
-#' # Proportion + trials
-#' diagnose_neuralGAM(fit_b, data = newdat, response = "prop",
-#'                    weights = newdat$trials)
-#'
-#' # Poisson example (counts with log-exposure offset)
-#' fit_p <- neuralGAM(count ~ offset(log(E)) + s(x1) + s(x2), num_units = 64,
-#'                    data = dat_pois, family = "poisson")
-#' diagnose_neuralGAM(fit_p, qq_method = "simulate", n_simulate = 400)
-#' }
-#'
 #' @references
 #'
 #' Augustin, N.H., Sauleau, E.A., Wood, S.N. (2012). On quantile-quantile plots
@@ -197,9 +176,9 @@ diagnose.neuralGAM <- function(object,
 
   # Choose residuals
   dres <- switch(residual_type,
-                 "deviance" = dev_resid_fun(y, mu, w),
-                 "pearson"  = pearson_fun(y, mu, w),
-                 "quantile" = quantile_resid(y, mu, w)
+                 "deviance" = dev_resid_fun(y, mu, weights),
+                 "pearson"  = pearson_fun(y, mu, weights),
+                 "quantile" = quantile_resid(y, mu, weights)
   )
 
   # --- Distribution helpers for QQ methods -----------------------------------
@@ -208,7 +187,7 @@ diagnose.neuralGAM <- function(object,
     qfun <- function(p, i) qnorm(p, mean = mu[i], sd = sigma_hat)
     rfun <- function() rnorm(n, mean = mu, sd = sigma_hat)
   } else if (family == "binomial") {
-    size <- if (!is.null(weights)) round(w) else rep(1, n)
+    size <- if (!is.null(weights)) round(weights) else rep(1, n)
     pmu  <- pmin(pmax(mu, .eps), 1 - .eps)
     qfun <- function(p, i) {
       qi <- stats::qbinom(p, size = size[i], prob = pmu[i])
@@ -239,7 +218,7 @@ diagnose.neuralGAM <- function(object,
       for (k in seq_len(n_uniform)) {
         u    <- stats::runif(n)
         yref <- vapply(seq_len(n), function(i) qfun(u[i], i), numeric(1))
-        rref <- dev_resid_fun(yref, mu, w)
+        rref <- dev_resid_fun(yref, mu, weights)
         ref_mat[, k] <- sort(rref)
       }
       theo <- rowMeans(ref_mat)
@@ -250,7 +229,7 @@ diagnose.neuralGAM <- function(object,
       ref_mat <- matrix(NA_real_, nrow = n, ncol = n_simulate)
       for (k in seq_len(n_simulate)) {
         ysim <- rfun()
-        rref <- dev_resid_fun(ysim, mu, w)
+        rref <- dev_resid_fun(ysim, mu, weights)
         ref_mat[, k] <- sort(rref)
       }
       lo_prob <- (1 - level) / 2

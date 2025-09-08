@@ -87,26 +87,26 @@ test_that("predict() basic types without PIs", {
   pr_terms <- predict(ngam0, type = "terms", se.fit = TRUE)
   expect_equal(dim(pr_terms$fit), dim(pr_terms$se.fit))
 
-  # intervals: confidence on link (explicit)
-  ci_link <- predict(ngam0, type = "link", interval = "confidence")
+  # intervals: confidence on link (not available)
+  expect_warning(ci_link <- predict(ngam0, type = "link", interval = "confidence"))
   expect_s3_class(ci_link, "data.frame")
   expect_true(all(c("fit","lwr","upr") %in% names(ci_link)))
-  expect_true(any(is.finite(ci_link$lwr)) && any(is.finite(ci_link$upr)))
+  expect_true(any(is.na(ci_link$lwr)) && any(is.na(ci_link$upr)))
 
   # intervals: confidence on response
-  ci_resp <- predict(ngam0, type = "response", interval = "confidence")
+  expect_warning(ci_resp <- predict(ngam0, type = "response", interval = "confidence"))
   expect_s3_class(ci_resp, "data.frame")
   expect_true(all(c("fit","lwr","upr") %in% names(ci_resp)))
-  expect_true(any(is.finite(ci_resp$lwr)) && any(is.finite(ci_resp$upr)))
+  expect_true(any(is.na(ci_resp$lwr)) && any(is.na(ci_resp$upr)))
 
   # intervals: prediction unavailable when no PI -> expect warning + NA bands
   expect_warning(pi_resp <- predict(ngam0, type = "response", interval = "prediction"))
   expect_true(all(is.na(pi_resp$lwr) | is.na(pi_resp$upr)))
 
   # link + prediction -> warning (PI not defined on link), returns CI columns with finite values if SEs exist
-  expect_warning(pi_on_link <- predict(ngam0, type = "link", interval = "prediction"))
+  expect_warning(expect_warning(pi_on_link <- predict(ngam0, type = "link", interval = "prediction")))
   expect_true(all(c("fit","lwr","upr") %in% names(pi_on_link)))
-  # lwr/upr can be finite if SEs available; just check columns exist as above
+
 })
 
 test_that("term selection, interval ignored for terms (shape), diagnostic_bands optional, and errors", {
@@ -205,7 +205,7 @@ test_that("uncertainty_method = 'aleatoric': PIs on response, not link", {
   expect_true(any(is.finite(both_df$lwr_pi)) && any(is.finite(both_df$upr_pi)))
 
   # on link, PI not defined => single warning; returns CI-shaped frame (lwr/upr may be NA if no epistemic SEs)
-  expect_warning(link_pred <- predict(ngam_ale, type = "link", interval = "prediction"))
+  expect_warning(expect_warning(link_pred <- predict(ngam_ale, type = "link", interval = "prediction")))
   expect_true(all(c("fit","lwr","upr") %in% names(link_pred)))
   expect_true(any(is.na(link_pred$lwr)) && any(is.na(link_pred$upr)))
 })
@@ -258,7 +258,7 @@ test_that("newdata path works with/without PI", {
   expect_type(pr_nd$fit, "double")
   expect_type(pr_nd$se.fit, "double")
   expect_length(pr_nd$se.fit, nrow(newdf))
-  expect_true(any(is.finite(pr_nd$se.fit)))
+  expect_true(any(is.na(pr_nd$se.fit)))
 
   # with PI machinery (aleatoric)
   ngam_lin_pi <- neuralGAM::neuralGAM(
@@ -267,6 +267,19 @@ test_that("newdata path works with/without PI", {
     num_units = 128,
     family = "gaussian",
     uncertainty_method = "aleatoric",
+    verbose = 0
+  )
+  pr_nd2 <- predict(ngam_lin_pi, newdata = newdf, type = "link", se.fit = TRUE)
+  expect_type(pr_nd2$fit, "double")
+  expect_type(pr_nd2$se.fit, "double")
+  expect_length(pr_nd2$fit, nrow(newdf))
+
+  ngam_lin_pi <- neuralGAM::neuralGAM(
+    z ~ x1 + s(x2),
+    data = dat2,
+    num_units = 128,
+    family = "gaussian",
+    uncertainty_method = "epistemic", forward_passes = 5,
     verbose = 0
   )
   pr_nd2 <- predict(ngam_lin_pi, newdata = newdf, type = "link", se.fit = TRUE)

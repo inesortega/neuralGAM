@@ -83,9 +83,10 @@ Generate predictions from a fitted \code{neuralGAM} model. Supported types:
 \item For \code{type = "response"}, SEs are mapped by the delta method:
 \eqn{se_\mu = |d\mu/d\eta| \cdot se_\eta}.
 \item Confidence intervals (CI) always reflect epistemic uncertainty about the fitted mean
-(as in \pkg{mgcv}).
+(as in mgcv).
 \item Prediction intervals (PI) are available only on the \emph{response scale}, and only if
-the model was trained with \code{uncertainty_method \%in\% c("aleatoric", "both")}.
+the model was trained with \code{uncertainty_method \%in\% c("aleatoric", "both")}. On the per-term scale
+quantile bands are available for diagnosis purposes only.
 }
 
 \strong{Important implementation details}

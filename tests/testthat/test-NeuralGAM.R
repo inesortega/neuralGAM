@@ -60,7 +60,7 @@ test_that("neuralGAM throws an error for incompatible loss with PI aleatoric", {
   skip_if_no_keras()
   formula <- y ~ s(x)
   data <- data.frame(x = 1:10, y = rnorm(10))
-  expect_error(neuralGAM(formula, data, num_units = 10, uncertainty_method = "aleatoric", loss = "binary_crossentropy"))
+  expect_error(neuralGAM(formula, data, num_units = 10, uncertainty_method = "aleatoric", loss = "unkown"))
 })
 
 test_that("neuralGAM throws an error for invalid kernel_initializer", {

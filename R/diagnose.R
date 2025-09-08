@@ -181,7 +181,13 @@ diagnose <- function(object,
                  "quantile" = quantile_resid(y, mu, weights)
   )
 
-  # --- Distribution helpers for QQ methods -----------------------------------
+  dres_label <- switch(residual_type,
+                       "deviance" = "Deviance Residuals",
+                       "pearson"  = "Pearson Residuals",
+                       "quantile" = "Quantile Residuals"
+  )
+
+  # --- Distribution helpers for QQ methods -- gaussian / poisson / binomial -----------------------------------
   if (family == "gaussian") {
     sigma_hat <- sqrt(mean((y - mu)^2))
     qfun <- function(p, i) qnorm(p, mean = mu[i], sd = sigma_hat)
@@ -253,28 +259,31 @@ diagnose <- function(object,
       else NULL
     } +
     ggplot2::geom_abline(slope = 1, intercept = 0, linetype = 2) +
-    ggplot2::labs(x = "Reference quantiles", y = "Sample deviance residuals",
-         title = sprintf("Q-Q plot of deviance residuals (%s)", qq_method))
+    ggplot2::labs(x = "Reference quantiles", y = paste0("Sample ", tolower(dres_label)),
+         title = sprintf("Q-Q plot of deviance residuals"),
+         subtitle = sprintf("Method: %s", qq_method))
 
   p2 <- ggplot2::ggplot(data.frame(eta = eta, dres = dres), aes(x = .data$eta, y = .data$dres)) +
     ggplot2::geom_hline(yintercept = 0, linetype = 2) +
     ggplot2::geom_point(alpha = point_alpha, color = point_col) +
     ggplot2::geom_smooth(method = "loess", formula = y ~ x, se = FALSE) +
-    ggplot2::labs(x = "Linear predictor (eta)", y = "Deviance residuals",
+    ggplot2::labs(x = "Linear predictor (eta)", y = dres_label,
          title = "Residuals vs linear predictor",
          subtitle = sprintf("Family: %s", family))
 
   p3 <- ggplot2::ggplot(data.frame(dres = dres), aes(x = .data$dres)) +
     ggplot2::geom_histogram(bins = hist_bins, fill = point_col, alpha = 0.7) +
-    ggplot2::labs(x = "Deviance residuals", y = "Count",
-         title = "Histogram of deviance residuals")
+    ggplot2::labs(x = dres_label, y = "Count",
+         title = paste0("Histogram of ", tolower(dres_label)),
+         subtitle = sprintf("Method: %s", qq_method))
 
   p4 <- ggplot2::ggplot(data.frame(mu = mu, y = y), aes(x = .data$mu, y = .data$y)) +
     ggplot2::geom_point(alpha = point_alpha, color = point_col) +
     ggplot2::geom_abline(slope = 1, intercept = 0, linetype = 2) +
     ggplot2::geom_smooth(method = "loess", formula = y ~ x, se = FALSE) +
     ggplot2::labs(x = "Fitted values (mu)", y = "Observed (y)",
-         title = "Observed vs fitted")
+         title = "Observed vs fitted",
+         subtitle = sprintf("Family: %s", family))
 
   (p1 | p3) / (p2 | p4)
 }

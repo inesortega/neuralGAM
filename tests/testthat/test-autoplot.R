@@ -139,14 +139,16 @@ test_that("autoplot: terms single-term enforcement and unknown term errors", {
   expect_error(autoplot(ngam_lin, which = "terms", term = "nope"))
 })
 
-test_that("autoplot: factor vs continuous term plotting (CI / aleatoric)", {
+test_that("autoplot: factor vs continuous term plotting (CI)", {
   skip_if_no_keras()
 
   ngam_lin <- neuralGAM(
     y ~ s(x1) + x2 + x3,
     data = dat,
     num_units = 64,
-    family = "gaussian"
+    family = "gaussian",
+    uncertainty_method = "epistemic",
+    forward_passes = 5
   )
 
   # factor term: CI around level means
@@ -158,7 +160,7 @@ test_that("autoplot: factor vs continuous term plotting (CI / aleatoric)", {
                          interval = "confidence", rug = TRUE)
   expect_s3_class(p_cont_par, "ggplot")
 
-  # continuous nonparametric term: CI via (potentially) MC Dropout SEs
+  # continuous nonparametric term: CI via MC Dropout SEs
   expect_no_warning(
     p_cont_np <- autoplot(ngam_lin, which = "terms", term = "x1",
                           interval = "confidence", rug = TRUE)
@@ -184,8 +186,8 @@ test_that("autoplot: response CI works when uncertainty_method='none'", {
     uncertainty_method = "none"
   )
 
-  # response CI should be available (SEs via MC on demand)
-  expect_no_warning(
+  # response CI should not be available (SEs via MC on demand) with a warning
+  expect_warning(
     p_ci <- autoplot(ngam_none, which = "response", interval = "confidence")
   )
   expect_s3_class(p_ci, "ggplot")
@@ -197,9 +199,9 @@ test_that("autoplot: response CI works when uncertainty_method='none'", {
   expect_s3_class(p_link_pi, "ggplot")
 
   # terms PI request -> warning (coerced to aleatoric) and still returns a plot
-  expect_warning(
+  expect_warning(expect_warning(
     p_term_pi <- autoplot(ngam_none, which = "terms", term = "x1", interval = "prediction")
-  )
+  ))
   expect_s3_class(p_term_pi, "ggplot")
 
   # explicit aleatoric on terms without quantile heads -> warning

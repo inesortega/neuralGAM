@@ -57,7 +57,6 @@
   } else if (uncertainty_method == "both") {
     # MC-dropout forward + aleatoric uncertainty: 3 outputs per pass -> output_dim = 3L
     y_array <- .mc_dropout_forward(model, x, forward_passes, output_dim = 3L)
-
     # y_array has dimension: [passes, n_obs, 3], and each obs is [lwr, upr, mean]
     lwr_mat  <- y_array[, , 1]
     upr_mat  <- y_array[, , 2]

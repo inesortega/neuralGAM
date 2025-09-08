@@ -52,6 +52,9 @@
 #'   \code{uncertainty_method \%in\% c("epistemic","both")}.
 #' @param validation_split Optional fraction of training data used for validation.
 #' @param w_train Optional training weights.
+#' @param w_mean Non-negative numeric. Weight for the mean-head loss within the composite PI loss.
+#' @param order_penalty_lambda Non-negative numeric. Strength of a soft monotonicity penalty
+#'   `ReLU(lwr - upr)` to discourage interval inversions.
 #' @param bf_threshold,ls_threshold Convergence thresholds for backfitting and local scoring.
 #' @param max_iter_backfitting,max_iter_ls Maximum iterations for backfitting and local scoring.
 #' @param seed Random seed.
@@ -159,6 +162,8 @@ neuralGAM <-
            dropout_rate = 0.1,
            validation_split = NULL,
            w_train = NULL,
+           w_mean = 0.1,
+           order_penalty_lambda = 0.0,
            bf_threshold = 0.001,
            ls_threshold = 0.1,
            max_iter_backfitting = 10,
@@ -178,7 +183,8 @@ neuralGAM <-
       kernel_regularizer = kernel_regularizer,
       bias_regularizer   = bias_regularizer,
       activity_regularizer = activity_regularizer,
-      dropout_rate = dropout_rate
+      dropout_rate = dropout_rate,
+      loss = loss
     )
 
     # --- Formula ---
@@ -357,6 +363,7 @@ neuralGAM <-
         bias_regularizer = formula$np_architecture[[term]]$bias_regularizer,
         bias_initializer = formula$np_architecture[[term]]$bias_initializer,
         activity_regularizer = formula$np_architecture[[term]]$activity_regularizer,
+        loss = formula$np_architecture[[term]]$loss,
         name = term,
         alpha = alpha,
         uncertainty_method = uncertainty_method,
@@ -454,6 +461,8 @@ neuralGAM <-
 
           # Update f with current learned function for predictor k
           f[[term]] <- fit
+          term_center <- vapply(f, mean, numeric(1))
+
           mean_val <- mean(f[[term]])
           f[[term]] <- f[[term]] - mean_val
           eta <- eta + f[[term]]
@@ -523,7 +532,6 @@ neuralGAM <-
     for (k in 1:ncol(x_np)) {
       term <- colnames(x_np)[[k]]
       mdl <- model[[term]]
-      mean_val <- mean(g[[term]])
 
       if (verbose == 1) {
         sprintf("Computing CI/PI using uncertainty_method = %s, at alpha = %s", uncertainty_method, alpha)
@@ -534,8 +542,8 @@ neuralGAM <-
                                     forward_passes = forward_passes)
       if(build_pi == TRUE){
         # Update prediction intervals
-        lwr[[term]] <- preds$lwr - mean_val
-        upr[[term]] <- preds$upr - mean_val
+        lwr[[term]] <- preds$lwr - term_center[[term]]
+        upr[[term]] <- preds$upr - term_center[[term]]
       }
       # store variances (centering does NOT change variance)
       var_epistemic[[term]] <- preds$var_epistemic
@@ -555,6 +563,7 @@ neuralGAM <-
       list(
         muhat = muhat,
         partial = g,
+        term_center = term_center,
         y = y,
         w_train = w,
         var_aleatoric = var_aleatoric,
@@ -591,30 +600,13 @@ neuralGAM <-
   eta <- eta - f[[term]]
   residuals <- Z - eta
   # ---- Fit - one epoch ----
-  if (family == "gaussian") {
-    history <- model[[term]] %>% fit(
-      x_np[[term]],
-      residuals,
-      validation_split = validation_split,
-      epochs = 1,
-      verbose = verbose
-    )
-  } else {
-    # Compile for non-gaussian families
-    model[[term]] <- set_compile(
-      model[[term]], uncertainty_method, alpha, learning_rate, loss,
-      loss_weights = loss_weights, ...
-    )
-
-    history <- model[[term]] %>% fit(
-      x_np[[term]],
-      residuals,
-      epochs = 1,
-      sample_weight = list(W),
-      verbose = verbose,
-      validation_split = validation_split
-    )
-  }
+  history <- model[[term]] %>% fit(
+    x_np[[term]],
+    residuals,
+    validation_split = validation_split,
+    epochs = 1,
+    verbose = verbose
+  )
 
   mu_hat <- model[[term]] %>% predict(x_np[[term]], verbose = verbose)
 

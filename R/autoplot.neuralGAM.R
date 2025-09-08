@@ -229,9 +229,12 @@ autoplot.neuralGAM <- function(object,
     if (!term %in% all_terms)
       stop(sprintf("Unknown term '%s'. Available terms: %s", term, paste(all_terms, collapse = ", ")))
 
-    want_ci  <- interval %in% c("confidence","both")
-    want_ale <- interval %in% c("aleatoric","both")
+    want_ci  <- interval %in% c("confidence","both") # can be estimated on runtime
+    want_ale <- interval %in% c("aleatoric","both") && object$uncertainty_method %in% c("aleatoric","both") ## cannot be estimated in runtime
 
+    if(interval %in% c("aleatoric","both") && !object$uncertainty_method %in% c("aleatoric","both")){
+      warning(sprintf("User requested %s but model was trained with uncertainty method = %s.", interval, object$uncertainty_method))
+    }
     pr_terms <- predict(object, newdata,
                         type = "terms", terms = term,
                         se.fit = want_ci,
@@ -253,8 +256,8 @@ autoplot.neuralGAM <- function(object,
         df$upr_ci <- term_fit + z * term_se
       }
       if (want_ale && any(is.finite(lwrA) & is.finite(uprA))) {
-        df$lwr_ale <- term_fit + lwrA
-        df$upr_ale <- term_fit + uprA
+        df$lwr_ale <- lwrA
+        df$upr_ale <- uprA
       }
       df <- df[order(df$x), , drop = FALSE]
 
@@ -263,7 +266,7 @@ autoplot.neuralGAM <- function(object,
           if (show_legend) {
             ggplot2::geom_ribbon(
               ggplot2::aes(ymin = .data$lwr_ale, ymax = .data$upr_ale,
-                           fill = "Residual quantiles (aleatoric)"),
+                           fill = "Residual quantiles (aleatoric, diagnostic only)"),
               alpha = 0.20,                         # was col=; for ribbons usually just fill/alpha
               show.legend = TRUE
             )

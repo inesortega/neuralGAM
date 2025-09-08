@@ -61,7 +61,7 @@ test_that("autoplot returns ggplot and basic geoms for numeric smooth", {
 
   # Prediction intervals are not defined for term effects; using 'confidence' instead.
   # Confidence band unavailable for term 'x1' (missing SEs). -> none
-  expect_warning(expect_warning(p <- autoplot(ngam, which = "terms", term = "x1", interval = "prediction")))
+  expect_warning(p <- autoplot(ngam, which = "terms", term = "x1", interval = "prediction"))
   expect_s3_class(p, "ggplot")
   expect_true(has_geom(p, "GeomLine"))
   expect_false(has_geom(p, "GeomRibbion"))

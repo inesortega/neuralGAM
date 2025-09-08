@@ -189,7 +189,7 @@ predict.neuralGAM <- function(object,
 
   if (use_cache) {
     term_fit[,] <- as.matrix(ngam$partial[, all_terms, drop = FALSE])
-
+    # already mean-centered
     if (!is.null(ngam$var_epistemic)) {
       var_epi[,] <- as.matrix(ngam$var_epistemic[, all_terms, drop = FALSE])
     }
@@ -229,7 +229,14 @@ predict.neuralGAM <- function(object,
           level = level, forward_passes = forward_passes,
           verbose = verbose
         )
-        term_fit[, tm] <- pt$fit
+        center <- (ngam$term_center %||% setNames(rep(0, length(all_terms)), all_terms))[tm]
+        term_fit[, tm] <- pt$fit - center
+
+        # keep bands aligned on the same (centered) scale:
+        if (need_pi) {
+          lwr_abs[, tm] <- pt$lwr_abs - center
+          upr_abs[, tm] <- pt$upr_abs - center
+        }
         var_epi[, tm]  <- pt$var_epistemic
         if (need_pi) {
           var_ale[, tm] <- pt$var_aleatoric
@@ -326,8 +333,8 @@ predict.neuralGAM <- function(object,
     if (isTRUE(diagnostic_bands)) {
       # These are quantiles for partial residuals R_j, not PIs for Y
       # if diagnostic_bands are requested, caller gets fit/se.fit/lwr_ale/upr_ale matrices
-      lwr_ale_terms <- lwr_abs[, sel_terms, drop = FALSE] - term_fit[, sel_terms, drop = FALSE]
-      upr_ale_terms <- upr_abs[, sel_terms, drop = FALSE] - term_fit[, sel_terms, drop = FALSE]
+      lwr_ale_terms <- lwr_abs[, sel_terms, drop = FALSE]
+      upr_ale_terms <- upr_abs[, sel_terms, drop = FALSE]
     }
 
     # Return a list so autoplot (and users) can access what's available
@@ -443,7 +450,6 @@ predict.neuralGAM <- function(object,
   X <- xvec; if (is.null(dim(X))) X <- matrix(X, ncol = 1L)
 
   alpha <- 1 - level
-  pm <- ngam$uncertainty_method
 
   y_det <- try(as.matrix(mdl$predict(X, verbose = 0)), silent = TRUE)
   if (inherits(y_det, "try-error") || is.null(dim(y_det))) {
@@ -459,8 +465,9 @@ predict.neuralGAM <- function(object,
   nout <- ncol(y_det)
   mean_col <- if (nout >= 3L) 3L else 1L
   mu_det <- as.numeric(y_det[, mean_col])
+  mu_det <- mu_det - mean(mu_det)
 
-  preds <- .compute_uncertainty(mdl, X, pm, alpha, forward_passes)
+  preds <- .compute_uncertainty(mdl, X, ngam$uncertainty_method, alpha, forward_passes)
 
   # Absolute bounds (on the term scale)
   lwr_abs <- upr_abs <- rep(NA_real_, length(mu_det))

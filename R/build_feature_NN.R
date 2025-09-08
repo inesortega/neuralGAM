@@ -152,8 +152,7 @@ build_feature_NN <-
 
 
 set_compile <- function(model, uncertainty_method, alpha, learning_rate,
-                        loss, w_mean = 0.1, order_penalty_lambda = 0.0,
-                        loss_weights = NULL, ...) {
+                        loss, w_mean = 0.1, order_penalty_lambda = 0.0, ...) {
 
   if (uncertainty_method %in% c("aleatoric", "both")) {
     model %>% keras::compile(
@@ -162,13 +161,11 @@ set_compile <- function(model, uncertainty_method, alpha, learning_rate,
                                 mean_loss = loss,
                                 w_mean = w_mean,
                                 order_penalty_lambda = order_penalty_lambda),
-      loss_weights = loss_weights
     )
   } else {
     model %>% keras::compile(
       optimizer = keras::optimizer_adam(learning_rate = learning_rate, ...),
-      loss = loss,
-      loss_weights = loss_weights
+      loss = loss
     )
   }
   model
@@ -176,7 +173,7 @@ set_compile <- function(model, uncertainty_method, alpha, learning_rate,
 
 #' @keywords internal
 make_quantile_loss <- function(alpha = 0.05,
-                               mean_loss,              # callable (string already resolved)
+                               mean_loss,
                                w_mean = 0.1,
                                order_penalty_lambda = 0.0) {
 

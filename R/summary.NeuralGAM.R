@@ -78,6 +78,7 @@ summary.neuralGAM <- function(object, ...) {
   g_kernel_regularizer <- .cfg_get(globals, "kernel_regularizer", NA)
   g_bias_regularizer   <- .cfg_get(globals, "bias_regularizer", NA)
   g_activity_regularizer <- .cfg_get(globals, "activity_regularizer", NA)
+  g_loss <- .cfg_get(globals, "loss", NA)
 
   cat("neuralGAM summary\n")
   cat("Family             : ", ngam$family, "\n", sep = "")
@@ -110,9 +111,10 @@ summary.neuralGAM <- function(object, ...) {
       kreg  <- .pretty_keras_obj(if (!is.null(cfg$kernel_regularizer))  cfg$kernel_regularizer  else g_kernel_regularizer)
       breg  <- .pretty_keras_obj(if (!is.null(cfg$bias_regularizer))    cfg$bias_regularizer    else g_bias_regularizer)
       areg  <- .pretty_keras_obj(if (!is.null(cfg$activity_regularizer))cfg$activity_regularizer else g_activity_regularizer)
+      loss  <- .pretty_keras_obj(if (!is.null(cfg$loss))cfg$loss else g_loss)
 
-      line <- sprintf(" -- %s - units: %s | activation: %s | learning rate: %s | k_init: %s | b_init: %s | k_reg: %s | b_reg: %s | a_reg: %s",
-                      term, units, act, lr, kinit, binit, kreg, breg, areg)
+      line <- sprintf(" -- %s - units: %s | activation: %s | loss: %s | learning rate: %s | k_init: %s | b_init: %s | k_reg: %s | b_reg: %s | a_reg: %s",
+                      term, units, act, loss, lr, kinit, binit, kreg, breg, areg)
       cat(line, "\n", sep = "")
     }
   }

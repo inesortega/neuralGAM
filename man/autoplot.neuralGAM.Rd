@@ -8,7 +8,7 @@
   object,
   newdata = NULL,
   which = c("response", "link", "terms"),
-  interval = c("none", "confidence", "prediction", "both"),
+  interval = c("none", "confidence", "prediction", "both", "aleatoric"),
   level = 0.95,
   term = NULL,
   rug = TRUE,
@@ -22,15 +22,22 @@
 
 \item{which}{One of \code{c("response","link","terms")}. Default \code{"response"}.}
 
-\item{interval}{One of \code{c("none","confidence","prediction","both")}. Default \code{"confidence"}.
+\item{interval}{One of \code{c("none","confidence","prediction","both","aleatoric")}.
+Default \code{"confidence"}.
 \itemize{
-\item \strong{Response scale:} CI reflect epistemic uncertainty about the mean (from SEs;
-delta-method on the response). PI reflect aleatoric (and, when \code{pi_method="both"},
-combined) uncertainty for a \emph{new observation}.
-\item \strong{Link scale:} CI only (PI not defined). If \code{interval} requests PI, it is
-coerced to \code{"confidence"} with a warning.
-\item \strong{Terms:} \emph{CI only} for the smooth \eqn{g_j(x_j)} (SE-based, epistemic).
-If \code{interval} requests PI, it is coerced to \code{"confidence"} with a warning.
+\item \strong{Response scale:} \code{"confidence"} draws epistemic CI for the fitted mean
+(SEs on the link mapped via the delta method). \code{"prediction"} draws PIs that reflect
+aleatoric noise (and, when the model was trained with combined uncertainty, epistemic too).
+\code{"both"} overlays CI and PI.
+\item \strong{Link scale:} Only \code{"confidence"} is defined; if \code{interval} requests
+\code{"prediction"}, \code{"both"}, or \code{"aleatoric"}, it is coerced to
+\code{"confidence"} with a warning.
+\item \strong{Terms (per-term effects on the link scale):}
+\code{"confidence"} draws epistemic CI for the smooth \eqn{g_j(x_j)} (SE-based).
+\code{"aleatoric"} draws \emph{diagnostic} residual quantile bands for partial residuals
+\eqn{R_j} (from quantile heads), centered on \eqn{\hat g_j}. \code{"both"} overlays
+confidence and aleatoric bands. \code{"prediction"} is not defined for terms and is
+coerced to \code{"aleatoric"} with a warning.
 }}
 
 \item{level}{Coverage level for intervals (e.g., \code{0.95}). Default \code{0.95}.}
@@ -53,56 +60,26 @@ Supported plot types:
 \item \code{which = "link"}: Linear predictor (link scale) vs. index,
 with optional CI (PI are not defined on the link scale).
 \item \code{which = "terms"}: Single per-term contribution \eqn{g_j(x_j)} on the link scale.
-For continuous covariates: line with optional CI ribbon (SE-based).
-For factor covariates: boxplots per level with optional mean \eqn{\pm z \cdot SE} error bars.
+For continuous covariates: line with optional bands. For factor covariates: boxplots per
+level with optional mean \eqn{\pm z \cdot SE} error bars and/or aleatoric ranges.
+On the terms panel you can display (i) epistemic CI for the smooth \eqn{g_j} and/or
+(ii) \emph{aleatoric residual quantile bands} for partial residuals \eqn{R_j}.
 }
 }
 \details{
 \strong{Uncertainty semantics}
 \itemize{
-\item \strong{CI (epistemic)}: uncertainty about the \emph{fitted mean}.
-For terms, bands are \eqn{\hat g_j \pm z \cdot SE(\hat g_j)} on the link scale.
-For response, SEs are mapped via the delta method.
-\item \strong{PI (aleatoric / both)}: width reflects data noise (and model uncertainty
-when \code{pi_method="both"}). PIs are provided \emph{only} on the response scale.
+\item \strong{CI (epistemic):} Uncertainty about the \emph{fitted mean}. For terms, bands are
+\eqn{\hat g_j \pm z \cdot SE(\hat g_j)} on the link scale. For the response, SEs are mapped
+to the response scale via the delta method.
+\item \strong{PI (aleatoric / combined):} Width reflects data noise (aleatoric) and, when the
+model was trained with combined uncertainty, also model uncertainty (epistemic). PIs are
+provided \emph{only} on the response scale.
+\item \strong{Aleatoric residual bands for terms (diagnostic):} For \code{which="terms"},
+quantile heads yield residual quantile bands for \eqn{R_j} centered on \eqn{\hat g_j}.
+These are intended for diagnostics and \emph{are not} prediction intervals for \eqn{Y}.
 }
 }
-\examples{
-\dontrun{
-set.seed(1)
-n <- 500
-x1 <- runif(n, -2, 2)
-x2 <- factor(sample(letters[1:3], n, TRUE))
-x3 <- runif(n, -2, 2)
-
-f1 <- sin(x1)
-f2 <- ifelse(x2 == "a", 1, ifelse(x2 == "b", -1, 0))
-f3 <- x3^2
-y <- 2 + f1 + f2 + f3 + rnorm(n, sd = 0.3)
-dat <- data.frame(x1, x2, x3, y)
-
-library(neuralGAM)
-ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3),
-                 data = dat, num_units = 128,
-                 family = "gaussian",
-                 pi_method = "both",
-                 seed = 1)
-
-# response with PI
-autoplot(ngam, which = "response", interval = "prediction")
-
-# link with CI
-autoplot(ngam, which = "link", interval = "confidence")
-
-# single term (continuous): x1
-autoplot(ngam, which = "terms", term = "x1", interval = "confidence")
-
-# single term (factor): x2
-autoplot(ngam, which = "terms", term = "x2", interval = "confidence")
-
-# user arranges multiple terms manually
-p1 <- autoplot(ngam, which = "terms", term = "x1")
-p2 <- autoplot(ngam, which = "terms", term = "x2")
-# arrange p1, p2 using your preferred layout tooling, such as grid.arrange
-}
+\author{
+Ines Ortega-Fernandez, Marta Sestelo
 }

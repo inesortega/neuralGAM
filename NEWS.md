@@ -5,7 +5,7 @@
 * **Additional distribution families**: now supports `poisson` and `multinomial` in addition to `gaussian` and `binomial`.
 * **Per-term architecture configuration**: hyperparameters (units, activation, learning rate, initializers, regularizers) can now be set per smooth term inside `s()`.  
 * **Prediction Intervals (PI)**:  
-  - `pi_method` argument allows estimation of *epistemic*, *aleatoric*, or *both* sources of uncertainty.  
+  - `uncertainty_method` argument allows estimation of *epistemic*, *aleatoric*, or *both* sources of uncertainty.  
   - Intervals integrated into `predict()` and `autoplot()`.  
 * **Cross-validation support**: new `validation_split` parameter for monitoring validation losses during training.  
 * **Training diagnostics**: new `plot_history()` function for visualizing training/validation loss curves per term and per backfitting iteration.  

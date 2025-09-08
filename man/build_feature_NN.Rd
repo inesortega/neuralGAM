@@ -16,85 +16,74 @@ build_feature_NN(
   loss = "mse",
   name = NULL,
   alpha = 0.05,
-  pi_method = "none",
+  w_mean = 0.1,
+  order_penalty_lambda = 0,
+  uncertainty_method = "none",
   dropout_rate = 0.1,
+  seed = NULL,
   ...
 )
 }
 \arguments{
 \item{num_units}{Integer or vector of integers. Number of units in the hidden
-layer(s). If a vector is provided, multiple dense layers are added
-sequentially.}
+layer(s). If a vector is provided, multiple dense layers are added sequentially.}
 
 \item{learning_rate}{Numeric. Learning rate for the Adam optimizer.}
 
-\item{activation}{Character string. Activation function to use in hidden layers.}
+\item{activation}{Character string or function. Activation function to use in hidden layers.
+If character, it must be valid for \code{tf$keras$activations$get()}.}
 
-\item{kernel_initializer}{Keras initializer object or string. Kernel initializer
-for dense layers.}
+\item{kernel_initializer}{Keras initializer object or string. Kernel initializer for dense layers.}
 
 \item{kernel_regularizer}{Optional Keras regularizer for kernel weights.}
 
 \item{bias_regularizer}{Optional Keras regularizer for bias terms.}
 
-\item{bias_initializer}{Keras initializer object or string. Initializer for
-bias terms.}
+\item{bias_initializer}{Keras initializer object or string. Initializer for bias terms.}
 
 \item{activity_regularizer}{Optional Keras regularizer for layer activations.}
 
 \item{loss}{Loss function to use.
 \itemize{
-\item When \code{pi_method} is \code{aleatoric} or \code{both}, this is passed as the mean prediction loss inside
-\code{make_quantile_loss()} (choose from \code{"mse"}, \code{"mae"}).
-\item In any other case, this is used directly in \code{compile()}. Can be any
-\code{keras} built-in loss or custom function.
+\item When \code{uncertainty_method} is \code{aleatoric} or \code{both}, this is the \strong{mean-head loss} inside
+\code{make_quantile_loss()} and can be any \code{keras} built-in loss name (e.g., \code{"mse"}, \code{"mae"}, \code{"huber"},
+\code{"logcosh"}, …) or a custom function.
+\item In any other case, this is used directly in \code{compile()}.
 }}
 
 \item{name}{Optional character string. Name assigned to the model.}
 
-\item{alpha}{Numeric. Desired significance level for prediction intervals when
-builading Prediction Intervals. Defaults to 0.05 (i.e., 95\\% PI using 2.5\\% and 97.5\\%
-quantiles).}
+\item{alpha}{Numeric. Desired significance level for \strong{symmetric} prediction intervals.
+Defaults to 0.05 (i.e., 95\% PI using quantiles α/2 and 1−α/2).}
 
-\item{pi_method}{Character string indicating the type of uncertainty to estimate in prediction intervals.
-Must be one of \code{"none"}, \code{"aleatoric"}, \code{"epistemic"}, or \code{"both"}:
-\itemize{
-\item \code{"none"}: Do not build PIs.
-\item \code{"aleatoric"}: Use quantile regression loss to capture data-dependent (heteroscedastic) noise.
-\item \code{"epistemic"}: Use Monte Carlo Dropout with multiple forward passes to capture model uncertainty.
-\item \code{"both"}: Combine both quantile estimation and MC Dropout to estimate total predictive uncertainty.
-}}
+\item{w_mean}{Non-negative numeric. Weight for the mean-head loss within the composite PI loss.}
+
+\item{order_penalty_lambda}{Non-negative numeric. Strength of a soft monotonicity penalty
+\code{ReLU(lwr - upr)} to discourage interval inversions.}
+
+\item{uncertainty_method}{Character string indicating the type of uncertainty to estimate in prediction intervals.
+Must be one of \code{"none"}, \code{"aleatoric"}, \code{"epistemic"}, or \code{"both"}.}
+
+\item{dropout_rate}{Numeric in (0,1). Dropout rate used when \code{uncertainty_method \%in\% c("epistemic","both")}.}
+
+\item{seed}{Random seed.}
 
 \item{...}{
   Arguments passed on to \code{\link[=neuralGAM]{neuralGAM}}
   \describe{
     \item{\code{formula}}{Model formula. Smooth terms must be wrapped in \code{s(...)}.
-You can specify per-term network settings, e.g.:
+You can specify per-term NN settings, e.g.:
 \code{y ~ s(x1, num_units = 1024) + s(x3, num_units = c(1024, 512))}.}
     \item{\code{data}}{Data frame containing the variables.}
     \item{\code{family}}{Response distribution: \code{"gaussian"}, \code{"binomial"}, \code{"poisson"}.}
     \item{\code{kernel_initializer,bias_initializer}}{Initializers for weights and biases.}
     \item{\code{kernel_regularizer,bias_regularizer,activity_regularizer}}{Optional Keras regularizers.}
-    \item{\code{dropout_rate}}{Numeric in (0,1). Dropout probability applied to hidden layers of each
-smooth-term network (when \code{pi_method} is \code{"epistemic"} or \code{"both"}). It serves two purposes:
-\itemize{
-\item During training: acts as a regularizer to prevent overfitting.
-\item During prediction (when \code{pi_method = "epistemic"} or \code{"both"}):
-enables Monte Carlo Dropout sampling to approximate epistemic uncertainty.
-}
-Typical values are between \code{0.1} and \code{0.3}.}
-    \item{\code{forward_passes}}{Integer, number of forward passess to run MC-dropout when computing
-epistemic uncertainty (\code{pi_method = "epistemic"}) or both aleatoric and epistemic.}
-    \item{\code{inner_samples}}{Integer, number of draws per MC-dropout pass used when combining
-aleatoric and epistemic uncertainty (\code{pi_method = "both"}).
-For each dropout mask, \code{inner_samples} values are generated from the Normal
-approximation defined by the predicted quantile bounds.
-Larger values improve stability of the sampled prediction intervals at the cost of speed.}
+    \item{\code{forward_passes}}{Integer. Number of MC-dropout forward passes used when
+\code{uncertainty_method \%in\% c("epistemic","both")}.}
     \item{\code{validation_split}}{Optional fraction of training data used for validation.}
     \item{\code{w_train}}{Optional training weights.}
     \item{\code{bf_threshold,ls_threshold}}{Convergence thresholds for backfitting and local scoring.}
     \item{\code{max_iter_backfitting,max_iter_ls}}{Maximum iterations for backfitting and local scoring.}
-    \item{\code{seed}}{Random seed.}
     \item{\code{verbose}}{Verbosity: \code{0} silent, \code{1} progress messages.}
   }}
 }
@@ -104,30 +93,32 @@ A compiled \code{keras_model} object ready for training.
 \description{
 Builds and compiles a \code{keras} neural network for a single smooth term in a
 \code{neuralGAM} model.
-The network can optionally be configured to output \strong{prediction intervals}
+
+The network can optionally be configured to output \strong{symmetric prediction intervals}
 (lower bound, upper bound, and mean prediction) using a custom quantile loss
 (\code{make_quantile_loss()}), or a standard single-output point prediction using
 any user-specified loss function.
 
-When \code{pi_method} is \code{aleatoric} or \code{both} the model outputs three units corresponding to the
-lower bound, upper bound, and mean prediction, and is compiled with the
-\code{make_quantile_loss()} custom loss. In any other case, the model outputs a single unit (point prediction)
-and uses the loss function provided in \code{loss}.
+When \code{uncertainty_method} is \code{aleatoric} or \code{both} the model outputs three units corresponding to the
+lower bound, upper bound, and mean prediction, and is compiled with
+\code{make_quantile_loss(alpha, mean_loss, ...)}. In any other case, the model
+outputs a single unit (point prediction) and uses the loss function provided in \code{loss}.
 }
 \details{
-\strong{Prediction interval mode (\code{pi_method \%in\% c("aleatoric", "both")})}:
+\strong{Prediction interval mode (\code{uncertainty_method \%in\% c("aleatoric", "both")})}:
 \itemize{
 \item Output layer has 3 units:
 \itemize{
-\item \code{lwr}: lower bound, \eqn{\tau = \frac{1-\alpha}{2}}
-\item \code{upr}: upper bound, \eqn{\tau = 1 - \frac{1-\alpha}{2}}
-\item \code{y_hat}: mean prediction
+\item \code{lwr}: lower bound, \eqn{\tau = \alpha/2}
+\item \code{upr}: upper bound, \eqn{\tau = 1 - \alpha/2}
+\item \code{y\_hat}: mean prediction
 }
 \item Loss function is \code{make_quantile_loss()} which combines two pinball losses
-(for lower and upper quantiles) with the chosen mean prediction loss.
+(for lower and upper quantiles) with the chosen mean prediction loss and an optional
+non-crossing penalty.
 }
 
-\strong{Point prediction mode (pi_method \%in\% c("none", "epistemic"))}:
+\strong{Point prediction mode (\code{uncertainty_method \%in\% c("none", "epistemic")})}:
 \itemize{
 \item Output layer has 1 unit: point prediction only.
 \item Loss function is the one passed in \code{loss}.
@@ -135,9 +126,8 @@ and uses the loss function provided in \code{loss}.
 }
 \references{
 Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
-arXiv preprint arXiv:1412.6980.
-Koenker, R., & Bassett Jr, G. (1978). Regression quantiles. Econometrica:
-journal of the Econometric Society, 33–50. \emph{Econometrica}, 46(1), 33–50.
+arXiv:1412.6980.
+Koenker, R., & Bassett Jr, G. (1978). Regression quantiles. \emph{Econometrica}, 46(1), 33–50.
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo

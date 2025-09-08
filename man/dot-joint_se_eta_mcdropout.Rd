@@ -33,4 +33,7 @@ Steps:
 \item Combined with parametric variance (assumed independent).
 }
 }
+\author{
+Ines Ortega-Fernandez, Marta Sestelo
+}
 \keyword{internal}

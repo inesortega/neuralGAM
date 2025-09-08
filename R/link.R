@@ -8,6 +8,7 @@
 #' @param muhat fitted values
 #' @return the link function specified by the \code{"family"} distribution
 #' for the given fitted values
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @keywords internal
 
 link <- function(family, muhat) {

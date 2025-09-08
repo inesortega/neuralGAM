@@ -7,7 +7,7 @@
 #' given by:
 #'
 #' \code{tools::R_user_dir('neuralGAM', 'cache')}
-#'
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @return NULL
 #' @export
 #' @importFrom reticulate py_module_available conda_binary install_miniconda py_config use_condaenv conda_list conda_create

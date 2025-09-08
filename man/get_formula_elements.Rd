@@ -78,4 +78,7 @@ any per‑term overrides while falling back to global defaults for unspecified k
 }
 }
 
+\author{
+Ines Ortega-Fernandez, Marta Sestelo
+}
 \keyword{internal}

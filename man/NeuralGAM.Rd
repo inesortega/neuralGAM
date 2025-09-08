@@ -17,11 +17,10 @@ neuralGAM(
   bias_initializer = "zeros",
   activity_regularizer = NULL,
   loss = "mse",
-  pi_method = c("none", "aleatoric", "epistemic", "both"),
+  uncertainty_method = c("none", "aleatoric", "epistemic", "both"),
   alpha = 0.05,
   forward_passes = 100,
   dropout_rate = 0.1,
-  inner_samples = 20,
   validation_split = NULL,
   w_train = NULL,
   bf_threshold = 0.001,
@@ -35,7 +34,7 @@ neuralGAM(
 }
 \arguments{
 \item{formula}{Model formula. Smooth terms must be wrapped in \code{s(...)}.
-You can specify per-term network settings, e.g.:
+You can specify per-term NN settings, e.g.:
 \code{y ~ s(x1, num_units = 1024) + s(x3, num_units = c(1024, 512))}.}
 
 \item{data}{Data frame containing the variables.}
@@ -47,46 +46,40 @@ You can specify per-term network settings, e.g.:
 
 \item{learning_rate}{Learning rate for Adam optimizer.}
 
-\item{activation}{Activation function for hidden layers.}
+\item{activation}{Activation function for hidden layers. Either a string understood by
+\code{tf$keras$activations$get()} or a function.}
 
 \item{kernel_initializer, bias_initializer}{Initializers for weights and biases.}
 
 \item{kernel_regularizer, bias_regularizer, activity_regularizer}{Optional Keras regularizers.}
 
-\item{loss}{Loss function.
+\item{loss}{Loss function to use.
 \itemize{
-\item If \code{pi_method = "none"}: used directly for training.
-\item Else: must be \code{"mse"}, \code{"mae"}, or a custom Keras loss function (applies to mean prediction inside PI loss).
+\item When \code{uncertainty_method} is \code{"aleatoric"} or \code{"both"}: this is the \strong{mean-head loss}
+inside \code{make_quantile_loss()}, and can be any Keras built-in (e.g., \code{"mse"}, \code{"mae"},
+\code{"huber"}, \code{"logcosh"}) or a custom function.
+\item Otherwise: passed directly to \code{keras::compile()}.
 }}
 
-\item{pi_method}{Character string indicating the type of uncertainty to estimate in prediction intervals.
-Must be one of \code{"none"}, \code{"aleatoric"}, \code{"epistemic"}, or \code{"both"}:
+\item{uncertainty_method}{Character string indicating the type of predictive uncertainty to estimate.
+One of:
 \itemize{
-\item \code{"none"}: None (default).
-\item \code{"aleatoric"}: Use quantile regression loss to capture data-dependent (heteroscedastic) noise.
-\item \code{"epistemic"}: Use MC Dropout with multiple forward passes to capture model uncertainty.
-\item \code{"both"}: Combine both quantile estimation and MC Dropout to estimate total predictive uncertainty.
+\item \code{"none"} (default): no uncertainty estimation.
+\item \code{"aleatoric"}: per-term quantile regression (pinball loss) heads (diagnosis only).
+\item \code{"epistemic"}: MC Dropout for mean uncertainty (CIs)
+\item \code{"both"}: enable both mechanisms.
 }}
 
-\item{alpha}{PI significance level, e.g. \code{0.05} for 95\% PI.}
+\item{alpha}{Significance level for prediction intervals, e.g. \code{0.05} for 95\% coverage.}
 
-\item{forward_passes}{Integer, number of forward passess to run MC-dropout when computing
-epistemic uncertainty (\code{pi_method = "epistemic"}) or both aleatoric and epistemic.}
+\item{forward_passes}{Integer. Number of MC-dropout forward passes used when
+\code{uncertainty_method \%in\% c("epistemic","both")}.}
 
-\item{dropout_rate}{Numeric in (0,1). Dropout probability applied to hidden layers of each
-smooth-term network (when \code{pi_method} is \code{"epistemic"} or \code{"both"}). It serves two purposes:
+\item{dropout_rate}{Dropout probability in smooth-term NNs (0,1).
 \itemize{
-\item During training: acts as a regularizer to prevent overfitting.
-\item During prediction (when \code{pi_method = "epistemic"} or \code{"both"}):
-enables Monte Carlo Dropout sampling to approximate epistemic uncertainty.
-}
-Typical values are between \code{0.1} and \code{0.3}.}
-
-\item{inner_samples}{Integer, number of draws per MC-dropout pass used when combining
-aleatoric and epistemic uncertainty (\code{pi_method = "both"}).
-For each dropout mask, \code{inner_samples} values are generated from the Normal
-approximation defined by the predicted quantile bounds.
-Larger values improve stability of the sampled prediction intervals at the cost of speed.}
+\item During training: acts as a regularizer.
+\item During prediction (if \code{uncertainty_method} includes "epistemic"): enables MC Dropout sampling.
+}}
 
 \item{validation_split}{Optional fraction of training data used for validation.}
 
@@ -103,93 +96,46 @@ Larger values improve stability of the sampled prediction intervals at the cost 
 \item{...}{Additional arguments passed to \code{keras::optimizer_adam()}.}
 }
 \value{
-An object of class \code{"neuralGAM"}, which is a list containing:
+An object of class \code{"neuralGAM"}, a list with elements including:
 \describe{
-\item{muhat}{ Numeric vector of fitted mean predictions on the training data.}
-\item{partial}{ List of partial contributions \eqn{g_j(x_j)} for each smooth term.}
+\item{muhat}{ Numeric vector of fitted mean predictions (training data).}
+\item{partial}{ Data frame of partial contributions \eqn{g_j(x_j)} per smooth term.}
 \item{y}{ Observed response values.}
-\item{eta}{ Numeric vector of the linear predictor \eqn{\eta = \eta_0 + \sum_j g_j(x_j)}.}
-\item{lwr}{ Numeric vector of lower prediction interval bounds if neuralGAM was trained with epistemic/aleatoric unecertainty, otherwise \code{NULL}.}
-\item{upr}{ Numeric vector of upper prediction interval bounds if neuralGAM was trained with epistemic/aleatoric unecertainty, otherwise \code{NULL}.}
-\item{x}{ List of model inputs (covariates) used in training.}
-\item{model}{L ist of fitted Keras models, one per smooth term (plus \code{"linear"} if a linear component is present).}
+\item{eta}{ Linear predictor \eqn{\eta = \eta_0 + \sum_j g_j(x_j)}.}
+\item{lwr,upr}{ Lower/upper prediction interval bounds (response scale), if
+\code{uncertainty_method \%in\% c("aleatoric","both")}. Otherwise \code{NULL}.}
+\item{x}{ Training covariates (inputs).}
+\item{model}{ List of fitted Keras models, one per smooth term (+ \code{"linear"} if present).}
 \item{eta0}{ Intercept estimate \eqn{\eta_0}.}
-\item{family}{ Model family (\code{"gaussian"}, \code{"binomial"}, \code{"poisson"}).}
+\item{family}{ Model family.}
 \item{stats}{ Data frame of training/validation losses per backfitting iteration.}
 \item{mse}{ Training mean squared error.}
-\item{formula}{ The original model formula, as parsed by \code{get_formula_elements()}.}
-\item{history}{ List of Keras training histories for each fitted term.}
-\item{globals}{ List of global default hyperparameters used for architecture and training.}
-\item{alpha}{ PI significance level (only relevant when model was trained with uncertainty).}
-\item{build_pi}{ Logical; whether the model was trained to produce prediction/confidence intervals.}
-\item{pi_method}{ Character string: type of predictive uncertainty estimated}
+\item{formula}{ Parsed model formula (via \code{get_formula_elements()}).}
+\item{history}{ List of Keras training histories per term.}
+\item{globals}{ Global hyperparameter defaults.}
+\item{alpha}{ PI significance level (if trained with uncertainty).}
+\item{build_pi}{ Logical; whether the model was trained with quantile heads.}
+\item{uncertainty_method}{ Type of predictive uncertainty used ("none","aleatoric","epistemic","both").}
+\item{var_epistemic}{ Matrix of per-term epistemic variances (if computed).}
+\item{var_aleatoric}{ Matrix of per-term aleatoric variances (if computed).}
 }
 }
 \description{
-Fits a Generalized Additive Model where the smooth terms are modeled using \code{keras} neural networks.
-The model can optionally output \strong{prediction intervals} (lower bound, upper bound, and mean prediction)
-using a custom quantile loss (\code{make_quantile_loss()}), or a standard single-output point prediction
-using any user-specified loss function.
-'
-}
-\details{
-\strong{Defining per-term architectures}
-You can pass most Keras architecture/training parameters inside each \code{s(...)} call:
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{y ~ s(x1, num_units = 512, activation = "tanh") +
-    s(x2, num_units = c(256,128), kernel_regularizer = regularizer_l2(1e-4))
-}\if{html}{\out{</div>}}
-
-Any term without its own setting will use the global defaults.
-
-**Prediction intervals **
-The package supports three PI mechanisms via \code{pi_method}:
+Fits a Generalized Additive Model where smooth terms are modeled by \code{keras} neural networks.
+In addition to point predictions, the model can optionally estimate \strong{uncertainty bands}:
 \itemize{
-\item \code{"aleatoric"}: per-term networks output \emph{lower}, \emph{upper}, and \emph{mean}
-using a combined quantile loss + mean loss. This captures data noise (heteroscedasticity).
-\item \code{"epistemic"}: per-term networks output a single head for the mean; epistemic
-uncertainty is obtained by Monte Carlo (MC) Dropout at prediction time. The line is the
-deterministic prediction (dropout \emph{off}); the interval comes from empirical
-quantiles across many stochastic forward passes (dropout \emph{on}).
-\item \code{"both"}: combines aleatoric and epistemic by running MC Dropout with the
-3-output (lower/upper/mean) head and combining them via variance decomposition.
-}
-\strong{Centering for partial effects}
-For identifiability, each smooth term \eqn{g_j(x_j)} is mean-centered after fitting. When plotting
-partial effects (e.g., \code{autoplot(ngam, type = "terms", term = "x1")}), the associated PI bounds are shifted by the \emph{same}
-centering constant so that the band and the smooth share the same baseline. (Widths/variances are
-unaffected by this shift.) Full-model predictions on the response scale are not centered.
-
-\strong{MC Dropout controls}
-\itemize{
-\item \code{dropout_rate}: probability of dropping units in hidden layers. Used as a regularizer
-during training and \emph{reused} at prediction time to approximate epistemic uncertainty.
-Practical values are in \code{[0.1, 0.3]}.
-\item \code{forward_passes}: number of stochastic forward passes with dropout \emph{on} when
-\code{pi_method = "epistemic"} or \code{"both"}. Larger values yield smoother, more stable
-envelopes (e.g., 300-1000).
-\item \code{inner_samples}: only used for \code{pi_method = "both"}. For each dropout pass, the
-lower/upper quantiles define a local Normal approximation from which \code{inner_samples}
-draws are taken; final PIs are empirical quantiles of all draws across passes.
+\item \strong{Epistemic uncertainty (confidence bands):} via Monte Carlo Dropout across forward passes.
+\item \strong{Residual quantile bands (diagnostic only):} per-term quantile heads trained on partial residuals \eqn{R_j} via quantile regression,
+available through \code{predict(type="terms", terms_band="residual")}.
 }
 
-\strong{Losses}
+These different layers are exposed at prediction/plotting time:
 \itemize{
-\item Aleatoric: lower/upper heads use the pinball (quantile) loss at \eqn{\alpha/2} and \eqn{1-\alpha/2};
-the mean head uses the user-chosen mean loss (\code{"mse"} or \code{"mae"}).
-\item Epistemic: any mean loss for the single-output head; uncertainty comes from MC Dropout only.
-\item Both: quantile + mean losses (as in aleatoric) and MC Dropout; PIs are built by variance decomposition.
-}
-
-\strong{Coverage control}
-\code{alpha} sets the nominal coverage (e.g., \code{alpha = 0.05} for 95\% PIs). If empirical coverage on a
-validation split deviates from target, a simple global scaling of the half-width (conformal-style
-calibration) can be applied post hoc.
-
-\strong{Point prediction (\code{pi_method == "none"})}
-\itemize{
-\item Output: single value per term (no intervals).
-\item Loss: exactly as given in \code{loss}.
+\item \code{interval="mean_ci"}: confidence bands (epistemic) for the fitted mean \eqn{E[Y|X]}.
+\item \code{interval="none"}: point predictions only.
+\item \code{terms_band="epistemic"}: SE-based bands for smooth functions \eqn{g_j(x_j)}.
+\item \code{terms_band="residual"}: per-term diagnostic bands (not CI/PI).
+\item \code{terms_band="both"}: both epistemic SE bands and residual diagnostic bands.
 }
 }
 \examples{
@@ -235,19 +181,12 @@ ngam <- neuralGAM(
   y ~ s(x1) + x2,
   num_units = 128,
   data = train,
-  pi_method = "aleatoric",
+  uncertainty_method = "aleatoric",
   alpha = 0.05
 )
 # Visualize point prediction and prediction intervals using autoplot:
 autoplot(ngam, which = "terms", term = "x1", intervals = "prediction")
 }
-}
-\references{
-Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
-arXiv preprint arXiv:1412.6980.
-Koenker, R., & Bassett, G. (1978). Regression quantiles.
-\emph{Econometrica}, 46(1), 33-50.
-#'
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.

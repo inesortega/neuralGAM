@@ -58,3 +58,6 @@ ngam <- neuralGAM(
 summary(ngam)
 }
 }
+\author{
+Ines Ortega-Fernandez, Marta Sestelo
+}

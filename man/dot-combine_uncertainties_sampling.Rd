@@ -41,4 +41,7 @@ produces quantile bounds and a mean. For each observation, samples are drawn fro
 Normal approximations of aleatoric noise across passes, yielding a predictive
 mixture distribution.
 }
+\author{
+Ines Ortega-Fernandez, Marta Sestelo
+}
 \keyword{internal}

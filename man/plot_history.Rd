@@ -50,3 +50,6 @@ if (requireNamespace("neuralGAM", quietly = TRUE)) {
   plot_history(model, metric = "val_loss") # Plot only validation loss
 }
 }
+\author{
+Ines Ortega-Fernandez, Marta Sestelo
+}

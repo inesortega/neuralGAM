@@ -71,6 +71,7 @@
 #' @importFrom formula.tools lhs rhs
 #' @importFrom stats as.formula terms.formula
 #' @keywords internal
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 get_formula_elements <- function(formula) {
   y <- formula.tools::lhs(formula)
   rhs <- formula.tools::rhs(formula)

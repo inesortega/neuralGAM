@@ -2,7 +2,7 @@
 #'
 #' @description
 #' Given a fitted Keras submodel and covariate input \code{x}, compute uncertainty
-#' estimates according to the \code{pi_method}.
+#' estimates according to the \code{uncertainty_method}.
 #'
 #' - \code{"epistemic"}: estimates only epistemic variance (via MC Dropout passes).
 #' - \code{"aleatoric"}: uses deterministic quantile heads to estimate aleatoric variance.
@@ -11,7 +11,7 @@
 #'
 #' @param model Fitted Keras model for a single smooth term.
 #' @param x Input covariate matrix (or vector; will be reshaped as needed).
-#' @param pi_method Character; one of \code{"epistemic"}, \code{"aleatoric"}, \code{"both"}, or \code{"none"}.
+#' @param uncertainty_method Character; one of \code{"epistemic"}, \code{"aleatoric"}, \code{"both"}, or \code{"none"}.
 #' @param alpha Coverage level (e.g. 0.05 for 95% bands).
 #' @param forward_passes Integer; number of MC Dropout passes.
 #' @param inner_samples Integer; number of inner samples per pass when combining uncertainties.
@@ -23,10 +23,10 @@
 #'     \item \code{var_aleatoric}: aleatoric variance.
 #'     \item \code{var_total}: total variance (epistemic + aleatoric).
 #'   }
-#'
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @importFrom stats rnorm qnorm
 #' @keywords internal
-.compute_uncertainty <- function(model, x, pi_method, alpha, forward_passes, inner_samples) {
+.compute_uncertainty <- function(model, x, uncertainty_method, alpha, forward_passes) {
 
   # ---- Uncertainty estimation given a fitted model ----
 
@@ -38,7 +38,7 @@
 
   if (is.null(dim(x))) x <- matrix(x, ncol = 1L)
 
-  if (pi_method == "epistemic") {
+  if (uncertainty_method == "epistemic") {
     # Compute only epistemic uncertainty by using `forward_passes` with Dropout layer -> output_dim = 1L
     y_array <- .mc_dropout_forward(model, x, forward_passes, output_dim = 1L)
     y_mat   <- y_array[, , 1]
@@ -54,7 +54,7 @@
       var_aleatoric = NA_real_,
       var_total     = y_var
     )
-  } else if (pi_method == "both") {
+  } else if (uncertainty_method == "both") {
     # MC-dropout forward + aleatoric uncertainty: 3 outputs per pass -> output_dim = 3L
     y_array <- .mc_dropout_forward(model, x, forward_passes, output_dim = 3L)
 
@@ -66,6 +66,7 @@
     combiner = "variance"
 
     preds <- if (combiner == "sampling") {
+      inner_samples = 20  # for compatibility
       .combine_uncertainties_sampling(
         lwr_mat  = lwr_mat,
         upr_mat  = upr_mat,
@@ -83,7 +84,7 @@
         centerline = mu_det[, 3]
       )
     }
-  } else if (pi_method == "aleatoric") {
+  } else if (uncertainty_method == "aleatoric") {
       lwr <- mu_det[, 1]; upr <- mu_det[, 2]; mu <- mu_det[, 3]
       z_val <- stats::qnorm(1 - alpha / 2)
       width <- pmax(upr - lwr, 0)
@@ -123,7 +124,7 @@
 #'   (e.g., 1 = mean only, 3 = quantile heads (lwr, upr, mean)).
 #'
 #' @return A numeric array of shape \code{[passes, n_obs, output_dim]}.
-#'
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @keywords internal
 .mc_dropout_forward <- function(model, x, passes, output_dim) {
   if (!is.matrix(x)) x <- as.matrix(x)
@@ -163,6 +164,7 @@
 #'
 #' @importFrom stats rnorm qnorm
 #' @keywords internal
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 .combine_uncertainties_sampling <- function(lwr_mat, upr_mat, mean_mat,
                                             alpha = 0.05, inner_samples = 50,
                                             centerline = NULL) {
@@ -230,6 +232,7 @@
 #'   - var_total: sum of epistemic and aleatoric variances
 #'
 #' @importFrom stats qnorm
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @keywords internal
 .combine_uncertainties_variance <- function(lwr_mat, upr_mat, mean_mat,
                                             alpha = 0.05, centerline = NULL) {
@@ -305,7 +308,7 @@
 #'   \item Joint across-pass variance captures covariance between smooths.
 #'   \item Combined with parametric variance (assumed independent).
 #' }
-#'
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @keywords internal
 .joint_se_eta_mcdropout <- function(ngam, x,
                                     forward_passes = 300,   # 300–1000 recommended for smooth bands
@@ -380,3 +383,81 @@
   var_eta <- var_ep_joint + var_param
   sqrt(pmax(var_eta, 0))
 }
+
+#' Internal helper: joint predictive interval (both) via variance combiner
+#' @keywords internal
+.joint_pi_both_variance <- function(ngam, x, level = 0.95, forward_passes = 50, verbose = 0) {
+  np_terms <- ngam$formula$np_terms %||% character(0L)
+  p_terms  <- ngam$formula$p_terms %||% character(0L)
+
+  n <- nrow(x)
+  if (!length(np_terms)) return(NULL)  # nothing to do
+
+  passes <- max(2L, as.integer(forward_passes))
+  alpha  <- 1 - level
+
+  # Accumulate per-pass sums of mean/lwr/upr across smooths
+  mean_pass <- matrix(0.0, nrow = passes, ncol = n)
+  lwr_pass  <- matrix(0.0, nrow = passes, ncol = n)
+  upr_pass  <- matrix(0.0, nrow = passes, ncol = n)
+
+  # Deterministic centerline (sum of mean-heads) for better stability
+  centerline <- rep(0.0, n)
+
+  for (tm in np_terms) {
+    mdl <- ngam$model[[tm]]
+    Xtm <- x[[tm]]; if (is.null(dim(Xtm))) Xtm <- matrix(Xtm, ncol = 1L)
+
+    probe <- try(as.matrix(mdl$predict(Xtm, verbose = 0)), silent = TRUE)
+    if (inherits(probe, "try-error") || is.null(dim(probe))) {
+      mu_det <- as.numeric(mdl$predict(Xtm, verbose = 0))
+      mean_pass <- sweep(mean_pass, 2L, mu_det, `+`)
+      centerline <- centerline + mu_det
+      next
+    }
+
+    nout <- ncol(probe)
+    # need 3 heads for aleatoric + mean
+    if (nout < 3L) {
+      # treat as mean-only; contributes no aleatoric width
+      mu_det <- as.numeric(probe[, min(1L, nout)])
+      mean_pass <- sweep(mean_pass, 2L, mu_det, `+`)
+      centerline <- centerline + mu_det
+      next
+    }
+
+    mu_det <- as.numeric(probe[, 3L])
+    lwr_det <- as.numeric(probe[, 1L])
+    upr_det <- as.numeric(probe[, 2L])
+    centerline <- centerline + mu_det
+
+    y_arr <- .mc_dropout_forward(mdl, Xtm, passes = passes, output_dim = 3L)
+    # y_arr: [passes, n, 3] -> split to [passes, n]
+    mean_pass <- mean_pass + y_arr[, , 3L, drop = TRUE]
+    lwr_pass  <- lwr_pass  + y_arr[, , 1L, drop = TRUE]
+    upr_pass  <- upr_pass  + y_arr[, , 2L, drop = TRUE]
+  }
+
+  # Add parametric part to centerline (intercept handled by eta0 later)
+  if (length(p_terms)) {
+    linmod <- ngam$model$linear
+    if (!is.null(linmod)) {
+      lm_data <- x[, p_terms, drop = FALSE]; colnames(lm_data) <- p_terms
+      pr_lin  <- stats::predict(linmod, newdata = lm_data, type = "terms", se.fit = FALSE)
+      # pr_lin is terms-only; add its row-sum
+      centerline <- centerline + rowSums(as.matrix(pr_lin))
+    }
+  }
+  # Finally add intercept
+  centerline <- centerline + (ngam$eta0 %||% 0)
+
+  # Combine across passes using your variance combiner
+  .combine_uncertainties_variance(
+    lwr_mat  = lwr_pass,
+    upr_mat  = upr_pass,
+    mean_mat = mean_pass,
+    alpha    = 1 - level,
+    centerline = centerline
+  )
+}
+

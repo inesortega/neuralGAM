@@ -47,7 +47,7 @@ setup_local_data_and_fit <- function(seed = 42L, n = 1500L) {
     max_iter_backfitting = 3,   # keep small for test speed
     max_iter_ls = 3,
     seed = seed,
-    pi_method = "aleatoric"
+    uncertainty_method = "aleatoric"
   )
 
   list(train = train, fit = ngam)

@@ -125,7 +125,7 @@ test_that("plot.neuralGAM works on real trained models (no stubs)", {
     family = "gaussian",
     learning_rate = 0.01,
     max_iter_backfitting = 2,
-    pi_method = "epistemic", forward_passes = 10,
+    uncertainty_method = "epistemic", forward_passes = 10,
     max_iter_ls = 2,
     seed = 999,
     verbose = 0

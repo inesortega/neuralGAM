@@ -13,7 +13,7 @@
   interval = c("none", "confidence", "prediction", "both"),
   level = 0.95,
   forward_passes = 30,
-  inner_samples = 20,
+  diagnostic_bands = FALSE,
   verbose = 1,
   ...
 )
@@ -38,12 +38,12 @@ Ignored when \code{type = "terms"} (prediction intervals are not defined for ter
 \item{level}{Coverage level for intervals (e.g., \code{0.95}). Default \code{0.95}.}
 
 \item{forward_passes}{Integer; number of MC-dropout forward passes when computing
-epistemic uncertainty (used when \code{pi_method \%in\% c("epistemic","both")}).}
+epistemic uncertainty (used when \code{uncertainty_method \%in\% c("epistemic","both")}).}
 
-\item{inner_samples}{Integer; number of draws per MC-dropout pass used when combining
-aleatoric and epistemic uncertainty (\code{pi_method = "both"}). For each dropout mask,
-\code{inner_samples} draws come from a Normal approximation induced by the predicted
-quantile bounds. Larger values improve stability at the cost of speed.}
+\item{diagnostic_bands}{Logical (default FALSE). When \code{type="terms"}, return
+per-term \emph{aleatoric residual quantile bands} (from quantile heads) for
+diagnostic plotting. These are bands for partial residuals \eqn{R_j} and should
+\emph{not} be interpreted as prediction intervals for \eqn{Y}.}
 
 \item{verbose}{Integer (0/1). Default \code{1}.}
 
@@ -85,7 +85,7 @@ Generate predictions from a fitted \code{neuralGAM} model. Supported types:
 \item Confidence intervals (CI) always reflect epistemic uncertainty about the fitted mean
 (as in \pkg{mgcv}).
 \item Prediction intervals (PI) are available only on the \emph{response scale}, and only if
-the model was trained with \code{pi_method \%in\% c("aleatoric", "both")}.
+the model was trained with \code{uncertainty_method \%in\% c("aleatoric", "both")}.
 }
 
 \strong{Important implementation details}
@@ -97,7 +97,7 @@ aggregated jointly by summing per-pass smooth contributions and taking the
 across-pass variance (implicitly accounting for cross-term covariance). For
 \code{type="terms"}, SEs are returned per smooth.
 \item \emph{Prediction intervals (PIs)} reflect aleatoric uncertainty (and, for
-\code{pi_method="both"}, combined effects). PIs are provided \emph{only} on the
+\code{uncertainty_method="both"}, combined effects). PIs are provided \emph{only} on the
 response scale.
 \item For \code{type = "terms"}, only \emph{confidence intervals for the smooth effect}
 are meaningful (from SEs). \strong{Prediction intervals are not defined for terms}
@@ -138,7 +138,7 @@ mu_new <- predict(ngam0, newdata = newx, type = "response")
 ngam_ale <- neuralGAM(
   y ~ s(x1) + x2 + s(x3),
   data = train, family = "gaussian", num_units = 128,
-  pi_method = "aleatoric", alpha = 0.05
+  uncertainty_method = "aleatoric", alpha = 0.05
 )
 ci_df  <- predict(ngam_ale, type = "response", interval = "confidence", level = 0.95)
 pi_df  <- predict(ngam_ale, type = "response", interval = "prediction", level = 0.95)
@@ -153,9 +153,11 @@ both_new <- predict(ngam_ale, newdata = newx2, type = "response", interval = "bo
 ngam_both <- neuralGAM(
   y ~ s(x1) + x2 + s(x3),
   data = train, family = "gaussian", num_units = 128,
-  pi_method = "both", alpha = 0.05, forward_passes = 50, inner_samples = 20
-)
+  uncertainty_method = "both", alpha = 0.05, forward_passes = 50)
 res_both   <- predict(ngam_both, type = "response", interval = "both")
 link_ci    <- predict(ngam_both, type = "link", interval = "confidence")
 }
+}
+\author{
+Ines Ortega-Fernandez, Marta Sestelo
 }

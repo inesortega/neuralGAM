@@ -16,7 +16,7 @@
 #' @importFrom ggplot2 ggplot labs aes geom_line geom_point facet_wrap
 #' @importFrom rlang .data
 #' @importFrom utils tail
-#'
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @examples
 #' if (requireNamespace("neuralGAM", quietly = TRUE)) {
 #'   set.seed(123)

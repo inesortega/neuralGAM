@@ -38,4 +38,7 @@ from \eqn{0} and \eqn{1} for stability.
 \seealso{
 \code{\link{inv_link}}, \code{\link{link}}
 }
+\author{
+Ines Ortega-Fernandez, Marta Sestelo
+}
 \keyword{internal}

@@ -61,7 +61,7 @@ ngam <- neuralGAM(
   activation = "relu",
   learning_rate = 0.001, bf_threshold = 0.001,
   max_iter_backfitting = 10, max_iter_ls = 10,
-  pi_method = "epistemic", forward_passes = 100,
+  uncertainty_method = "epistemic", forward_passes = 100,
   seed = seed
 )
 
@@ -147,13 +147,13 @@ The `summary()` now prints each smooth terms configuration and the essential par
 
 ### Prediction Intervals
 
-Enable predictive intervals by setting `pi_method` and specifying a confidence level via `alpha`. For epistemic variance, `forward_passes > 100` is recommended.
+Enable predictive intervals by setting `uncertainty_method` and specifying a confidence level via `alpha`. For epistemic variance, `forward_passes > 100` is recommended.
 
 ```r
 ngam <- neuralGAM(
   y ~ s(x1) + s(x2),
   data = train,
-  pi_method = "epistemic",
+  uncertainty_method = "epistemic",
   forward_passes = 100,
   alpha = 0.95,
   num_units = 1024,

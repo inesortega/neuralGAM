@@ -48,4 +48,7 @@ estimated from quantile width via Normal approximation.
 \item Predictive interval = Normal-theory interval around the chosen centerline.
 }
 }
+\author{
+Ines Ortega-Fernandez, Marta Sestelo
+}
 \keyword{internal}

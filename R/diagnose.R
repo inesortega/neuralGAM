@@ -84,7 +84,7 @@
 #'
 #' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @export
-diagnose.neuralGAM <- function(object,
+diagnose <- function(object,
                                data = NULL,
                                response = NULL,
                                qq_method = c("uniform", "simulate", "normal"),

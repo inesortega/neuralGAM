@@ -44,7 +44,7 @@ test_that("print.neuralGAM: validation and output format on a real model", {
   expect_match(out, "Deviance explained\\s*:\\s*[0-9]+\\.[0-9]{2}%")
 
   # Intervals line: either ENABLED(...) or 'disabled'
-  if (isTRUE(m$build_pi) && !is.null(m$alpha) && !is.null(m$pi_method)) {
+  if (isTRUE(m$build_pi) && !is.null(m$alpha) && !is.null(m$uncertainty_method)) {
     expect_match(
       out,
       "Pred\\. / Conf\\. Int\\. \\s*:\\s*ENABLED \\(alpha =\\s*[-+0-9\\.eE]+, method =\\s*.+\\)",

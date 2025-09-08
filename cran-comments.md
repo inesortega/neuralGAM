@@ -1,6 +1,31 @@
 # neuralGAM 2.0.0
 
-This version adds....
+This version introduces major new functionality and internal improvements:
+
+* Adds support for additional distribution family **Poisson**.
+* New **per-term architecture configuration**: hyperparameters (units, activation, initializers, regularizers) can be specified inside `s()`, overriding global defaults.
+* Adds **prediction and confidence intervals ** for fitted models, available for all supported families. Supports epistemic, aleatoric, and combined uncertainty via `uncertainty_method`.
+* Adds **cross-validation support** with `validation_split` and a new helper `plot_history()` function to visualize training and validation losses per backfitting iteration.
+* Improves **summary()** with per-term architecture details, layer configuration, linear coefficients, and compact training history.
+* Adds deviance explained by the model in `summary()` and `print()`. 
+* Enhances **autoplot()**: ggplot2-based diagnostic/effect plots with support for confidence and prediction intervals, continuous vs. factor terms, and response / link visualization.
+* New **diagnosis plots** via `diagnose()` to evaluate fitted models using QQ plots, residual histogram, residuals vs linear predictor and observed vs fitted values.  
+* Internal refactoring for family-specific deviance/link functions, consistent handling of sample weights, and improved numerical stability (clamping in log/exp/probabilities).
+* Expanded **test coverage** for new features: prediction intervals, Poisson/multinomial families, cross-validation, plotting, and per-term configs achieving a 80% test coverage. 
+
+## R CMD check results
+
+── R CMD check results ──── neuralGAM 2.0 ────
+
+❯ checking for future file timestamps ... NOTE
+  unable to verify current time
+
+0 errors ✔ | 0 warnings ✔ | 1 notes ✖
+
+* Local: `R CMD check` passed on Windows 11 (x86_64, mingw32, R 4.4.1 2024-06-14 ucrt).
+* NOTE related to unability of R to verify current time, which is a known issue reported [here](https://forum.posit.co/t/r-devel-r-cmd-check-failing-because-of-time-unable-to-verify-current-time/25589):
+* GitHub Actions: [R-CMD-check](https://github.com/inesortega/neuralGAM/actions/workflows/R-CMD-check.yaml) passes on macOS, Windows, and Ubuntu (R-release, R-devel, R-oldrel).
+* Coverage: >80% test coverage confirmed with [codecov](https://app.codecov.io/gh/inesortega/neuralGAM).
 
 # neuralGAM 1.1.1
 

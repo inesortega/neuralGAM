@@ -10,6 +10,7 @@
 #'
 #' @return Invisibly returns \code{object}. Prints a human-readable summary.
 #' @export
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @examples
 #' \dontrun{
 #' n <- 24500
@@ -86,7 +87,7 @@ summary.neuralGAM <- function(object, ...) {
   cat(sprintf("Deviance explained : %.2f%%\n", attr(.deviance_explained.neuralGAM(ngam), "percent")))
   cat("Train MSE          : ", format(ngam$mse, digits = 6), "\n", sep = "")
   if (isTRUE(build_pi)) {
-    cat("Pred. / Conf. Int. : ENABLED (alpha = ", alpha, ", method = ", ngam$pi_method, ")\n", sep = "")
+    cat("Pred. / Conf. Int. : ENABLED (alpha = ", alpha, ", method = ", ngam$uncertainty_method, ")\n", sep = "")
   } else {
     cat("Pred. / Conf. Int. : disabled\n")
   }

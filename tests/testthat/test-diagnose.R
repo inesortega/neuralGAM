@@ -1,6 +1,6 @@
 # tests/testthat/test-diagnose-neuralGAM.R
 
-test_that("diagnose.neuralGAM returns a patchwork object (gaussian, fast)", {
+test_that("diagnose returns a patchwork object (gaussian, fast)", {
   skip_if_not_installed("neuralGAM")
   skip_if_not_installed("keras")
   skip_if_not_installed("ggplot2")
@@ -32,7 +32,7 @@ test_that("diagnose.neuralGAM returns a patchwork object (gaussian, fast)", {
 
   # default qq_method = "uniform" with tiny n_uniform for speed
   expect_no_error({
-    p <- diagnose.neuralGAM(
+    p <- diagnose(
       m,
       qq_method   = "uniform",
       n_uniform   = 50,     # small, fast
@@ -46,7 +46,7 @@ test_that("diagnose.neuralGAM returns a patchwork object (gaussian, fast)", {
   })
 })
 
-test_that("diagnose.neuralGAM works with qq_method='simulate' and 'normal'", {
+test_that("diagnose works with qq_method='simulate' and 'normal'", {
   skip_if_not_installed("neuralGAM")
   skip_if_not_installed("patchwork")
 
@@ -69,7 +69,7 @@ test_that("diagnose.neuralGAM works with qq_method='simulate' and 'normal'", {
 
   # qq_method = "simulate" with small n_simulate (fast)
   expect_no_error({
-    p_sim <- diagnose.neuralGAM(
+    p_sim <- diagnose(
       m,
       qq_method  = "simulate",
       n_simulate = 20,
@@ -81,7 +81,7 @@ test_that("diagnose.neuralGAM works with qq_method='simulate' and 'normal'", {
 
   # qq_method = "normal" (fastest)
   expect_no_error({
-    p_norm <- diagnose.neuralGAM(
+    p_norm <- diagnose(
       m,
       qq_method = "normal",
       hist_bins = 12
@@ -90,7 +90,7 @@ test_that("diagnose.neuralGAM works with qq_method='simulate' and 'normal'", {
   })
 })
 
-test_that("diagnose.neuralGAM accepts external data + response and quantile residuals", {
+test_that("diagnose accepts external data + response and quantile residuals", {
   skip_if_not_installed("neuralGAM")
   skip_if_not_installed("patchwork")
 
@@ -120,7 +120,7 @@ test_that("diagnose.neuralGAM accepts external data + response and quantile resi
 
   # Use out-of-sample data and quantile residuals (works for Gaussian too)
   expect_no_error({
-    p <- diagnose.neuralGAM(
+    p <- diagnose(
       m,
       data = dat_te,
       response = "y",

@@ -72,7 +72,7 @@ print.neuralGAM <- function(x, ...) {
     cat(sprintf("Deviance explained : %.2f%%\n", attr(.deviance_explained.neuralGAM(ngam), "percent")))
     cat("Train MSE          : ", format(ngam$mse, digits = 6), "\n", sep = "")
     if (isTRUE(build_pi)) {
-      cat("Pred. / Conf. Int. : ENABLED (alpha = ", alpha, ", method = ", ngam$pi_method, ")\n", sep = "")
+      cat("Pred. / Conf. Int. : ENABLED (alpha = ", alpha, ", method = ", ngam$uncertainty_method, ")\n", sep = "")
     } else {
       cat("Pred. / Conf. Int. : disabled\n")
     }

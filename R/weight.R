@@ -8,6 +8,7 @@
 #' \code{"gaussian"}, \code{"binomial"}, or \code{"poisson"}.
 #' @return computed weights for the Local Scoring algorithm
 #' according to the \code{"family"} distribution
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @keywords internal
 weight <- function(w, muhat, family) {
 

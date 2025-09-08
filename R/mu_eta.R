@@ -27,7 +27,7 @@
 #'   the derivative \eqn{d\mu/d\eta}.
 #'
 #' @seealso \code{\link{inv_link}}, \code{\link{link}}
-#'
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @keywords internal
 mu_eta <- function(family, eta) {
   if (missing(eta)) stop('Argument "eta" is missing, with no default')

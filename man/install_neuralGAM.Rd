@@ -15,3 +15,6 @@ given by:
 
 \code{tools::R_user_dir('neuralGAM', 'cache')}
 }
+\author{
+Ines Ortega-Fernandez, Marta Sestelo
+}

@@ -17,9 +17,10 @@
 #'   \item For \code{type = "response"}, SEs are mapped by the delta method:
 #'         \eqn{se_\mu = |d\mu/d\eta| \cdot se_\eta}.
 #'   \item Confidence intervals (CI) always reflect epistemic uncertainty about the fitted mean
-#'         (as in \pkg{mgcv}).
+#'         (as in mgcv).
 #'   \item Prediction intervals (PI) are available only on the \emph{response scale}, and only if
-#'         the model was trained with \code{pi_method \%in\% c("aleatoric", "both")}.
+#'         the model was trained with \code{uncertainty_method \%in\% c("aleatoric", "both")}. On the per-term scale
+#'         quantile bands are available for diagnosis purposes only.
 #' }
 #'
 #' \strong{Important implementation details}
@@ -31,7 +32,7 @@
 #'         across-pass variance (implicitly accounting for cross-term covariance). For
 #'         \code{type="terms"}, SEs are returned per smooth.
 #'   \item \emph{Prediction intervals (PIs)} reflect aleatoric uncertainty (and, for
-#'         \code{pi_method="both"}, combined effects). PIs are provided \emph{only} on the
+#'         \code{uncertainty_method="both"}, combined effects). PIs are provided \emph{only} on the
 #'         response scale.
 #'   \item For \code{type = "terms"}, only \emph{confidence intervals for the smooth effect}
 #'         are meaningful (from SEs). \strong{Prediction intervals are not defined for terms}
@@ -52,11 +53,11 @@
 #'   Ignored when \code{type = "terms"} (prediction intervals are not defined for terms).
 #' @param level Coverage level for intervals (e.g., \code{0.95}). Default \code{0.95}.
 #' @param forward_passes Integer; number of MC-dropout forward passes when computing
-#'   epistemic uncertainty (used when \code{pi_method \%in\% c("epistemic","both")}).
-#' @param inner_samples Integer; number of draws per MC-dropout pass used when combining
-#'   aleatoric and epistemic uncertainty (\code{pi_method = "both"}). For each dropout mask,
-#'   \code{inner_samples} draws come from a Normal approximation induced by the predicted
-#'   quantile bounds. Larger values improve stability at the cost of speed.
+#'   epistemic uncertainty (used when \code{uncertainty_method \%in\% c("epistemic","both")}).
+#' @param diagnostic_bands Logical (default FALSE). When \code{type="terms"}, return
+#'   per-term \emph{aleatoric residual quantile bands} (from quantile heads) for
+#'   diagnostic plotting. These are bands for partial residuals \eqn{R_j} and should
+#'   \emph{not} be interpreted as prediction intervals for \eqn{Y}.
 #' @param verbose Integer (0/1). Default \code{1}.
 #' @param \ldots Other options (passed on to internal predictors).
 #'
@@ -79,7 +80,7 @@
 #'
 #' @importFrom stats predict qnorm
 #' @export
-#'
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @examples
 #' \dontrun{
 #' set.seed(42)
@@ -112,7 +113,7 @@
 #' ngam_ale <- neuralGAM(
 #'   y ~ s(x1) + x2 + s(x3),
 #'   data = train, family = "gaussian", num_units = 128,
-#'   pi_method = "aleatoric", alpha = 0.05
+#'   uncertainty_method = "aleatoric", alpha = 0.05
 #' )
 #' ci_df  <- predict(ngam_ale, type = "response", interval = "confidence", level = 0.95)
 #' pi_df  <- predict(ngam_ale, type = "response", interval = "prediction", level = 0.95)
@@ -127,8 +128,7 @@
 #' ngam_both <- neuralGAM(
 #'   y ~ s(x1) + x2 + s(x3),
 #'   data = train, family = "gaussian", num_units = 128,
-#'   pi_method = "both", alpha = 0.05, forward_passes = 50, inner_samples = 20
-#' )
+#'   uncertainty_method = "both", alpha = 0.05, forward_passes = 50)
 #' res_both   <- predict(ngam_both, type = "response", interval = "both")
 #' link_ci    <- predict(ngam_both, type = "link", interval = "confidence")
 #' }
@@ -139,7 +139,7 @@ predict.neuralGAM <- function(object,
                               se.fit = FALSE,
                               interval = c("none","confidence","prediction","both"),
                               level = 0.95, forward_passes = 30,
-                              inner_samples = 20,
+                              diagnostic_bands = FALSE,
                               verbose = 1, ...) {
   stopifnot(inherits(object, "neuralGAM"))
   type     <- match.arg(type)
@@ -183,8 +183,9 @@ predict.neuralGAM <- function(object,
   term_fit <- matrix(0, n, p, dimnames = list(NULL, all_terms))
   var_epi  <- matrix(NA_real_, n, p, dimnames = list(NULL, all_terms))
   var_ale  <- matrix(NA_real_, n, p, dimnames = list(NULL, all_terms))
-  lwr_mat  <- matrix(NA_real_, n, p, dimnames = list(NULL, all_terms))
-  upr_mat  <- matrix(NA_real_, n, p, dimnames = list(NULL, all_terms))
+
+  lwr_abs  <- matrix(NA_real_, n, p, dimnames = list(NULL, all_terms))
+  upr_abs  <- matrix(NA_real_, n, p, dimnames = list(NULL, all_terms))
 
   if (use_cache) {
     term_fit[,] <- as.matrix(ngam$partial[, all_terms, drop = FALSE])
@@ -196,8 +197,8 @@ predict.neuralGAM <- function(object,
       var_ale[,] <- as.matrix(ngam$var_aleatoric[, all_terms, drop = FALSE])
     }
     if (isTRUE(ngam$build_pi)) {
-      lwr_mat[,] <- as.matrix(ngam$lwr[, all_terms, drop = FALSE])
-      upr_mat[,] <- as.matrix(ngam$upr[, all_terms, drop = FALSE])
+      lwr_abs[,] <- as.matrix(ngam$lwr[, all_terms, drop = FALSE])
+      upr_abs[,] <- as.matrix(ngam$upr[, all_terms, drop = FALSE])
     }
 
   } else {
@@ -226,15 +227,14 @@ predict.neuralGAM <- function(object,
           want_pi = need_pi,     # deterministic lwr/upr for aleatoric models
           want_se = need_se,     # MC for epistemic variance
           level = level, forward_passes = forward_passes,
-          inner_samples = inner_samples, verbose = verbose
+          verbose = verbose
         )
         term_fit[, tm] <- pt$fit
-        var_epi[, tm]  <- pt$var_epistemic              # always fill for SEs
-
-        if (need_pi) {                                  # only PI ingredients when requested
+        var_epi[, tm]  <- pt$var_epistemic
+        if (need_pi) {
           var_ale[, tm] <- pt$var_aleatoric
-          lwr_mat[, tm] <- pt$lwr
-          upr_mat[, tm] <- pt$upr
+          lwr_abs[, tm] <- pt$lwr_abs
+          upr_abs[, tm] <- pt$upr_abs
         }
       }
     }
@@ -276,7 +276,6 @@ predict.neuralGAM <- function(object,
             want_se = TRUE,         # MC-dropout
             level = level,
             forward_passes = forward_passes,
-            inner_samples = inner_samples,
             verbose = verbose
           )
           var_epi[miss, tm] <- pt$var_epistemic[miss]
@@ -313,9 +312,30 @@ predict.neuralGAM <- function(object,
   # ---- type="terms" ----
   if (type == "terms") {
     fit_terms <- term_fit[, sel_terms, drop = FALSE]
-    if (!se.fit || interval != "none") return(fit_terms)
-    se_terms <- sqrt(pmax(var_epi[, sel_terms, drop = FALSE], 0))
-    return(list(fit = fit_terms, se.fit = se_terms))
+
+    # default (legacy) behavior: no bands requested
+    if (!diagnostic_bands && (!se.fit || interval != "none")) {
+      return(fit_terms)
+    }
+
+    # when SE requested, compute epistemic SEs
+    se_terms <- if (isTRUE(se.fit)) sqrt(pmax(var_epi[, sel_terms, drop = FALSE], 0)) else NULL
+
+    # expose aleatoric residual bands if asked (diagnostic only)
+    lwr_ale_terms <- upr_ale_terms <- NULL
+    if (isTRUE(diagnostic_bands)) {
+      # These are quantiles for partial residuals R_j, not PIs for Y
+      # if diagnostic_bands are requested, caller gets fit/se.fit/lwr_ale/upr_ale matrices
+      lwr_ale_terms <- lwr_abs[, sel_terms, drop = FALSE] - term_fit[, sel_terms, drop = FALSE]
+      upr_ale_terms <- upr_abs[, sel_terms, drop = FALSE] - term_fit[, sel_terms, drop = FALSE]
+    }
+
+    # Return a list so autoplot (and users) can access what's available
+    out <- list(fit = fit_terms)
+    if (!is.null(se_terms))        out$se.fit   <- se_terms
+    if (!is.null(lwr_ale_terms))   out$lwr_ale  <- lwr_ale_terms
+    if (!is.null(upr_ale_terms))   out$upr_ale  <- upr_ale_terms
+    return(out)
   }
   # ---- type="link" ----
   if (type == "link") {
@@ -362,24 +382,40 @@ predict.neuralGAM <- function(object,
   pi_available <- FALSE
   lwr_pi <- upr_pi <- rep(NA_real_, length(mu))
 
-  if (isTRUE(ngam$build_pi) && any(is.finite(lwr_mat)) && any(is.finite(upr_mat))) {
-    # Preferred: sum per-term bounds on link and inverse-link
-    eta_lwr <- eta0 + rowSums(lwr_mat, na.rm = FALSE)
-    eta_upr <- eta0 + rowSums(upr_mat, na.rm = FALSE)
-    lwr_pi  <- inv_link(ngam$family, eta_lwr)
-    upr_pi  <- inv_link(ngam$family, eta_upr)
-    pi_available <- any(is.finite(lwr_pi) | is.finite(upr_pi))
-  } else if (isTRUE(ngam$build_pi) && any(is.finite(var_ale))) {
-    # Fallback: Normal approx using total variance (epistemic + aleatoric) on link
-    row_var_ale  <- .row_sum_var(var_ale)
-    row_var_total <- row_var_epi + row_var_ale  # aleatoric contributes to PI width
-    sd_tot <- sqrt(pmax(row_var_total, 0))
-    z      <- stats::qnorm(1 - (1 - level)/2)
-    eta_lwr <- eta - z * sd_tot
-    eta_upr <- eta + z * sd_tot
-    lwr_pi  <- inv_link(ngam$family, eta_lwr)
-    upr_pi  <- inv_link(ngam$family, eta_upr)
-    pi_available <- any(is.finite(lwr_pi) | is.finite(upr_pi))
+  pi_available <- FALSE
+  lwr_pi <- upr_pi <- rep(NA_real_, length(mu))
+
+  if (isTRUE(ngam$build_pi)) {
+    if (identical(tolower(ngam$uncertainty_method), "both")) {
+      # Joint combination across terms and passes
+      joint <- .joint_pi_both_variance(ngam, x, level = level, forward_passes = forward_passes)
+      if (!is.null(joint)) {
+        lwr_pi <- inv_link(ngam$family, joint$lwr)
+        upr_pi <- inv_link(ngam$family, joint$upr)
+        pi_available <- any(is.finite(lwr_pi) | is.finite(upr_pi))
+      }
+    } else {
+      # Aleatoric only: use absolute per-term bounds (still an approximation)
+      if (any(is.finite(lwr_abs)) && any(is.finite(upr_abs))) {
+        eta_lwr <- eta0 + rowSums(lwr_abs, na.rm = FALSE)
+        eta_upr <- eta0 + rowSums(upr_abs, na.rm = FALSE)
+        lwr_pi  <- inv_link(ngam$family, eta_lwr)
+        upr_pi  <- inv_link(ngam$family, eta_upr)
+        pi_available <- any(is.finite(lwr_pi) | is.finite(upr_pi))
+      } else if (any(is.finite(var_ale))) {
+        # Fallback: Normal approximation using summed variances
+        row_var_epi   <- se_eta^2
+        row_var_ale   <- .row_sum_var(var_ale)
+        row_var_total <- row_var_epi + row_var_ale
+        sd_tot <- sqrt(pmax(row_var_total, 0))
+        z      <- stats::qnorm(1 - (1 - level)/2)
+        eta_lwr <- eta - z * sd_tot
+        eta_upr <- eta + z * sd_tot
+        lwr_pi  <- inv_link(ngam$family, eta_lwr)
+        upr_pi  <- inv_link(ngam$family, eta_upr)
+        pi_available <- any(is.finite(lwr_pi) | is.finite(upr_pi))
+      }
+    }
   }
 
   if (interval == "confidence") {
@@ -398,128 +434,50 @@ predict.neuralGAM <- function(object,
 }
 
 .ngam_predict_term <- function(ngam, xvec, term_name,
-                               want_pi = FALSE,     # return PI ingredients/bounds
-                               want_se = FALSE,     # compute epistemic variance
+                               want_pi = FALSE,
+                               want_se = FALSE,
                                verbose = 1, level = 0.95,
-                               forward_passes = 30, inner_samples = 20) {
+                               forward_passes = 30) {
 
   mdl <- ngam$model[[term_name]]
   X <- xvec; if (is.null(dim(X))) X <- matrix(X, ncol = 1L)
 
   alpha <- 1 - level
-  pm <- ngam$pi_method %||% "none"
+  pm <- ngam$uncertainty_method
 
-  # deterministic forward (dropout OFF) to get a clean centerline
   y_det <- try(as.matrix(mdl$predict(X, verbose = 0)), silent = TRUE)
   if (inherits(y_det, "try-error") || is.null(dim(y_det))) {
     fit <- as.numeric(mdl$predict(X, verbose = 0))
     return(list(fit = fit,
                 var_epistemic = rep(NA_real_, length(fit)),
                 var_aleatoric = rep(NA_real_, length(fit)),
-                lwr = rep(NA_real_, length(fit)),
-                upr = rep(NA_real_, length(fit))))
+                # absolute bounds are NA in this fallback
+                lwr_abs = rep(NA_real_, length(fit)),
+                upr_abs = rep(NA_real_, length(fit))))
   }
 
   nout <- ncol(y_det)
   mean_col <- if (nout >= 3L) 3L else 1L
-  mu_det <- y_det[, mean_col]
+  mu_det <- as.numeric(y_det[, mean_col])
 
-  # ---------- CASE A: pm == "both" ----------
-  if (pm == "both") {
-    # Need per-pass 3-head outputs to be consistent with .combine_uncertainties_sampling
-    passes <- max(2L, forward_passes)
-    # y_arr: [passes, n_obs, nout]
-    y_arr  <- .mc_dropout_forward(mdl, X, passes = passes, output_dim = max(nout, 3L))
+  preds <- .compute_uncertainty(mdl, X, pm, alpha, forward_passes)
 
-    # If the model really has <3 outputs, fall back gracefully
-    if (length(dim(y_arr)) == 3L && dim(y_arr)[3] >= 3L) {
-      lwr_mat  <- y_arr[, , 1, drop = FALSE]
-      upr_mat  <- y_arr[, , 2, drop = FALSE]
-      mean_mat <- y_arr[, , 3, drop = FALSE]
-      # squeeze to matrices: [passes, n]
-      lwr_mat  <- lwr_mat[, , 1]
-      upr_mat  <- upr_mat[, , 1]
-      mean_mat <- mean_mat[, , 1]
-
-      # Combine via mixture sampling; centerline = deterministic mean head
-      comb <- .combine_uncertainties_sampling(
-        lwr_mat = lwr_mat, upr_mat = upr_mat, mean_mat = mean_mat,
-        alpha = alpha, inner_samples = inner_samples,
-        centerline = mu_det
-      )
-      # fit: deterministic mean head for smooth plotting
-      return(list(
-        fit = as.numeric(mu_det),
-        var_epistemic = as.numeric(comb$var_epistemic),
-        var_aleatoric = as.numeric(comb$var_aleatoric),
-        lwr = as.numeric(comb$lwr),
-        upr = as.numeric(comb$upr)
-      ))
-    } else {
-      # Fallback if 3-head not available per pass:
-      # - Epistemic from MC on single mean head
-      # - Aleatoric from deterministic 2-quantile heads (if provided)
-      passes <- max(2L, forward_passes)
-      y_mean <- .mc_dropout_forward(mdl, X, passes = passes, output_dim = mean_col)
-      y_mat  <- if (length(dim(y_mean)) == 2L) y_mean else y_mean[, , mean_col, drop = TRUE]
-      var_ep <- matrixStats::colVars(y_mat)
-
-      lwr_det <- upr_det <- rep(NA_real_, length(mu_det))
-      var_ale <- rep(NA_real_, length(mu_det))
-      if (nout >= 2L) {
-        lwr_det <- y_det[, 1]; upr_det <- y_det[, 2]
-        z <- stats::qnorm(1 - alpha/2)
-        width <- pmax(upr_det - lwr_det, 0)
-        var_ale <- if (z > 0) (width/(2*z))^2 else rep(NA_real_, length(width))
-      }
-      return(list(
-        fit = as.numeric(mu_det),
-        var_epistemic = as.numeric(var_ep),
-        var_aleatoric = as.numeric(var_ale),
-        lwr = as.numeric(lwr_det),
-        upr = as.numeric(upr_det)
-      ))
-    }
-  }
-
-  # ---------- CASE B: pm == "aleatoric" ----------
-  if (pm == "aleatoric") {
-    lwr_det <- upr_det <- rep(NA_real_, length(mu_det))
-    var_ale <- rep(NA_real_, length(mu_det))
-    if (nout >= 3L) {
-      lwr_det <- y_det[, 1]; upr_det <- y_det[, 2]
-      z <- stats::qnorm(1 - alpha/2)
-      width <- pmax(upr_det - lwr_det, 0)
-      var_ale <- if (z > 0) (width/(2*z))^2 else rep(NA_real_, length(width))
-    }
-    return(list(
-      fit = as.numeric(mu_det),
-      var_epistemic = rep(NA_real_, length(mu_det)),
-      var_aleatoric = as.numeric(var_ale),
-      lwr = as.numeric(lwr_det),
-      upr = as.numeric(upr_det)
-    ))
-  }
-
-  # ---------- CASE C: pm == "epistemic" or "none" ----------
-  if (isTRUE(want_se)) {
-    passes <- max(2L, forward_passes)
-    y_arr  <- .mc_dropout_forward(mdl, X, passes = passes, output_dim = mean_col)
-    y_mat  <- if (length(dim(y_arr)) == 2L) y_arr else y_arr[, , mean_col, drop = TRUE]
-    var_ep <- matrixStats::colVars(y_mat)
-  } else {
-    var_ep <- rep(NA_real_, length(mu_det))
+  # Absolute bounds (on the term scale)
+  lwr_abs <- upr_abs <- rep(NA_real_, length(mu_det))
+  if (want_pi) {
+    # When aleatoric/both enabled, .compute_uncertainty returns absolute lwr/upr
+    lwr_abs <- as.numeric(preds$lwr)
+    upr_abs <- as.numeric(preds$upr)
   }
 
   list(
-    fit = as.numeric(mu_det),
-    var_epistemic = as.numeric(var_ep),
-    var_aleatoric = rep(NA_real_, length(mu_det)),
-    lwr = rep(NA_real_, length(mu_det)),
-    upr = rep(NA_real_, length(mu_det))
+    fit = mu_det,
+    var_epistemic = as.numeric(preds$var_epistemic),
+    var_aleatoric = as.numeric(preds$var_aleatoric),
+    lwr_abs = lwr_abs,   # absolute term quantiles
+    upr_abs = upr_abs
   )
 }
-
 
 # row-sum variance with NA propagation
 .row_sum_var <- function(var_mat) {

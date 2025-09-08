@@ -24,4 +24,7 @@ Run \code{passes} stochastic forward passes with Dropout active at prediction ti
 Each pass samples a dropout mask and produces predictions, simulating epistemic
 uncertainty.
 }
+\author{
+Ines Ortega-Fernandez, Marta Sestelo
+}
 \keyword{internal}

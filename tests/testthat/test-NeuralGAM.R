@@ -60,7 +60,7 @@ test_that("neuralGAM throws an error for incompatible loss with PI aleatoric", {
   skip_if_no_keras()
   formula <- y ~ s(x)
   data <- data.frame(x = 1:10, y = rnorm(10))
-  expect_error(neuralGAM(formula, data, num_units = 10, pi_method = "aleatoric", loss = "binary_crossentropy"))
+  expect_error(neuralGAM(formula, data, num_units = 10, uncertainty_method = "aleatoric", loss = "binary_crossentropy"))
 })
 
 test_that("neuralGAM throws an error for invalid kernel_initializer", {
@@ -90,8 +90,8 @@ test_that("neuralGAM throws an error for invalid alpha", {
   skip_if_no_keras()
   formula <- y ~ s(x)
   data <- data.frame(x = 1:10, y = rnorm(10))
-  expect_error(neuralGAM(formula, data, num_units = 10, pi_method = "aleatoric", alpha = -0.1))
-  expect_error(neuralGAM(formula, data, num_units = 10, pi_method = "aleatoric", alpha = 1.5))
+  expect_error(neuralGAM(formula, data, num_units = 10, uncertainty_method = "aleatoric", alpha = -0.1))
+  expect_error(neuralGAM(formula, data, num_units = 10, uncertainty_method = "aleatoric", alpha = 1.5))
 })
 
 test_that("neuralGAM throws an error for invalid validation_split", {
@@ -239,7 +239,7 @@ test_that("neuralGAM runs OK with Prediction Intervals and gaussian response", {
   set.seed(seed)
   data <- data.frame(x = 1:10, y = rnorm(10))
 
-  ngam <- neuralGAM(formula, data, num_units = 10, seed = seed, pi_method = "aleatoric", alpha = 0.05)
+  ngam <- neuralGAM(formula, data, num_units = 10, seed = seed, uncertainty_method = "aleatoric", alpha = 0.05)
   expect_equal(round(ngam$mse,4), 0.7079)
 })
 
@@ -260,7 +260,7 @@ test_that("neuralGAM runs OK with Prediction Intervals and binomial response", {
                     num_units = 10,
                     seed = seed,
                     family = "binomial",
-                    pi_method = "aleatoric",
+                    uncertainty_method = "aleatoric",
                     alpha = 0.05)
 
   expect_equal(round(ngam$mse,4), 0.2105)
@@ -284,7 +284,7 @@ test_that("neuralGAM runs OK with Prediction Intervals and poisson response", {
                     seed = seed,
                     family = "poisson", max_iter_backfitting = 1,
                     max_iter_ls = 1,
-                    pi_method = "aleatoric",
+                    uncertainty_method = "aleatoric",
                     alpha = 0.05)
 
   expect_equal(round(ngam$mse,4), 4.4227)
@@ -308,7 +308,7 @@ test_that("neuralGAM runs OK with mixed neural-linear model architecture and PI"
     seed = seed,
     max_iter_backfitting = 1,
     max_iter_ls = 1,
-    pi_method = "aleatoric",
+    uncertainty_method = "aleatoric",
     alpha = 0.05
   )
   expect_equal(round(ngam$mse,4), 0.5234)
@@ -348,12 +348,12 @@ test_that("neuralGAM accepts build_pi=TRUE with supported losses", {
   seed <- 10
   data <- data.frame(x = 1:10, y = rnorm(10))
 
-  ngam <- neuralGAM(formula, data, num_units = 5, seed = seed, max_iter_backfitting = 1, max_iter_ls = 1, pi_method = "aleatoric",
+  ngam <- neuralGAM(formula, data, num_units = 5, seed = seed, max_iter_backfitting = 1, max_iter_ls = 1, uncertainty_method = "aleatoric",
                     alpha = 0.05, loss = "mse")
 
   expect_equal(round(ngam$mse, 4), 0.8739)
 
-  ngam <- neuralGAM(formula, data, num_units = 5, seed = seed, max_iter_backfitting = 1, max_iter_ls = 1, pi_method = "aleatoric",
+  ngam <- neuralGAM(formula, data, num_units = 5, seed = seed, max_iter_backfitting = 1, max_iter_ls = 1, uncertainty_method = "aleatoric",
                     alpha = 0.05, loss = "mae")
 
   expect_equal(round(ngam$mse, 4), 0.8739)
@@ -436,7 +436,7 @@ test_that("neuralGAM accepts per-term num_units and default value for other smoo
 # ----------------------------
 
 
-.fit_ngam_with_pi <- function(pi_method,
+.fit_ngam_with_pi <- function(uncertainty_method,
                               family = "gaussian",
                               seed = 10,
                               n = 10,
@@ -470,7 +470,7 @@ test_that("neuralGAM accepts per-term num_units and default value for other smoo
       max_iter_backfitting = 1,
       max_iter_ls = 1,
       family = family,
-      pi_method = pi_method,
+      uncertainty_method = uncertainty_method,
       alpha = alpha
     ),
     silent = TRUE
@@ -478,8 +478,8 @@ test_that("neuralGAM accepts per-term num_units and default value for other smoo
 
   if (inherits(res, "try-error")) {
     msg <- as.character(res)
-    if (grepl("pi_method|unsupported|not supported|invalid.*pi", msg, ignore.case = TRUE)) {
-      skip(paste0("pi_method='", pi_method, "' not supported in this build"))
+    if (grepl("uncertainty_method|unsupported|not supported|invalid.*pi", msg, ignore.case = TRUE)) {
+      skip(paste0("uncertainty_method='", uncertainty_method, "' not supported in this build"))
     } else {
       stop(res)
     }
@@ -488,63 +488,63 @@ test_that("neuralGAM accepts per-term num_units and default value for other smoo
   res
 }
 
-test_that("neuralGAM rejects invalid pi_method", {
+test_that("neuralGAM rejects invalid uncertainty_method", {
   skip_if_no_keras()
   formula <- y ~ s(x)
   data <- data.frame(x = 1:10, y = rnorm(10))
   expect_error(
     neuralGAM(formula, data,
               num_units = 5,
-              pi_method = "definitely_not_a_method",
+              uncertainty_method = "definitely_not_a_method",
               alpha = 0.05)
   )
 })
 
 # Create a list of accepted PI methods.
 # Tests will auto-skip any that aren't implemented in the installed version.
-pi_methods_to_check <- c(
+uncertainty_methods_to_check <- c(
   "aleatoric",
   "epistemic",
   "both"
   )
 
-test_that("neuralGAM runs OK with various pi_methods (gaussian)", {
+test_that("neuralGAM runs OK with various uncertainty_methods (gaussian)", {
   skip_if_no_keras()
-  for (m in pi_methods_to_check) {
+  for (m in uncertainty_methods_to_check) {
     ngam <- .fit_ngam_with_pi(m, family = "gaussian", alpha = 0.05)
-    expect_true(inherits(ngam, "neuralGAM"), info = paste("pi_method =", m))
-    expect_true(is.numeric(ngam$mse) && length(ngam$mse) == 1, info = paste("pi_method =", m))
+    expect_true(inherits(ngam, "neuralGAM"), info = paste("uncertainty_method =", m))
+    expect_true(is.numeric(ngam$mse) && length(ngam$mse) == 1, info = paste("uncertainty_method =", m))
   }
 })
 
-test_that("neuralGAM runs OK with various pi_methods (binomial)", {
+test_that("neuralGAM runs OK with various uncertainty_methods (binomial)", {
   skip_if_no_keras()
-  for (m in pi_methods_to_check) {
+  for (m in uncertainty_methods_to_check) {
     ngam <- .fit_ngam_with_pi(m, family = "binomial", alpha = 0.05)
-    expect_true(inherits(ngam, "neuralGAM"), info = paste("pi_method =", m))
-    expect_true(is.numeric(ngam$mse) && length(ngam$mse) == 1, info = paste("pi_method =", m))
+    expect_true(inherits(ngam, "neuralGAM"), info = paste("uncertainty_method =", m))
+    expect_true(is.numeric(ngam$mse) && length(ngam$mse) == 1, info = paste("uncertainty_method =", m))
   }
 })
 
-test_that("neuralGAM runs OK with various pi_methods (poisson)", {
+test_that("neuralGAM runs OK with various uncertainty_methods (poisson)", {
   skip_if_no_keras()
-  for (m in pi_methods_to_check) {
+  for (m in uncertainty_methods_to_check) {
     ngam <- .fit_ngam_with_pi(m, family = "poisson", alpha = 0.05)
-    expect_true(inherits(ngam, "neuralGAM"), info = paste("pi_method =", m))
-    expect_true(is.numeric(ngam$mse) && length(ngam$mse) == 1, info = paste("pi_method =", m))
+    expect_true(inherits(ngam, "neuralGAM"), info = paste("uncertainty_method =", m))
+    expect_true(is.numeric(ngam$mse) && length(ngam$mse) == 1, info = paste("uncertainty_method =", m))
   }
 })
 
 # Sanity check that changing alpha has an effect for quantile-based methods
 # (This does not assert exact numeric values; it only checks the model runs and
 # that training with a different alpha still returns a valid object.)
-test_that("neuralGAM quantile-like pi_methods accept different alpha values", {
+test_that("neuralGAM quantile-like uncertainty_methods accept different alpha values", {
   skip_if_no_keras()
   for (m in c("aleatoric", "both")) {
     ngam_a <- .fit_ngam_with_pi(m, family = "gaussian", alpha = 0.90)
     ngam_b <- .fit_ngam_with_pi(m, family = "gaussian", alpha = 0.50)
-    expect_true(inherits(ngam_a, "neuralGAM"), info = paste("pi_method =", m, "alpha=0.90"))
-    expect_true(inherits(ngam_b, "neuralGAM"), info = paste("pi_method =", m, "alpha=0.50"))
+    expect_true(inherits(ngam_a, "neuralGAM"), info = paste("uncertainty_method =", m, "alpha=0.90"))
+    expect_true(inherits(ngam_b, "neuralGAM"), info = paste("uncertainty_method =", m, "alpha=0.50"))
   }
 })
 
@@ -563,15 +563,15 @@ test_that("predict(neuralGAM) returns lower/upper/mean and variances when built 
               seed = 10,
               max_iter_backfitting = 1,
               max_iter_ls = 1,
-              pi_method = "aleatoric",
+              uncertainty_method = "aleatoric",
               alpha = 0.05),
     silent = TRUE
   )
 
   if (inherits(fit, "try-error")) {
     msg <- as.character(fit)
-    if (grepl("pi_method|unsupported|not supported|invalid.*pi", msg, ignore.case = TRUE)) {
-      skip("predict-with-PI test skipped: 'aleatoric' pi_method not supported in this build")
+    if (grepl("uncertainty_method|unsupported|not supported|invalid.*pi", msg, ignore.case = TRUE)) {
+      skip("predict-with-PI test skipped: 'aleatoric' uncertainty_method not supported in this build")
     } else {
       stop(fit)
     }

@@ -4,14 +4,14 @@
 \alias{.compute_uncertainty}
 \title{Internal helper: compute uncertainty decomposition (epistemic / aleatoric / both)}
 \usage{
-.compute_uncertainty(model, x, pi_method, alpha, forward_passes, inner_samples)
+.compute_uncertainty(model, x, uncertainty_method, alpha, forward_passes)
 }
 \arguments{
 \item{model}{Fitted Keras model for a single smooth term.}
 
 \item{x}{Input covariate matrix (or vector; will be reshaped as needed).}
 
-\item{pi_method}{Character; one of \code{"epistemic"}, \code{"aleatoric"}, \code{"both"}, or \code{"none"}.}
+\item{uncertainty_method}{Character; one of \code{"epistemic"}, \code{"aleatoric"}, \code{"both"}, or \code{"none"}.}
 
 \item{alpha}{Coverage level (e.g. 0.05 for 95\% bands).}
 
@@ -30,12 +30,15 @@ A \code{data.frame} with columns:
 }
 \description{
 Given a fitted Keras submodel and covariate input \code{x}, compute uncertainty
-estimates according to the \code{pi_method}.
+estimates according to the \code{uncertainty_method}.
 \itemize{
 \item \code{"epistemic"}: estimates only epistemic variance (via MC Dropout passes).
 \item \code{"aleatoric"}: uses deterministic quantile heads to estimate aleatoric variance.
 \item \code{"both"}: combines aleatoric and epistemic using variance decomposition.
 \item Otherwise: returns \code{NA} placeholders.
 }
+}
+\author{
+Ines Ortega-Fernandez, Marta Sestelo
 }
 \keyword{internal}

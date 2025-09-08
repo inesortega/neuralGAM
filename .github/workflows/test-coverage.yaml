@@ -55,11 +55,9 @@ jobs:
 
       - name: Test coverage
         run: |
-          covr::codecov(
-            quiet = FALSE,
-            clean = FALSE,
-            install_path = file.path(Sys.getenv("RUNNER_TEMP"), "package")
-          )
+          cov <- covr::package_coverage()
+          covr::codecov(coverage = cov, quiet = FALSE, clean = FALSE)
+          covr::to_cobertura(cov, "coverage.xml")
         shell: Rscript {0}
 
       - name: Show testthat output
@@ -81,5 +79,6 @@ jobs:
         with:
           fail_ci_if_error: true # optional (default = false)
           token: ${{ secrets.CODECOV_TOKEN }}
-          verbose: true # optional (default = false)
+          verbose: true
+          files: coverage.xml
 

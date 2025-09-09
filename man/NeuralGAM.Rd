@@ -17,14 +17,12 @@ neuralGAM(
   bias_initializer = "zeros",
   activity_regularizer = NULL,
   loss = "mse",
-  uncertainty_method = c("none", "aleatoric", "epistemic", "both"),
+  uncertainty_method = c("none", "epistemic"),
   alpha = 0.05,
   forward_passes = 100,
   dropout_rate = 0.1,
   validation_split = NULL,
   w_train = NULL,
-  w_mean = 0.1,
-  order_penalty_lambda = 0,
   bf_threshold = 0.001,
   ls_threshold = 0.1,
   max_iter_backfitting = 10,
@@ -55,21 +53,14 @@ You can specify per-term NN settings, e.g.:
 
 \item{kernel_regularizer, bias_regularizer, activity_regularizer}{Optional Keras regularizers.}
 
-\item{loss}{Loss function to use.
-\itemize{
-\item When \code{uncertainty_method} is \code{"aleatoric"} or \code{"both"}: this is the \strong{mean-head loss}
-inside \code{make_quantile_loss()}, and can be any Keras built-in (e.g., \code{"mse"}, \code{"mae"},
-\code{"huber"}, \code{"logcosh"}) or a custom function.
-\item Otherwise: passed directly to \code{keras::compile()}.
-}}
+\item{loss}{Loss function to use. Can be any Keras built-in (e.g., \code{"mse"}, \code{"mae"},
+\code{"huber"}, \code{"logcosh"}) or a custom function, passed directly to \code{keras::compile()}.}
 
-\item{uncertainty_method}{Character string indicating the type of predictive uncertainty to estimate.
+\item{uncertainty_method}{Character string indicating the type of uncertainty to estimate.
 One of:
 \itemize{
 \item \code{"none"} (default): no uncertainty estimation.
-\item \code{"aleatoric"}: per-term quantile regression (pinball loss) heads (diagnosis only).
 \item \code{"epistemic"}: MC Dropout for mean uncertainty (CIs)
-\item \code{"both"}: enable both mechanisms.
 }}
 
 \item{alpha}{Significance level for prediction intervals, e.g. \code{0.05} for 95\% coverage.}
@@ -86,11 +77,6 @@ One of:
 \item{validation_split}{Optional fraction of training data used for validation.}
 
 \item{w_train}{Optional training weights.}
-
-\item{w_mean}{Non-negative numeric. Weight for the mean-head loss within the composite PI loss.}
-
-\item{order_penalty_lambda}{Non-negative numeric. Strength of a soft monotonicity penalty
-\code{ReLU(lwr - upr)} to discourage interval inversions.}
 
 \item{bf_threshold}{Convergence criterion of the backfitting algorithm. Defaults to \code{0.001}}
 
@@ -114,8 +100,7 @@ An object of class \code{"neuralGAM"}, a list with elements including:
 \item{partial}{ Data frame of partial contributions \eqn{g_j(x_j)} per smooth term.}
 \item{y}{ Observed response values.}
 \item{eta}{ Linear predictor \eqn{\eta = \eta_0 + \sum_j g_j(x_j)}.}
-\item{lwr,upr}{ Lower/upper prediction interval bounds (response scale), if
-\code{uncertainty_method \%in\% c("aleatoric","both")}. Otherwise \code{NULL}.}
+\item{lwr,upr}{ Lower/upper confidence interval bounds (response scale)}
 \item{x}{ Training covariates (inputs).}
 \item{model}{ List of fitted Keras models, one per smooth term (+ \code{"linear"} if present).}
 \item{eta0}{ Intercept estimate \eqn{\eta_0}.}
@@ -126,52 +111,21 @@ An object of class \code{"neuralGAM"}, a list with elements including:
 \item{history}{ List of Keras training histories per term.}
 \item{globals}{ Global hyperparameter defaults.}
 \item{alpha}{ PI significance level (if trained with uncertainty).}
-\item{build_pi}{ Logical; whether the model was trained with quantile heads.}
-\item{uncertainty_method}{ Type of predictive uncertainty used ("none","aleatoric","epistemic","both").}
+\item{build_pi}{ Logical; whether the model was trained with uancertainty estimation enabled}
+\item{uncertainty_method}{ Type of predictive uncertainty used ("none","epistemic").}
 \item{var_epistemic}{ Matrix of per-term epistemic variances (if computed).}
-\item{var_aleatoric}{ Matrix of per-term aleatoric variances (if computed).}
 }
 }
 \description{
 Fits a Generalized Additive Model where smooth terms are modeled by \code{keras} neural networks.
-In addition to point predictions, the model can optionally estimate \strong{uncertainty bands}:
-\itemize{
-\item \strong{Epistemic uncertainty (confidence bands):} via Monte Carlo Dropout across forward passes.
-\item \strong{Residual quantile bands (diagnostic only):} per-term quantile heads trained on partial residuals \eqn{R_j} via quantile regression,
-available through \code{predict(type="terms", terms_band="residual")}.
-}
-
-These different layers are exposed at prediction/plotting time:
-\itemize{
-\item \code{interval="mean_ci"}: confidence bands (epistemic) for the fitted mean \eqn{E[Y|X]}.
-\item \code{interval="none"}: point predictions only.
-\item \code{terms_band="epistemic"}: SE-based bands for smooth functions \eqn{g_j(x_j)}.
-\item \code{terms_band="residual"}: per-term diagnostic bands (not CI/PI).
-\item \code{terms_band="both"}: both epistemic SE bands and residual diagnostic bands.
-}
+In addition to point predictions, the model can optionally estimate \strong{uncertainty bands} via Monte Carlo Dropout across forward passes.
 }
 \examples{
 \dontrun{
-n <- 24500
 
-seed <- 42
-set.seed(seed)
-
-x1 <- runif(n, -2.5, 2.5)
-x2 <- runif(n, -2.5, 2.5)
-x3 <- runif(n, -2.5, 2.5)
-
-f1 <- x1 ** 2
-f2 <- 2 * x2
-f3 <- sin(x3)
-f1 <- f1 - mean(f1)
-f2 <- f2 - mean(f2)
-f3 <- f3 - mean(f3)
-
-eta0 <- 2 + f1 + f2 + f3
-epsilon <- rnorm(n, 0.25)
-y <- eta0 + epsilon
-train <- data.frame(x1, x2, x3, y)
+dat <- .sim_neuralGAM_data()
+train <- dat$train
+test  <- dat$test
 
 library(neuralGAM)
 # Global architecture
@@ -188,16 +142,17 @@ ngam <- neuralGAM(
   data = train
 )
 ngam
-# Construct prediction intervals
+# Construct confidence intervals
 ngam <- neuralGAM(
   y ~ s(x1) + x2,
   num_units = 128,
   data = train,
-  uncertainty_method = "aleatoric",
+  uncertainty_method = "epistemic",
+  forward_passes = 10,
   alpha = 0.05
 )
-# Visualize point prediction and prediction intervals using autoplot:
-autoplot(ngam, which = "terms", term = "x1", intervals = "prediction")
+# Visualize point prediction and confidence intervals using autoplot:
+autoplot(ngam, which = "terms", term = "x1", interval = "confidence")
 }
 }
 \author{

@@ -2,14 +2,15 @@
 % Please edit documentation in R/autoplot.neuralGAM.R
 \name{autoplot.neuralGAM}
 \alias{autoplot.neuralGAM}
-\title{Autoplot method for \code{neuralGAM} objects (single plot)}
+\title{Autoplot method for \code{neuralGAM} objects (epistemic-only)}
 \usage{
 \method{autoplot}{neuralGAM}(
   object,
   newdata = NULL,
   which = c("response", "link", "terms"),
-  interval = c("none", "confidence", "prediction", "both", "aleatoric"),
+  interval = c("none", "confidence"),
   level = 0.95,
+  forward_passes = 150,
   term = NULL,
   rug = TRUE,
   ...
@@ -22,25 +23,9 @@
 
 \item{which}{One of \code{c("response","link","terms")}. Default \code{"response"}.}
 
-\item{interval}{One of \code{c("none","confidence","prediction","both","aleatoric")}.
-Default \code{"confidence"}.
-\itemize{
-\item \strong{Response scale:} \code{"confidence"} draws epistemic CI for the fitted mean
-(SEs on the link mapped via the delta method). \code{"prediction"} draws PIs that reflect
-aleatoric noise (and, when the model was trained with combined uncertainty, epistemic too).
-\code{"both"} overlays CI and PI.
-\item \strong{Link scale:} Only \code{"confidence"} is defined; if \code{interval} requests
-\code{"prediction"}, \code{"both"}, or \code{"aleatoric"}, it is coerced to
-\code{"confidence"} with a warning.
-\item \strong{Terms (per-term effects on the link scale):}
-\code{"confidence"} draws epistemic CI for the smooth \eqn{g_j(x_j)} (SE-based).
-\code{"aleatoric"} draws \emph{diagnostic} residual quantile bands for partial residuals
-\eqn{R_j} (from quantile heads), centered on \eqn{\hat g_j}. \code{"both"} overlays
-confidence and aleatoric bands. \code{"prediction"} is not defined for terms and is
-coerced to \code{"aleatoric"} with a warning.
-}}
+\item{interval}{One of \code{c("none","confidence")}. Default \code{"confidence"}.}
 
-\item{level}{Coverage level for intervals (e.g., \code{0.95}). Default \code{0.95}.}
+\item{level}{Coverage level for confidence intervals (e.g., \code{0.95}). Default \code{0.95}.}
 
 \item{term}{Single term name to plot when \code{which = "terms"}.}
 
@@ -52,32 +37,61 @@ coerced to \code{"aleatoric"} with a warning.
 A single \code{ggplot} object.
 }
 \description{
-Produce diagnostic and effect plots from a fitted \code{neuralGAM} model.
-Supported plot types:
+Produce effect/diagnostic plots from a fitted \code{neuralGAM} model.
+Supported panels:
 \itemize{
-\item \code{which = "response"}: Fitted response vs. index, with optional
-\emph{confidence intervals} (CI) and/or \emph{prediction intervals} (PI).
-\item \code{which = "link"}: Linear predictor (link scale) vs. index,
-with optional CI (PI are not defined on the link scale).
-\item \code{which = "terms"}: Single per-term contribution \eqn{g_j(x_j)} on the link scale.
-For continuous covariates: line with optional bands. For factor covariates: boxplots per
-level with optional mean \eqn{\pm z \cdot SE} error bars and/or aleatoric ranges.
-On the terms panel you can display (i) epistemic CI for the smooth \eqn{g_j} and/or
-(ii) \emph{aleatoric residual quantile bands} for partial residuals \eqn{R_j}.
+\item \code{which = "response"}: fitted response vs. index, with optional
+epistemic \emph{confidence intervals} (CI).
+\item \code{which = "link"}: linear predictor (link scale) vs. index,
+with optional CI.
+\item \code{which = "terms"}: single per-term contribution \eqn{g_j(x_j)} on the link scale,
+with optional CI band for the smooth (epistemic).
 }
 }
 \details{
-\strong{Uncertainty semantics}
+\strong{Uncertainty semantics (epistemic only)}
 \itemize{
-\item \strong{CI (epistemic):} Uncertainty about the \emph{fitted mean}. For terms, bands are
-\eqn{\hat g_j \pm z \cdot SE(\hat g_j)} on the link scale. For the response, SEs are mapped
-to the response scale via the delta method.
-\item \strong{PI (aleatoric / combined):} Width reflects data noise (aleatoric) and, when the
-model was trained with combined uncertainty, also model uncertainty (epistemic). PIs are
-provided \emph{only} on the response scale.
-\item \strong{Aleatoric residual bands for terms (diagnostic):} For \code{which="terms"},
-quantile heads yield residual quantile bands for \eqn{R_j} centered on \eqn{\hat g_j}.
-These are intended for diagnostics and \emph{are not} prediction intervals for \eqn{Y}.
+\item \strong{CI:} Uncertainty about the fitted mean.
+\item For the response, SEs are mapped via the delta method;
+\item For terms, bands are obtained as \eqn{\hat g_j \pm z \cdot SE(\hat g_j)} on the link scale.
+}
+}
+\examples{
+\dontrun{
+dat <- .sim_neuralGAM_data()
+train <- dat$train
+test  <- dat$test
+
+library(neuralGAM)
+ngam0 <- neuralGAM(
+  y ~ s(x1) + x2 + s(x3),
+  data = train, family = "gaussian", num_units = 128,
+  uncertainty_method = "epistemic"
+)
+## --- Autoplot (epistemic-only) ---
+# Per-term effect (link scale) with CI band
+autoplot(ngam, which = "terms", term = "x1", interval = "confidence")
+
+# Request a different number of forward passes or CI level:
+autoplot(ngam, which = "terms", term = "x1", interval = "confidence", forward_passes = 100, level = 0.7)
+# Response panel with CI
+autoplot(ngam, which = "response", interval = "confidence")
+
+# Link panel with CI
+autoplot(ngam, which = "link", interval = "confidence")
+
+# Add custom title
+autoplot(ngam, which = "terms", term = "x1", interval = "confidence") +
+  ggplot2::ggtitle("Main Title")
+
+# Add axis labels
+autoplot(ngam, which = "terms", term = "x1", interval = "confidence") +
+  ggplot2::xlab("x1") + ggplot2::ylab("Partial effect")
+
+# Plot multiple terms side by side
+plots <- lapply(c("x1","x2","x3"),
+                function(tm) autoplot(ngam, which = "terms", term = tm, interval = "confidence"))
+gridExtra::grid.arrange(grobs = plots, ncol = 3, nrow = 1)
 }
 }
 \author{

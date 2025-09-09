@@ -1,28 +1,26 @@
 # tests/testthat/test-autoplot-neuralGAM.R
 # ------------------------------------------------------------
-# Coverage:
-# - which = response/link/terms
-# - intervals = none/confidence/prediction/both (+ aleatoric on terms)
-# - warnings for coerced cases (PI on link; PI on terms -> aleatoric)
+# Coverage (epistemic-only):
+# - which = response / link / terms
+# - interval = none / confidence
 # - term validation (single-term only; unknown term)
 # - factor vs continuous term plotting
-# - newdata path (CI and aleatoric for terms)
-# - behavior when aleatoric bands unavailable
+# - newdata path
 # ------------------------------------------------------------
 
 library(testthat)
 library(reticulate)
 
 skip_if_no_keras <- function() {
-  if (!reticulate::py_module_available("keras")) skip("keras not available")
+  if (!reticulate::py_module_available("keras"))      skip("keras not available")
   if (!reticulate::py_module_available("tensorflow")) skip("tensorflow not available")
 }
 
 set.seed(123)
 n <- 300
-x1 <- runif(n, -2.5, 2.5)
-x2 <- factor(sample(letters[1:3], n, TRUE))
-x3 <- runif(n, -2.5, 2.5)
+x1 <- runif(n, -2.5, 2.5)                    # smooth
+x2 <- factor(sample(letters[1:3], n, TRUE))  # factor
+x3 <- runif(n, -2.5, 2.5)                    # linear
 f1 <- sin(x1)
 f2 <- ifelse(x2 == "a", 1, ifelse(x2 == "b", -1, 0))
 f3 <- 0.5 * x3
@@ -35,212 +33,109 @@ newx_small <- data.frame(
   x3 = 0
 )
 
-test_that("autoplot: response/link/terms with expected interval behavior", {
+test_that("autoplot: response/link/terms with interval none/confidence", {
   skip_if_no_keras()
 
-  # Model with both mechanisms available for response and aleatoric for terms
-  ngam_both <- neuralGAM(
+  ngam <- neuralGAM(
     y ~ s(x1) + x2 + s(x3),
     data = dat,
     num_units = 64,
     family = "gaussian",
-    uncertainty_method = "both",
-    alpha = 0.05
+    uncertainty_method = "epistemic",
+    forward_passes = 10,
+    verbose = 0
   )
 
   # ---------------- RESPONSE ----------------
-  # CI
-  expect_no_warning(
-    p_resp_ci <- autoplot(ngam_both, which = "response",
-                          interval = "confidence", level = 0.95)
-  )
+  p_resp_none <- autoplot(ngam, which = "response", interval = "none")
+  expect_s3_class(p_resp_none, "ggplot")
+
+  p_resp_ci <- autoplot(ngam, which = "response", interval = "confidence", level = 0.95)
   expect_s3_class(p_resp_ci, "ggplot")
 
-  # PI
-  expect_no_warning(
-    p_resp_pi <- autoplot(ngam_both, which = "response",
-                          interval = "prediction", level = 0.95)
-  )
-  expect_s3_class(p_resp_pi, "ggplot")
+  # ---------------- LINK ----------------
+  p_link_none <- autoplot(ngam, which = "link", interval = "none")
+  expect_s3_class(p_link_none, "ggplot")
 
-  # Both
-  expect_no_warning(
-    p_resp_both <- autoplot(ngam_both, which = "response",
-                            interval = "both", level = 0.95)
-  )
-  expect_s3_class(p_resp_both, "ggplot")
-
-  # ---------------- LINK (CI only) ----------------
-  expect_no_warning(
-    p_link_ci <- autoplot(ngam_both, which = "link",
-                          interval = "confidence", level = 0.95)
-  )
+  p_link_ci <- autoplot(ngam, which = "link", interval = "confidence", level = 0.95)
   expect_s3_class(p_link_ci, "ggplot")
 
-  # Requesting PI on link -> warning (coerced to CI)
-  expect_warning(
-    p_link_pi_req <- autoplot(ngam_both, which = "link",
-                              interval = "prediction", level = 0.95)
-  )
-  expect_s3_class(p_link_pi_req, "ggplot")
+  # ---------------- TERMS (single term) ----------------
+  p_term_none <- autoplot(ngam, which = "terms", term = "x1", interval = "none")
+  expect_s3_class(p_term_none, "ggplot")
 
-  # ---------------- TERMS (now supports confidence / aleatoric / both) ----------------
-  # continuous smooth: epistemic CI
-  expect_no_warning(
-    p_term_ci <- autoplot(ngam_both, which = "terms",
-                          term = "x1", interval = "confidence", level = 0.95)
-  )
+  p_term_ci <- autoplot(ngam, which = "terms", term = "x1", interval = "confidence", level = 0.95)
   expect_s3_class(p_term_ci, "ggplot")
-
-  # continuous smooth: aleatoric residual band (diagnostic)
-  expect_no_warning(
-    p_term_ale <- autoplot(ngam_both, which = "terms",
-                           term = "x1", interval = "aleatoric", level = 0.95)
-  )
-  expect_s3_class(p_term_ale, "ggplot")
-
-  # continuous smooth: both overlays
-  expect_no_warning(
-    p_term_both <- autoplot(ngam_both, which = "terms",
-                            term = "x1", interval = "both", level = 0.95)
-  )
-  expect_s3_class(p_term_both, "ggplot")
-
-  # factor term (boxplot + mean ± z*SE; aleatoric ranges if available)
-  expect_s3_class(
-    autoplot(ngam_both, which = "terms", term = "x2",
-             interval = "both", level = 0.95),
-    "ggplot"
-  )
-
-  # Requesting PI on terms -> warning (coerced to aleatoric)
-  expect_warning(
-    p_term_pi_req <- autoplot(ngam_both, which = "terms",
-                              term = "x1", interval = "prediction", level = 0.95)
-  )
-  expect_s3_class(p_term_pi_req, "ggplot")
 })
 
 test_that("autoplot: terms single-term enforcement and unknown term errors", {
   skip_if_no_keras()
 
-  ngam_lin <- neuralGAM(
+  ngam <- neuralGAM(
     y ~ s(x1) + x2,
     data = dat,
     family = "gaussian",
-    num_units = 64
+    num_units = 64,
+    uncertainty_method = "epistemic",
+    forward_passes = 5
   )
 
   # must provide exactly one term
-  expect_error(autoplot(ngam_lin, which = "terms"))
-  expect_error(autoplot(ngam_lin, which = "terms", term = c("x1","x2")))
+  expect_error(autoplot(ngam, which = "terms"))
+  expect_error(autoplot(ngam, which = "terms", term = c("x1","x2")))
 
   # unknown term
-  expect_error(autoplot(ngam_lin, which = "terms", term = "nope"))
+  expect_error(autoplot(ngam, which = "terms", term = "nope"))
 })
 
 test_that("autoplot: factor vs continuous term plotting (CI)", {
   skip_if_no_keras()
 
-  ngam_lin <- neuralGAM(
+  ngam <- neuralGAM(
     y ~ s(x1) + x2 + x3,
     data = dat,
     num_units = 64,
     family = "gaussian",
     uncertainty_method = "epistemic",
-    forward_passes = 5
+    forward_passes = 5,
+    verbose = 0
   )
 
-  # factor term: CI around level means
-  p_fac <- autoplot(ngam_lin, which = "terms", term = "x2", interval = "confidence")
+  # factor term: CI around level means (whiskers)
+  p_fac <- autoplot(ngam, which = "terms", term = "x2", interval = "confidence")
   expect_s3_class(p_fac, "ggplot")
 
-  # continuous parametric term: CI available
-  p_cont_par <- autoplot(ngam_lin, which = "terms", term = "x3",
+  # continuous parametric term (x3): CI band
+  p_cont_par <- autoplot(ngam, which = "terms", term = "x3",
                          interval = "confidence", rug = TRUE)
   expect_s3_class(p_cont_par, "ggplot")
 
-  # continuous nonparametric term: CI via MC Dropout SEs
-  expect_no_warning(
-    p_cont_np <- autoplot(ngam_lin, which = "terms", term = "x1",
-                          interval = "confidence", rug = TRUE)
-  )
+  # continuous smooth term (x1): CI band via MC-dropout SEs
+  p_cont_np <- autoplot(ngam, which = "terms", term = "x1",
+                        interval = "confidence", rug = TRUE)
   expect_s3_class(p_cont_np, "ggplot")
-
-  # Requesting aleatoric on a model without quantile heads -> warning but still returns a plot
-  expect_warning(
-    p_cont_np_ale <- autoplot(ngam_lin, which = "terms", term = "x1",
-                              interval = "aleatoric", rug = TRUE)
-  )
-  expect_s3_class(p_cont_np_ale, "ggplot")
 })
 
-test_that("autoplot: response CI works when uncertainty_method='none'", {
+test_that("autoplot: newdata path for terms and panels", {
   skip_if_no_keras()
 
-  ngam_none <- neuralGAM(
-    y ~ s(x1) + x2 + s(x3),
-    data = dat,
-    num_units = 64,
-    family = "gaussian",
-    uncertainty_method = "none"
-  )
-
-  # response CI should not be available (SEs via MC on demand) with a warning
-  expect_warning(
-    p_ci <- autoplot(ngam_none, which = "response", interval = "confidence")
-  )
-  expect_s3_class(p_ci, "ggplot")
-
-  # link PI request -> warning & CI drawn
-  expect_warning(
-    p_link_pi <- autoplot(ngam_none, which = "link", interval = "prediction")
-  )
-  expect_s3_class(p_link_pi, "ggplot")
-
-  # terms PI request -> warning (coerced to aleatoric) and still returns a plot
-  expect_warning(expect_warning(
-    p_term_pi <- autoplot(ngam_none, which = "terms", term = "x1", interval = "prediction")
-  ))
-  expect_s3_class(p_term_pi, "ggplot")
-
-  # explicit aleatoric on terms without quantile heads -> warning
-  expect_warning(
-    p_term_ale_none <- autoplot(ngam_none, which = "terms", term = "x1", interval = "aleatoric")
-  )
-  expect_s3_class(p_term_ale_none, "ggplot")
-})
-
-test_that("autoplot: newdata path (terms CI and aleatoric)", {
-  skip_if_no_keras()
-
-  ngam_both <- neuralGAM(
+  ngam <- neuralGAM(
     y ~ s(x1) + x2 + s(x3),
     data = dat,
     family = "gaussian",
     num_units = 64,
-    uncertainty_method = "both",
-    alpha = 0.05
+    uncertainty_method = "epistemic",
+    forward_passes = 8,
+    verbose = 0
   )
 
-  # terms + newdata: CI OK
-  expect_no_warning(
-    p_term_new_ci <- autoplot(ngam_both, newdata = newx_small,
-                              which = "terms", term = "x1", interval = "confidence")
-  )
-  expect_s3_class(p_term_new_ci, "ggplot")
+  # response/link with newdata
+  expect_s3_class(autoplot(ngam, which = "response", interval = "confidence", newdata = newx_small), "ggplot")
+  expect_s3_class(autoplot(ngam, which = "link",     interval = "confidence", newdata = newx_small), "ggplot")
 
-  # terms + newdata: aleatoric diagnostic band OK
-  expect_no_warning(
-    p_term_new_ale <- autoplot(ngam_both, newdata = newx_small,
-                               which = "terms", term = "x1", interval = "aleatoric")
-  )
-  expect_s3_class(p_term_new_ale, "ggplot")
-
-  # terms + newdata: PI request -> warning & coerced to aleatoric
-  expect_warning(
-    p_term_new_pi <- autoplot(ngam_both, newdata = newx_small,
-                              which = "terms", term = "x1", interval = "prediction")
-  )
-  expect_s3_class(p_term_new_pi, "ggplot")
+  # terms with newdata
+  expect_s3_class(autoplot(ngam, which = "terms", term = "x1",
+                           interval = "confidence", newdata = newx_small), "ggplot")
+  expect_s3_class(autoplot(ngam, which = "terms", term = "x1",
+                           interval = "none",       newdata = newx_small), "ggplot")
 })

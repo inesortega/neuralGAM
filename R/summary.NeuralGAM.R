@@ -13,25 +13,10 @@
 #' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @examples
 #' \dontrun{
-#' n <- 24500
-#' seed <- 42
-#' set.seed(seed)
 #'
-#' x1 <- runif(n, -2.5, 2.5)
-#' x2 <- runif(n, -2.5, 2.5)
-#' x3 <- runif(n, -2.5, 2.5)
-#'
-#' f1 <- x1**2
-#' f2 <- 2 * x2
-#' f3 <- sin(x3)
-#' f1 <- f1 - mean(f1)
-#' f2 <- f2 - mean(f2)
-#' f3 <- f3 - mean(f3)
-#'
-#' eta0 <- 2 + f1 + f2 + f3
-#' epsilon <- rnorm(n, 0.25)
-#' y <- eta0 + epsilon
-#' train <- data.frame(x1, x2, x3, y)
+#' dat <- .sim_neuralGAM_data()
+#' train <- dat$train
+#' test  <- dat$test
 #'
 #' library(neuralGAM)
 #' ngam <- neuralGAM(

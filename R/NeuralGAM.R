@@ -55,8 +55,11 @@
 #' @param w_mean Non-negative numeric. Weight for the mean-head loss within the composite PI loss.
 #' @param order_penalty_lambda Non-negative numeric. Strength of a soft monotonicity penalty
 #'   `ReLU(lwr - upr)` to discourage interval inversions.
-#' @param bf_threshold,ls_threshold Convergence thresholds for backfitting and local scoring.
-#' @param max_iter_backfitting,max_iter_ls Maximum iterations for backfitting and local scoring.
+#' @param bf_threshold Convergence criterion of the backfitting algorithm. Defaults to \code{0.001}
+#' @param ls_threshold Convergence criterion of the local scoring algorithm. Defaults to \code{0.1}
+#' @param max_iter_backfitting An integer with the maximum number of iterations
+#' of the backfitting algorithm. Defaults to \code{10}.
+#' @param max_iter_ls An integer with the maximum number of iterations of the local scoring Algorithm. Defaults to \code{10}.
 #' @param seed Random seed.
 #' @param verbose Verbosity: `0` silent, `1` progress messages.
 #' @param ... Additional arguments passed to `keras::optimizer_adam()`.

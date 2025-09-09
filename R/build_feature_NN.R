@@ -50,7 +50,7 @@
 #'     \itemize{
 #'       \item \code{lwr}: lower bound, \eqn{\tau = \alpha/2}
 #'       \item \code{upr}: upper bound, \eqn{\tau = 1 - \alpha/2}
-#'       \item \code{y\_hat}: mean prediction
+#'       \item \code{y_hat}: mean prediction
 #'     }
 #'   \item Loss function is `make_quantile_loss()` which combines two pinball losses
 #'         (for lower and upper quantiles) with the chosen mean prediction loss and an optional

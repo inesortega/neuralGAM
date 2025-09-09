@@ -16,8 +16,6 @@
 \item{alpha}{Coverage level (e.g. 0.05 for 95\% bands).}
 
 \item{forward_passes}{Integer; number of MC Dropout passes.}
-
-\item{inner_samples}{Integer; number of inner samples per pass when combining uncertainties.}
 }
 \value{
 A \code{data.frame} with columns:

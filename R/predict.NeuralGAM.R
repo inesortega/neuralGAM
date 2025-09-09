@@ -78,7 +78,7 @@
 #'     }
 #' }
 #'
-#' @importFrom stats predict qnorm
+#' @importFrom stats predict qnorm setNames
 #' @export
 #' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @examples

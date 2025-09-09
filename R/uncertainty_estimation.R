@@ -14,8 +14,6 @@
 #' @param uncertainty_method Character; one of \code{"epistemic"}, \code{"aleatoric"}, \code{"both"}, or \code{"none"}.
 #' @param alpha Coverage level (e.g. 0.05 for 95% bands).
 #' @param forward_passes Integer; number of MC Dropout passes.
-#' @param inner_samples Integer; number of inner samples per pass when combining uncertainties.
-#'
 #' @return A \code{data.frame} with columns:
 #'   \itemize{
 #'     \item \code{lwr}, \code{upr}: lower/upper bounds of interval estimates.
@@ -375,7 +373,7 @@
   #    is added via var_param, assuming independence.
   eta_full_pass <- sweep(eta_np_pass, 2L, eta_param_fit, `+`)  # [passes, n]
 
-  # 4) Joint epistemic variance from passes (captures cross-term covariance among smooths)
+  # 4) Joint epistemic variance from passes (captures cross-term covariance across smooths)
   var_ep_joint <- matrixStats::colVars(eta_full_pass)  # length n
 
   # 5) Combine with parametric variance (independence assumption)

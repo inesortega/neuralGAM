@@ -82,8 +82,11 @@ You can specify per-term NN settings, e.g.:
 \code{uncertainty_method \%in\% c("epistemic","both")}.}
     \item{\code{validation_split}}{Optional fraction of training data used for validation.}
     \item{\code{w_train}}{Optional training weights.}
-    \item{\code{bf_threshold,ls_threshold}}{Convergence thresholds for backfitting and local scoring.}
-    \item{\code{max_iter_backfitting,max_iter_ls}}{Maximum iterations for backfitting and local scoring.}
+    \item{\code{bf_threshold}}{Convergence criterion of the backfitting algorithm. Defaults to \code{0.001}}
+    \item{\code{ls_threshold}}{Convergence criterion of the local scoring algorithm. Defaults to \code{0.1}}
+    \item{\code{max_iter_backfitting}}{An integer with the maximum number of iterations
+of the backfitting algorithm. Defaults to \code{10}.}
+    \item{\code{max_iter_ls}}{An integer with the maximum number of iterations of the local scoring Algorithm. Defaults to \code{10}.}
     \item{\code{verbose}}{Verbosity: \code{0} silent, \code{1} progress messages.}
   }}
 }
@@ -111,7 +114,7 @@ outputs a single unit (point prediction) and uses the loss function provided in 
 \itemize{
 \item \code{lwr}: lower bound, \eqn{\tau = \alpha/2}
 \item \code{upr}: upper bound, \eqn{\tau = 1 - \alpha/2}
-\item \code{y\_hat}: mean prediction
+\item \code{y_hat}: mean prediction
 }
 \item Loss function is \code{make_quantile_loss()} which combines two pinball losses
 (for lower and upper quantiles) with the chosen mean prediction loss and an optional

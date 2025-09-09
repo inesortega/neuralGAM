@@ -23,6 +23,8 @@ neuralGAM(
   dropout_rate = 0.1,
   validation_split = NULL,
   w_train = NULL,
+  w_mean = 0.1,
+  order_penalty_lambda = 0,
   bf_threshold = 0.001,
   ls_threshold = 0.1,
   max_iter_backfitting = 10,
@@ -85,9 +87,19 @@ One of:
 
 \item{w_train}{Optional training weights.}
 
-\item{bf_threshold, ls_threshold}{Convergence thresholds for backfitting and local scoring.}
+\item{w_mean}{Non-negative numeric. Weight for the mean-head loss within the composite PI loss.}
 
-\item{max_iter_backfitting, max_iter_ls}{Maximum iterations for backfitting and local scoring.}
+\item{order_penalty_lambda}{Non-negative numeric. Strength of a soft monotonicity penalty
+\code{ReLU(lwr - upr)} to discourage interval inversions.}
+
+\item{bf_threshold}{Convergence criterion of the backfitting algorithm. Defaults to \code{0.001}}
+
+\item{ls_threshold}{Convergence criterion of the local scoring algorithm. Defaults to \code{0.1}}
+
+\item{max_iter_backfitting}{An integer with the maximum number of iterations
+of the backfitting algorithm. Defaults to \code{10}.}
+
+\item{max_iter_ls}{An integer with the maximum number of iterations of the local scoring Algorithm. Defaults to \code{10}.}
 
 \item{seed}{Random seed.}
 

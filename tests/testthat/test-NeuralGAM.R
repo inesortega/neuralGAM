@@ -325,7 +325,7 @@ test_that("neuralGAM accepts valid validation_split", {
 
   data <- data.frame(x = 1:10, y = rnorm(10))
   ngam <- neuralGAM(formula, data, num_units = 5, seed = seed, max_iter_backfitting = 1, max_iter_ls = 1, validation_split = 0.2)
-  expect_equalexpect_true(is.numeric(ngam$mse) && length(ngam$mse) == 1)
+  expect_true(is.numeric(ngam$mse) && length(ngam$mse) == 1)
 })
 
 test_that("neuralGAM accepts valid w_train", {

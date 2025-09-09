@@ -20,6 +20,8 @@ ggplot2::autoplot
 #' @param which One of \code{c("response","link","terms")}. Default \code{"response"}.
 #' @param interval One of \code{c("none","confidence")}. Default \code{"confidence"}.
 #' @param level Coverage level for confidence intervals (e.g., \code{0.95}). Default \code{0.95}.
+#' @param forward_passes Integer. Number of MC-dropout forward passes used when
+#'   \code{uncertainty_method \%in\% c("epistemic","both")}.
 #' @param term Single term name to plot when \code{which = "terms"}.
 #' @param rug Logical; if \code{TRUE} (default), add rugs to continuous term plots.
 #' @param ... Additional arguments passed to \code{predict.neuralGAM}.
@@ -49,7 +51,8 @@ ggplot2::autoplot
 #' autoplot(ngam, which = "terms", term = "x1", interval = "confidence")
 #'
 #' # Request a different number of forward passes or CI level:
-#' autoplot(ngam, which = "terms", term = "x1", interval = "confidence", forward_passes = 100, level = 0.7)
+#' autoplot(ngam, which = "terms", term = "x1", interval = "confidence",
+#' forward_passes = 100, level = 0.7)
 #' # Response panel with CI
 #' autoplot(ngam, which = "response", interval = "confidence")
 #'
@@ -66,7 +69,8 @@ ggplot2::autoplot
 #'
 #' # Plot multiple terms side by side
 #' plots <- lapply(c("x1","x2","x3"),
-#'                 function(tm) autoplot(ngam, which = "terms", term = tm, interval = "confidence"))
+#'                 function(tm) autoplot(ngam, which = "terms",
+#'                 term = tm, interval = "confidence"))
 #' gridExtra::grid.arrange(grobs = plots, ncol = 3, nrow = 1)
 #' }
 #' @importFrom ggplot2 ggplot aes geom_line geom_ribbon geom_rug geom_boxplot

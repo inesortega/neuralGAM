@@ -27,6 +27,9 @@
 
 \item{level}{Coverage level for confidence intervals (e.g., \code{0.95}). Default \code{0.95}.}
 
+\item{forward_passes}{Integer. Number of MC-dropout forward passes used when
+\code{uncertainty_method \%in\% c("epistemic","both")}.}
+
 \item{term}{Single term name to plot when \code{which = "terms"}.}
 
 \item{rug}{Logical; if \code{TRUE} (default), add rugs to continuous term plots.}
@@ -73,7 +76,8 @@ ngam0 <- neuralGAM(
 autoplot(ngam, which = "terms", term = "x1", interval = "confidence")
 
 # Request a different number of forward passes or CI level:
-autoplot(ngam, which = "terms", term = "x1", interval = "confidence", forward_passes = 100, level = 0.7)
+autoplot(ngam, which = "terms", term = "x1", interval = "confidence",
+forward_passes = 100, level = 0.7)
 # Response panel with CI
 autoplot(ngam, which = "response", interval = "confidence")
 
@@ -90,7 +94,8 @@ autoplot(ngam, which = "terms", term = "x1", interval = "confidence") +
 
 # Plot multiple terms side by side
 plots <- lapply(c("x1","x2","x3"),
-                function(tm) autoplot(ngam, which = "terms", term = tm, interval = "confidence"))
+                function(tm) autoplot(ngam, which = "terms",
+                term = tm, interval = "confidence"))
 gridExtra::grid.arrange(grobs = plots, ncol = 3, nrow = 1)
 }
 }

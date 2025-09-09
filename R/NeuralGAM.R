@@ -466,8 +466,7 @@ neuralGAM <-
           f[[term]] <- fit
           term_center <- vapply(f, mean, numeric(1))
 
-          mean_val <- mean(f[[term]])
-          f[[term]] <- f[[term]] - mean_val
+          f[[term]] <- f[[term]] - term_center[[term]]
           eta <- eta + f[[term]]
 
           ## Store training metrics for current backfitting iteration

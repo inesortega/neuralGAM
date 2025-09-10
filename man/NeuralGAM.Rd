@@ -123,11 +123,11 @@ In addition to point predictions, the model can optionally estimate \strong{unce
 \examples{
 \dontrun{
 
+library(neuralGAM)
 dat <- .sim_neuralGAM_data()
 train <- dat$train
 test  <- dat$test
 
-library(neuralGAM)
 # Global architecture
 ngam <- neuralGAM(
   y ~ s(x1) + x2,

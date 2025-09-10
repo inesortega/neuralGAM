@@ -36,11 +36,12 @@ ggplot2::autoplot
 #'   \item For terms, bands are obtained as \eqn{\hat g_j \pm z \cdot SE(\hat g_j)} on the link scale.
 #' }
 #' @examples \dontrun{
+#'
+#' library(neuralGAM)
 #' dat <- .sim_neuralGAM_data()
 #' train <- dat$train
 #' test  <- dat$test
 #'
-#' library(neuralGAM)
 #' ngam0 <- neuralGAM(
 #'   y ~ s(x1) + x2 + s(x3),
 #'   data = train, family = "gaussian", num_units = 128,

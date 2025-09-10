@@ -23,11 +23,11 @@ coefficients are also reported.
 \examples{
 \dontrun{
 
+library(neuralGAM)
 dat <- .sim_neuralGAM_data()
 train <- dat$train
 test  <- dat$test
 
-library(neuralGAM)
 ngam <- neuralGAM(
   y ~ s(x1) + x2 + s(x3),
   data = train,

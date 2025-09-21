@@ -93,11 +93,6 @@ autoplot(ngam, which = "terms", term = "x1", interval = "confidence") +
 autoplot(ngam, which = "terms", term = "x1", interval = "confidence") +
   ggplot2::xlab("x1") + ggplot2::ylab("Partial effect")
 
-# Plot multiple terms side by side
-plots <- lapply(c("x1","x2","x3"),
-                function(tm) autoplot(ngam, which = "terms",
-                term = tm, interval = "confidence"))
-gridExtra::grid.arrange(grobs = plots, ncol = 3, nrow = 1)
 }
 }
 \author{

@@ -68,11 +68,6 @@ ggplot2::autoplot
 #' autoplot(ngam, which = "terms", term = "x1", interval = "confidence") +
 #'   ggplot2::xlab("x1") + ggplot2::ylab("Partial effect")
 #'
-#' # Plot multiple terms side by side
-#' plots <- lapply(c("x1","x2","x3"),
-#'                 function(tm) autoplot(ngam, which = "terms",
-#'                 term = tm, interval = "confidence"))
-#' gridExtra::grid.arrange(grobs = plots, ncol = 3, nrow = 1)
 #' }
 #' @importFrom ggplot2 ggplot aes geom_line geom_ribbon geom_rug geom_boxplot
 #' @importFrom ggplot2 geom_point geom_errorbar labs theme_bw

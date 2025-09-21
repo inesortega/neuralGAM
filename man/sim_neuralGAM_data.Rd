@@ -41,15 +41,6 @@ dat <- sim_neuralGAM_data(n = 500, test_prop = 0.2)
 train <- dat$train
 test  <- dat$test
 
-# Fit a neuralGAM model on the training data
-  library(neuralGAM)
-  ngam <- neuralGAM(
-    y ~ s(x1) + x2 + s(x3),
-    data = train,
-    family = "gaussian"
-  )
-  preds <- predict(ngam, newdata = test, type = "response")
-  head(preds)
 }
 }
 \author{

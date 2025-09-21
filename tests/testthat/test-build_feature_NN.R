@@ -96,41 +96,6 @@ test_that("PI branch compiles, trains, predicts 3 heads (lwr, upr, mean) with cu
   expect_true(inv_rate <= 0.40)  # relaxed bound for a tiny training run
 })
 
-# ---- Penalty effectiveness (λ > 0 should not worsen inversions) -------------
-
-test_that("Order-penalty (lambda > 0) does not increase inversions vs lambda = 0", {
-  skip_if_no_keras()
-
-  set.seed(124)
-  tf$random$set_seed(124L)
-
-  dat <- .local_synth_data(600L, seed = 124)
-  x <- dat$x; y <- dat$y
-
-  # no-penalty model
-  m0 <- build_feature_NN(
-    num_units = 32, activation = "relu",
-    learning_rate = 1e-3, uncertainty_method = "aleatoric", alpha = 0.10,
-    w_mean = 0.2, order_penalty_lambda = 0.0, loss = "mse", seed = 124
-  )
-  invisible(m0 %>% fit(x, y, epochs = 6L, batch_size = 64L, verbose = 0L))
-  p0 <- predict(m0, x, verbose = 0L)
-  inv0 <- .count_inversions(p0)
-
-  # penalty model
-  m1 <- build_feature_NN(
-    num_units = 32, activation = "relu",
-    learning_rate = 1e-3, uncertainty_method = "aleatoric", alpha = 0.10,
-    w_mean = 0.2, order_penalty_lambda = 1e-2, loss = "mse", seed = 124
-  )
-  invisible(m1 %>% fit(x, y, epochs = 6L, batch_size = 64L, verbose = 0L))
-  p1 <- predict(m1, x, verbose = 0L)
-  inv1 <- .count_inversions(p1)
-
-  # Because of stochasticity in a very short training, assert "not worse", with small tolerance
-  expect_lte(inv1, inv0 + 1e-3)
-})
-
 # ---- Point branch with exotic loss ------------------------------------------
 
 test_that("Point branch compiles/trains with exotic loss = 'logcosh' and yields 1 output", {

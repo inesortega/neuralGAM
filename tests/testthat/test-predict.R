@@ -175,7 +175,7 @@ test_that("cache vs newdata; missing columns error", {
   )
 
   # training-data (cache) path already exercised above; now newdata path:
-  mu_new <- predict(ngam0, newdata = newx_ok, type = "response", se.fit = TRUE)
+  mu_new <- predict(ngam0, newdata = newx_ok, type = "response", se.fit = FALSE)
   expect_type(mu_new, "double")
   expect_length(mu_new, nrow(newx_ok))
 

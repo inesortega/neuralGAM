@@ -124,9 +124,6 @@ predict.neuralGAM <- function(object,
   need_se_req <- isTRUE(se.fit) || interval == "confidence"
   has_np <- length(np_terms) > 0L
 
-  # Decide aggregation mode ONCE to avoid duplicate MC passes
-  agg_mode <- if (type != "terms" && need_se_req && has_np) "joint" else "perterm"
-
   if (use_cache) {
     term_fit[,] <- as.matrix(ngam$partial[, all_terms, drop = FALSE])
     if (!is.null(ngam$var_epistemic)) var_epi[,] <- as.matrix(ngam$var_epistemic[, all_terms, drop = FALSE])
@@ -137,9 +134,12 @@ predict.neuralGAM <- function(object,
       linmod <- ngam$model$linear
       if (!is.null(linmod)) {
         pr_terms <- stats::predict(linmod, newdata = lm_data, type = "terms", se.fit = need_se_req)
-        term_fit[, p_terms] <- unname(as.matrix(pr_terms$fit))
-        if (need_se_req && !is.null(pr_terms$se.fit)) {
+        if(need_se_req && !is.null(pr_terms$se.fit)){
+          term_fit[, p_terms] <- unname(as.matrix(pr_terms$fit))
           var_epi[, p_terms] <- unname(as.matrix(pr_terms$se.fit))^2
+        }
+        else{
+          term_fit[, p_terms] <- pr_terms
         }
       }
     }
@@ -147,7 +147,6 @@ predict.neuralGAM <- function(object,
     if (length(np_terms)) {
       for (tm in np_terms) {
         need_se <- isTRUE(se.fit) || interval == "confidence"
-        if (agg_mode == "joint") need_se <- FALSE  # skip per-term MC if we will do joint MC
         pt <- .ngam_predict_term_epistemic(
           ngam, x[[tm]], term_name = tm,
           want_se = need_se, level = level,
@@ -167,23 +166,19 @@ predict.neuralGAM <- function(object,
   # epistemic SE on link
   se_eta <- NULL
   if (need_se_req) {
-    if (agg_mode == "joint") {
-      se_eta <- .joint_se_eta_mcdropout(ngam, x, forward_passes = forward_passes, verbose = 0)
-    } else {
-      # per-term aggregation: LM full-fit variance + sum of smooth variances
-      var_np_sum <- if (has_np) .row_sum_var(var_epi[, np_terms, drop=FALSE]) else rep(0, n)
-      var_param_full <- rep(0, n)
-      if (length(p_terms)) {
-        linmod <- ngam$model$linear
-        if (!is.null(linmod)) {
-          lm_data <- x[, p_terms, drop = FALSE]; colnames(lm_data) <- p_terms
-          pr_lin_all <- stats::predict(linmod, newdata = lm_data, se.fit = TRUE)
-          var_param_full <- (as.numeric(pr_lin_all$se.fit))^2
-        }
+    # per-term aggregation: LM full-fit variance + sum of smooth variances
+    var_np_sum <- if (has_np) .row_sum_var(var_epi[, np_terms, drop=FALSE]) else rep(0, n)
+    var_param_full <- rep(0, n)
+    if (length(p_terms)) {
+      linmod <- ngam$model$linear
+      if (!is.null(linmod)) {
+        lm_data <- x[, p_terms, drop = FALSE]; colnames(lm_data) <- p_terms
+        pr_lin_all <- stats::predict(linmod, newdata = lm_data, se.fit = TRUE)
+        var_param_full <- (as.numeric(pr_lin_all$se.fit))^2
       }
-      row_var <- var_param_full + var_np_sum
-      se_eta  <- sqrt(pmax(row_var, 0))
     }
+    row_var <- var_param_full + var_np_sum
+    se_eta  <- sqrt(pmax(row_var, 0))
   }
 
   # ---- type="terms" (now supports CI matrices) ----

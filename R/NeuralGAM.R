@@ -28,7 +28,7 @@
 #' @param dropout_rate Dropout probability in smooth-term NNs (0,1).
 #'   \itemize{
 #'     \item During training: acts as a regularizer.
-#'     \item During prediction (if \code{uncertainty_method} includes "epistemic"): enables MC Dropout sampling.
+#'     \item During prediction (if \code{uncertainty_method} is "epistemic"): enables MC Dropout sampling.
 #'   }
 #' @param forward_passes Integer. Number of MC-dropout forward passes used when
 #'   \code{uncertainty_method \%in\% c("epistemic","both")}.

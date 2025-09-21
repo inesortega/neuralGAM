@@ -137,5 +137,5 @@ test_that("autoplot: newdata path for terms and panels", {
   expect_s3_class(autoplot(ngam, which = "terms", term = "x1",
                            interval = "confidence", newdata = newx_small), "ggplot")
   expect_s3_class(autoplot(ngam, which = "terms", term = "x1",
-                           interval = "none",       newdata = newx_small), "ggplot")
+                           interval = "none", newdata = newx_small), "ggplot")
 })

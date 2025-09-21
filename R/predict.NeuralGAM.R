@@ -58,8 +58,7 @@
 #'       \item \code{interval="confidence"}: data.frame with \code{fit}, \code{lwr}, \code{upr}.
 #'     }
 #' }
-#' @examples
-#' \dontrun{
+#' @examples \dontrun{
 #'
 #' library(neuralGAM)
 #' dat <- sim_neuralGAM_data()

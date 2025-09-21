@@ -82,29 +82,16 @@
 #' train <- dat$train
 #' test  <- dat$test
 #'
-#' # Global architecture
-#' ngam <- neuralGAM(
-#'   y ~ s(x1) + x2,
-#'   data = train,
-#'   num_units = 128
-#' )
-#' ngam
-#' # Per-term architecture
+#' # Per-term architecture and confidence intervals
 #' ngam <- neuralGAM(
 #'   y ~ s(x1, num_units = c(128,64), activation = "tanh") +
 #'        s(x2, num_units = 256),
-#'   data = train
-#' )
-#' ngam
-#' # Construct confidence intervals
-#' ngam <- neuralGAM(
-#'   y ~ s(x1) + x2,
-#'   num_units = 128,
 #'   data = train,
 #'   uncertainty_method = "epistemic",
 #'   forward_passes = 10,
 #'   alpha = 0.05
 #' )
+#' ngam
 #' # Visualize point prediction and confidence intervals using autoplot:
 #' autoplot(ngam, which = "terms", term = "x1", interval = "confidence")
 #' }

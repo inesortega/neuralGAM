@@ -67,7 +67,7 @@ dat <- sim_neuralGAM_data()
 train <- dat$train
 test  <- dat$test
 
-ngam0 <- neuralGAM(
+ngam <- neuralGAM(
   y ~ s(x1) + x2 + s(x3),
   data = train, family = "gaussian", num_units = 128,
   uncertainty_method = "epistemic"

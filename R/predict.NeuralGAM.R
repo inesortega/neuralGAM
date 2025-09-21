@@ -1,4 +1,4 @@
-#' Produces predictions from a fitted \code{neuralGAM} object (epistemic-only)
+#' Produces predictions from a fitted \code{neuralGAM} object
 #'
 #' @description
 #' Generate predictions from a fitted \code{neuralGAM} model. Supported types:
@@ -8,25 +8,25 @@
 #'   \item \code{type = "terms"}: per-term contributions to the linear predictor (no intercept).
 #' }
 #'
-#' \strong{Uncertainty (epistemic only)}
+#' \strong{Uncertainty estimation via MC Dropout (epistemic only)}
 #' \itemize{
 #'   \item If \code{se.fit = TRUE}, standard errors (SE) of the \emph{fitted mean} are returned
 #'         (mgcv-style via Monte Carlo Dropout).
-#'   \item For \code{type = "response"}, SEs are mapped by the delta method:
+#'   \item For \code{type = "response"}, SEs are mapped to the response scale by the delta method:
 #'         \eqn{se_\mu = |d\mu/d\eta| \cdot se_\eta}.
 #'   \item \code{interval = "confidence"} returns CI bands derived from SEs; prediction intervals are not supported.
-#'   \item For \code{type = "terms"}, \code{interval="confidence"} returns per-term CI matrices.
+#'   \item For \code{type = "terms"}, \code{interval="confidence"} returns per-term CI matrices (and \code{se.fit} when requested).
 #' }
 #'
 #' \strong{Details}
 #'
 #' \itemize{
-#'   \item Epistemic SEs (CIs) are obtained via Monte Carlo Dropout. For full-model CIs,
-#'         uncertainty is aggregated jointly (via joint MC) when needed; otherwise by summing
-#'         per-term variances.
-#'   \item For \code{type="terms"}, only epistemic SEs are returned (if \code{se.fit=TRUE});
-#'         intervals are ignored for terms.
-#'   \item For \code{type="link"}, only CIs are provided; PIs are not defined on the link scale.
+#'   \item Epistemic SEs (CIs) are obtained via Monte Carlo Dropout. When \code{type != "terms"}
+#'         and SEs/CIs are requested in the presence of smooth terms, uncertainty is aggregated
+#'         \emph{jointly} to capture cross-term covariance in a single MC pass set. Otherwise,
+#'         per-term variances are used (parametric variances are obtained from \code{stats::predict(..., se.fit=TRUE)}).
+#'   \item For \code{type="terms"}, epistemic SEs and CI matrices are returned when requested.
+#'   \item PIs are not defined on the link scale and are not supported.
 #' }
 #'
 #' @param object A fitted \code{neuralGAM} object.
@@ -58,15 +58,11 @@
 #'       \item \code{interval="confidence"}: data.frame with \code{fit}, \code{lwr}, \code{upr}.
 #'     }
 #' }
-#'
-#' @importFrom stats predict qnorm setNames
-#' @export
-#' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @examples
 #' \dontrun{
 #'
 #' library(neuralGAM)
-#' #' dat <- .sim_neuralGAM_data()
+#' dat <- sim_neuralGAM_data()
 #' train <- dat$train
 #' test  <- dat$test
 #'
@@ -82,6 +78,9 @@
 #' resp_ci  <- predict(ngam0, type = "response", interval = "confidence", level = 0.95)
 #' trm_se   <- predict(ngam0, type = "terms", se.fit = TRUE)
 #' }
+#' @importFrom stats predict qnorm setNames
+#' @export
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 predict.neuralGAM <- function(object,
                               newdata = NULL,
                               type = c("link","response","terms"),
@@ -122,24 +121,33 @@ predict.neuralGAM <- function(object,
   term_fit <- matrix(0, n, p, dimnames = list(NULL, all_terms))
   var_epi  <- matrix(NA_real_, n, p, dimnames = list(NULL, all_terms))
 
+  need_se_req <- isTRUE(se.fit) || interval == "confidence"
+  has_np <- length(np_terms) > 0L
+
+  # Decide aggregation mode ONCE to avoid duplicate MC passes
+  agg_mode <- if (type != "terms" && need_se_req && has_np) "joint" else "perterm"
+
   if (use_cache) {
     term_fit[,] <- as.matrix(ngam$partial[, all_terms, drop = FALSE])
     if (!is.null(ngam$var_epistemic)) var_epi[,] <- as.matrix(ngam$var_epistemic[, all_terms, drop = FALSE])
   } else {
-    # parametric terms
+    # parametric terms (batch)
     if (length(p_terms)) {
       lm_data <- x[, p_terms, drop = FALSE]; colnames(lm_data) <- p_terms
       linmod <- ngam$model$linear
-      for (tm in p_terms) {
-        pr <- stats::predict(linmod, newdata = lm_data, type = "terms", terms = tm, se.fit = TRUE)
-        term_fit[, tm] <- as.numeric(pr$fit)
-        var_epi[, tm]  <- (as.numeric(pr$se.fit))^2
+      if (!is.null(linmod)) {
+        pr_terms <- stats::predict(linmod, newdata = lm_data, type = "terms", se.fit = need_se_req)
+        term_fit[, p_terms] <- unname(as.matrix(pr_terms$fit))
+        if (need_se_req && !is.null(pr_terms$se.fit)) {
+          var_epi[, p_terms] <- unname(as.matrix(pr_terms$se.fit))^2
+        }
       }
     }
     # nonparametric terms (epistemic only)
     if (length(np_terms)) {
       for (tm in np_terms) {
         need_se <- isTRUE(se.fit) || interval == "confidence"
+        if (agg_mode == "joint") need_se <- FALSE  # skip per-term MC if we will do joint MC
         pt <- .ngam_predict_term_epistemic(
           ngam, x[[tm]], term_name = tm,
           want_se = need_se, level = level,
@@ -152,45 +160,30 @@ predict.neuralGAM <- function(object,
     }
   }
 
-  # fill missing epistemic variance if needed
-  need_se_req <- isTRUE(se.fit) || interval == "confidence"
-  if (need_se_req && any(!is.finite(var_epi))) {
-    if (length(p_terms)) {
-      linmod <- ngam$model$linear
-      if (!is.null(linmod)) {
-        lm_data <- x[, p_terms, drop = FALSE]; colnames(lm_data) <- p_terms
-        for (tm in p_terms) {
-          miss <- !is.finite(var_epi[, tm]); if (!any(miss)) next
-          pr <- stats::predict(linmod, newdata = lm_data, type = "terms", terms = tm, se.fit = TRUE)
-          ve <- (as.numeric(pr$se.fit))^2; var_epi[miss, tm] <- ve[miss]
-        }
-      }
-    }
-    if (length(np_terms)) {
-      for (tm in np_terms) {
-        miss <- !is.finite(var_epi[, tm]); if (!any(miss)) next
-        pt <- .ngam_predict_term_epistemic(
-          ngam, x[[tm]], term_name = tm,
-          want_se = TRUE, level = level,
-          forward_passes = forward_passes, verbose = verbose
-        )
-        var_epi[miss, tm] <- pt$var_epistemic[miss]
-      }
-    }
-  }
-
   # assemble link
   eta0 <- ngam$eta0 %||% 0
   eta  <- eta0 + rowSums(term_fit, na.rm = FALSE)
 
   # epistemic SE on link
-  use_joint_mc <- need_se_req &&
-    length(ngam$formula$np_terms %||% character(0L)) > 0L &&
-    any(!is.finite(rowSums(var_epi, na.rm = TRUE)))
-  if (isTRUE(use_joint_mc)) {
-    se_eta <- .joint_se_eta_mcdropout(ngam, x, forward_passes = forward_passes, verbose = 0)
-  } else {
-    row_var_epi <- .row_sum_var(var_epi); se_eta <- sqrt(pmax(row_var_epi, 0))
+  se_eta <- NULL
+  if (need_se_req) {
+    if (agg_mode == "joint") {
+      se_eta <- .joint_se_eta_mcdropout(ngam, x, forward_passes = forward_passes, verbose = 0)
+    } else {
+      # per-term aggregation: LM full-fit variance + sum of smooth variances
+      var_np_sum <- if (has_np) .row_sum_var(var_epi[, np_terms, drop=FALSE]) else rep(0, n)
+      var_param_full <- rep(0, n)
+      if (length(p_terms)) {
+        linmod <- ngam$model$linear
+        if (!is.null(linmod)) {
+          lm_data <- x[, p_terms, drop = FALSE]; colnames(lm_data) <- p_terms
+          pr_lin_all <- stats::predict(linmod, newdata = lm_data, se.fit = TRUE)
+          var_param_full <- (as.numeric(pr_lin_all$se.fit))^2
+        }
+      }
+      row_var <- var_param_full + var_np_sum
+      se_eta  <- sqrt(pmax(row_var, 0))
+    }
   }
 
   # ---- type="terms" (now supports CI matrices) ----
@@ -256,7 +249,7 @@ predict.neuralGAM <- function(object,
   nout <- ncol(y_det)
   mean_col <- if (nout >= 3L) 3L else 1L
   mu_det <- as.numeric(y_det[, mean_col])
-  mu_det <- mu_det - mean(mu_det)
+  # Do not center here. Centering is applied upstream using training-time term_center.
 
   var_ep <- rep(NA_real_, length(mu_det))
   if (isTRUE(want_se)) {
@@ -275,3 +268,101 @@ predict.neuralGAM <- function(object,
 }
 
 `%||%` <- function(a, b) if (!is.null(a)) a else b
+
+#' Internal helper: joint epistemic SE on link scale
+#'
+#' @description
+#' Computes joint epistemic standard errors on the link scale by aggregating
+#' across all smooth terms via MC Dropout, capturing cross-term covariance.
+#' Parametric model uncertainty (from the linear submodel) is added assuming
+#' independence from NN-based epistemic uncertainty.
+#'
+#' @param ngam Fitted \code{neuralGAM} object.
+#' @param x New data frame of covariates.
+#' @param forward_passes Number of MC Dropout passes (default 300).
+#' @param verbose Verbosity (0/1).
+#'
+#' @return A numeric vector of length \code{nrow(x)} giving epistemic SEs on the link scale.
+#'
+#' @details
+#' Steps:
+#' \enumerate{
+#'   \item Parametric part: mean + variance from linear model.
+#'   \item Nonparametric part: pass-level sums across all smooths.
+#'   \item Joint across-pass variance captures covariance between smooths.
+#'   \item Combined with parametric variance (assumed independent).
+#' }
+#' @keywords internal
+.joint_se_eta_mcdropout <- function(ngam, x,
+                                    forward_passes = 300,   # 300–1000 recommended for smooth bands
+                                    verbose = 0) {
+  p_terms  <- ngam$formula$p_terms %||% character(0L)
+  np_terms <- ngam$formula$np_terms %||% character(0L)
+
+  n <- nrow(x)
+  # 1) Parametric component: mean & SE (includes intercept)
+  eta_param_fit <- rep(0, n)
+  var_param     <- rep(0, n)
+  if (length(p_terms)) {
+    lm_data <- x[, p_terms, drop = FALSE]
+    colnames(lm_data) <- p_terms
+    linmod <- ngam$model$linear
+    if (!is.null(linmod)) {
+      pr_lin <- stats::predict(linmod, newdata = lm_data, se.fit = TRUE)
+      eta_param_fit <- as.numeric(pr_lin$fit)               # includes intercept
+      var_param     <- (as.numeric(pr_lin$se.fit))^2
+    } else {
+      eta_param_fit <- rep(ngam$eta0 %||% 0, n)
+    }
+  } else {
+    # If no parametric part, intercept lives in eta0; keep var_param = 0
+    eta_param_fit <- rep(ngam$eta0 %||% 0, n)
+  }
+
+  # 2) Nonparametric component: joint MC Dropout over all smooths
+  if (!length(np_terms)) {
+    # No smooths: SE = sqrt(var_param)
+    return(sqrt(pmax(var_param, 0)))
+  }
+
+  passes <- max(2L, as.integer(forward_passes))
+  eta_np_pass <- matrix(0.0, nrow = passes, ncol = n)  # each row = one pass
+
+  for (tm in np_terms) {
+    mdl <- ngam$model[[tm]]
+    Xtm <- x[[tm]]; if (is.null(dim(Xtm))) Xtm <- matrix(Xtm, ncol = 1L)
+
+    probe <- try(as.matrix(mdl$predict(Xtm, verbose = 0)), silent = TRUE)
+    if (inherits(probe, "try-error") || is.null(dim(probe))) {
+      # fallback: deterministic mean only, no extra variance
+      mu_det <- as.numeric(mdl$predict(Xtm, verbose = 0))
+      eta_np_pass <- sweep(eta_np_pass, 2L, mu_det, `+`)
+      next
+    }
+    nout <- ncol(probe)
+    mean_col <- if (nout >= 3L) 3L else 1L
+
+    # MC Dropout forward: returns [passes, n, nout] or [passes, n] if nout==1 --> this is prepared for future integration of aleatoric uncertainty via Quantile Regression.
+    y_arr <- .mc_dropout_forward(mdl, Xtm, passes = passes, output_dim = nout)
+    y_mat <- if (length(dim(y_arr)) == 2L) {
+      y_arr                               # [passes, n] (single-head)
+    } else {
+      y_arr[, , mean_col, drop = TRUE]    # [passes, n] (mean head)
+    }
+
+    # Accumulate this term's mean head across passes
+    eta_np_pass <- eta_np_pass + y_mat
+  }
+
+  # 3) Full linear predictor per pass (parametric mean + sum of smooths per pass)
+  #    Note: parametric part is deterministic across passes here; its *uncertainty*
+  #    is added via var_param, assuming independence.
+  eta_full_pass <- sweep(eta_np_pass, 2L, eta_param_fit, `+`)  # [passes, n]
+
+  # 4) Joint epistemic variance from passes (captures cross-term covariance across smooths)
+  var_ep_joint <- apply(eta_full_pass, 2L, stats::var)  # length n
+
+  # 5) Combine with parametric variance (independence assumption)
+  var_eta <- var_ep_joint + var_param
+  sqrt(pmax(var_eta, 0))
+}

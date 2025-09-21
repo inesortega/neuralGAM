@@ -78,7 +78,7 @@
 #' @examples \dontrun{
 #'
 #' library(neuralGAM)
-#' dat <- .sim_neuralGAM_data()
+#' dat <- sim_neuralGAM_data()
 #' train <- dat$train
 #' test  <- dat$test
 #'
@@ -583,29 +583,6 @@ neuralGAM <-
     model = model,
     history = history,
     fit = mu_hat
-  )
-}
-
-.sim_neuralGAM_data <- function(n = 2000, seed = 42, test_prop = 0.3) {
-  set.seed(seed)
-  x1 <- runif(n, -2.5, 2.5)
-  x2 <- runif(n, -2.5, 2.5)
-  x3 <- runif(n, -2.5, 2.5)
-
-  f1 <- x1^2
-  f2 <- 2 * x2
-  f3 <- sin(x3)
-
-  y <- 2 + f1 + f2 + f3 + rnorm(n, 0.25)
-  df <- data.frame(x1, x2, x3, y)
-
-  # train/test split
-  n_test <- floor(test_prop * n)
-  idx <- sample(seq_len(n), n_test)
-
-  list(
-    train = df[-idx, , drop = FALSE],
-    test  = df[ idx, , drop = FALSE]
   )
 }
 

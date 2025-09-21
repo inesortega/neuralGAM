@@ -15,7 +15,7 @@
 #' \dontrun{
 #'
 #' library(neuralGAM)
-#' dat <- .sim_neuralGAM_data()
+#' dat <- sim_neuralGAM_data()
 #' train <- dat$train
 #' test  <- dat$test
 #'

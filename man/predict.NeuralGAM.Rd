@@ -2,7 +2,7 @@
 % Please edit documentation in R/predict.NeuralGAM.R
 \name{predict.neuralGAM}
 \alias{predict.neuralGAM}
-\title{Produces predictions from a fitted \code{neuralGAM} object (epistemic-only)}
+\title{Produces predictions from a fitted \code{neuralGAM} object}
 \usage{
 \method{predict}{neuralGAM}(
   object,
@@ -65,32 +65,32 @@ Generate predictions from a fitted \code{neuralGAM} model. Supported types:
 \item \code{type = "terms"}: per-term contributions to the linear predictor (no intercept).
 }
 
-\strong{Uncertainty (epistemic only)}
+\strong{Uncertainty estimation via MC Dropout (epistemic only)}
 \itemize{
 \item If \code{se.fit = TRUE}, standard errors (SE) of the \emph{fitted mean} are returned
 (mgcv-style via Monte Carlo Dropout).
-\item For \code{type = "response"}, SEs are mapped by the delta method:
+\item For \code{type = "response"}, SEs are mapped to the response scale by the delta method:
 \eqn{se_\mu = |d\mu/d\eta| \cdot se_\eta}.
 \item \code{interval = "confidence"} returns CI bands derived from SEs; prediction intervals are not supported.
-\item For \code{type = "terms"}, \code{interval="confidence"} returns per-term CI matrices.
+\item For \code{type = "terms"}, \code{interval="confidence"} returns per-term CI matrices (and \code{se.fit} when requested).
 }
 
 \strong{Details}
 
 \itemize{
-\item Epistemic SEs (CIs) are obtained via Monte Carlo Dropout. For full-model CIs,
-uncertainty is aggregated jointly (via joint MC) when needed; otherwise by summing
-per-term variances.
-\item For \code{type="terms"}, only epistemic SEs are returned (if \code{se.fit=TRUE});
-intervals are ignored for terms.
-\item For \code{type="link"}, only CIs are provided; PIs are not defined on the link scale.
+\item Epistemic SEs (CIs) are obtained via Monte Carlo Dropout. When \code{type != "terms"}
+and SEs/CIs are requested in the presence of smooth terms, uncertainty is aggregated
+\emph{jointly} to capture cross-term covariance in a single MC pass set. Otherwise,
+per-term variances are used (parametric variances are obtained from \code{stats::predict(..., se.fit=TRUE)}).
+\item For \code{type="terms"}, epistemic SEs and CI matrices are returned when requested.
+\item PIs are not defined on the link scale and are not supported.
 }
 }
 \examples{
 \dontrun{
 
 library(neuralGAM)
-#' dat <- .sim_neuralGAM_data()
+dat <- sim_neuralGAM_data()
 train <- dat$train
 test  <- dat$test
 

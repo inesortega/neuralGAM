@@ -124,7 +124,7 @@ In addition to point predictions, the model can optionally estimate \strong{unce
 \dontrun{
 
 library(neuralGAM)
-dat <- .sim_neuralGAM_data()
+dat <- sim_neuralGAM_data()
 train <- dat$train
 test  <- dat$test
 

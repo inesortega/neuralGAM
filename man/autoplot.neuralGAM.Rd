@@ -70,7 +70,7 @@ test  <- dat$test
 ngam <- neuralGAM(
   y ~ s(x1) + x2 + s(x3),
   data = train, family = "gaussian", num_units = 128,
-  uncertainty_method = "epistemic"
+  uncertainty_method = "epistemic", forward_passes = 10
 )
 ## --- Autoplot (epistemic-only) ---
 # Per-term effect (link scale) with CI band
@@ -78,7 +78,7 @@ autoplot(ngam, which = "terms", term = "x1", interval = "confidence")
 
 # Request a different number of forward passes or CI level:
 autoplot(ngam, which = "terms", term = "x1", interval = "confidence",
-forward_passes = 100, level = 0.7)
+forward_passes = 15, level = 0.7)
 # Response panel with CI
 autoplot(ngam, which = "response", interval = "confidence")
 

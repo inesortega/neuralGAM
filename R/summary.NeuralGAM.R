@@ -22,14 +22,14 @@
 #' ngam <- neuralGAM(
 #'   y ~ s(x1) + x2 + s(x3),
 #'   data = train,
-#'   num_units = 1024,
+#'   num_units = 128,
 #'   family = "gaussian",
 #'   activation = "relu",
 #'   learning_rate = 0.001,
 #'   bf_threshold = 0.001,
 #'   max_iter_backfitting = 10,
 #'   max_iter_ls = 10,
-#'   seed = seed
+#'   seed = 1234
 #' )
 #' summary(ngam)
 #' }

@@ -17,7 +17,10 @@ a callable loss (Python callable) or the original R function.
 Validate/resolve a Keras loss
 }
 \examples{
-L <- validate_loss("huber")             # ok (Huber with default delta)
-L <- validate_loss(function(y,t) tensorflow::tf$reduce_mean((y-t)^2))  # custom
+\dontrun{
+library(neuralGAM)
+L <- neuralGAM:::validate_loss("huber")             # ok (Huber with default delta)
+L <- neuralGAM:::validate_loss(function(y,t) tensorflow::tf$reduce_mean((y-t)^2))  # custom
+}
 }
 \keyword{internal}

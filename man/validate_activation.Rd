@@ -17,7 +17,10 @@ a callable activation (Python callable) or the original R function.
 Validate/resolve a Keras activation
 }
 \examples{
-act <- validate_activation("relu")     # ok
-act <- validate_activation(function(x) x)  # custom
+\dontrun{
+library(neuralGAM)
+act <- neuralGAM:::validate_activation("relu")     # ok
+act <- neuralGAM:::validate_activation(function(x) x)  # custom
+}
 }
 \keyword{internal}

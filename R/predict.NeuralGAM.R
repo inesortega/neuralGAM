@@ -70,12 +70,12 @@
 #'   data = train, family = "gaussian",
 #'   num_units = 128, uncertainty_method = "epistemic"
 #' )
-#' eta      <- predict(ngam0, type = "link")
-#' mu       <- predict(ngam0, type = "response")
-#' trm      <- predict(ngam0, type = "terms")
-#' link_ci  <- predict(ngam0, type = "link", interval = "confidence", level = 0.95)
-#' resp_ci  <- predict(ngam0, type = "response", interval = "confidence", level = 0.95)
-#' trm_se   <- predict(ngam0, type = "terms", se.fit = TRUE)
+#' link_ci  <- predict(ngam0, type = "link", interval = "confidence",
+#'                     level = 0.95, forward_passes = 10)
+#' resp_ci  <- predict(ngam0, type = "response", interval = "confidence",
+#'                     level = 0.95, forward_passes = 10)
+#' trm_se   <- predict(ngam0, type = "terms",
+#'                     se.fit = TRUE, forward_passes = 10)
 #' }
 #' @importFrom stats predict qnorm setNames
 #' @export

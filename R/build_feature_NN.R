@@ -231,9 +231,11 @@ make_quantile_loss <- function(alpha = 0.05,
 #' @param activation character or function. If character, must be a valid
 #'   tf.keras activation identifier (e.g., "relu", "gelu", "swish", ...).
 #' @return a callable activation (Python callable) or the original R function.
-#' @examples
-#' act <- validate_activation("relu")     # ok
-#' act <- validate_activation(function(x) x)  # custom
+#' @examples \dontrun{
+#' library(neuralGAM)
+#' act <- neuralGAM:::validate_activation("relu")     # ok
+#' act <- neuralGAM:::validate_activation(function(x) x)  # custom
+#' }
 #' @keywords internal
 validate_activation <- function(activation) {
   if (is.character(activation)) {
@@ -259,9 +261,11 @@ validate_activation <- function(activation) {
 #' @param loss character or function. If character, must be a valid
 #'   tf.keras loss identifier (e.g., "mse", "mae", "huber", "logcosh", ...).
 #' @return a callable loss (Python callable) or the original R function.
-#' @examples
-#' L <- validate_loss("huber")             # ok (Huber with default delta)
-#' L <- validate_loss(function(y,t) tensorflow::tf$reduce_mean((y-t)^2))  # custom
+#' @examples \dontrun{
+#' library(neuralGAM)
+#' L <- neuralGAM:::validate_loss("huber")             # ok (Huber with default delta)
+#' L <- neuralGAM:::validate_loss(function(y,t) tensorflow::tf$reduce_mean((y-t)^2))  # custom
+#' }
 #' @keywords internal
 validate_loss <- function(loss) {
   if (is.character(loss)) {

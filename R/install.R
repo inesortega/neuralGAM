@@ -89,7 +89,6 @@ install_neuralGAM <- function() {
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
       reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
       reticulate::py_config() # ensure python is initialized
-      tfVersion <- tensorflow::tf$`__version__`
     }
     else{
       packageStartupMessage("NOTE: conda environment not found... run 'install_neuralGAM()' and load library again...")
@@ -150,10 +149,6 @@ install_neuralGAM <- function() {
 
 .isTensorFlow <- function() {
   tfAvailable <- reticulate::py_module_available("tensorflow")
-  if (tfAvailable) {
-    tfVersion <- tensorflow::tf$`__version__`
-    tfAvailable <- utils::compareVersion("2.2", tfVersion) <= 0
-  }
   return(tfAvailable)
 }
 

@@ -1,11 +1,15 @@
 # tests/testthat/test-diagnose-neuralGAM.R
+library(testthat)
+library(reticulate)
+
+skip_if_no_keras <- function() {
+  if (!reticulate::py_module_available("keras"))      skip("keras not available")
+  if (!reticulate::py_module_available("tensorflow")) skip("tensorflow not available")
+}
+
 
 test_that("diagnose returns a patchwork object (gaussian, fast)", {
-  skip_if_not_installed("neuralGAM")
-  skip_if_not_installed("keras")
-  skip_if_not_installed("ggplot2")
-  skip_if_not_installed("patchwork")
-
+  skip_if_no_keras()
   set.seed(2025)
 
   # small synthetic data
@@ -47,9 +51,7 @@ test_that("diagnose returns a patchwork object (gaussian, fast)", {
 })
 
 test_that("diagnose works with qq_method='simulate' and 'normal'", {
-  skip_if_not_installed("neuralGAM")
-  skip_if_not_installed("patchwork")
-
+  skip_if_no_keras()
   set.seed(2026)
 
   n <- 180
@@ -91,8 +93,7 @@ test_that("diagnose works with qq_method='simulate' and 'normal'", {
 })
 
 test_that("diagnose accepts external data + response and quantile residuals", {
-  skip_if_not_installed("neuralGAM")
-  skip_if_not_installed("patchwork")
+  skip_if_no_keras()
 
   set.seed(2027)
 

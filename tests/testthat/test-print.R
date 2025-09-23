@@ -1,10 +1,18 @@
 # tests/testthat/test-print-neuralGAM.R
+library(testthat)
+library(reticulate)
+
+skip_if_no_keras <- function() {
+
+  if (!tryCatch(
+    reticulate::py_module_available("keras"),
+    error = function(e) return(FALSE)
+  )
+  ) skip("keras not available for testing...")
+}
 
 test_that("print.neuralGAM: validation and output format on a real model", {
-  skip_if_not_installed("reticulate")
-  if (!reticulate::py_module_available("tensorflow")) {
-    skip("TensorFlow not available; cannot fit neuralGAM.")
-  }
+  skip_if_no_keras()
 
   # --- error on wrong class
   expect_error(print.neuralGAM(list()), "must be a neuralGAM")

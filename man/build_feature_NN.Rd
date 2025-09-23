@@ -47,14 +47,14 @@ If character, it must be valid for \code{tf$keras$activations$get()}.}
 \itemize{
 \item When \code{uncertainty_method} is \code{aleatoric} or \code{both}, this is the \strong{mean-head loss} inside
 \code{make_quantile_loss()} and can be any \code{keras} built-in loss name (e.g., \code{"mse"}, \code{"mae"}, \code{"huber"},
-\code{"logcosh"}, …) or a custom function.
+\code{"logcosh"}, ...) or a custom function.
 \item In any other case, this is used directly in \code{compile()}.
 }}
 
 \item{name}{Optional character string. Name assigned to the model.}
 
 \item{alpha}{Numeric. Desired significance level for \strong{symmetric} prediction intervals.
-Defaults to 0.05 (i.e., 95\% PI using quantiles alpha/2 and 1−alpha/2).}
+Defaults to 0.05 (i.e., 95\% PI using quantiles alpha/2 and 1-alpha/2).}
 
 \item{w_mean}{Non-negative numeric. Weight for the mean-head loss within the composite PI loss.}
 
@@ -130,7 +130,7 @@ non-crossing penalty.
 \references{
 Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
 arXiv:1412.6980.
-Koenker, R., & Bassett Jr, G. (1978). Regression quantiles. \emph{Econometrica}, 46(1), 33–50.
+Koenker, R., & Bassett Jr, G. (1978). Regression quantiles. \emph{Econometrica}, 46(1), 33-50.
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo

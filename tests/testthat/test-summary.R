@@ -1,9 +1,15 @@
 # tests/testthat/test-summary-neuralGAM.R
 
+
+library(testthat)
+library(reticulate)
+
+skip_if_no_keras <- function() {
+  if (!reticulate::py_module_available("keras"))      skip("keras not available")
+  if (!reticulate::py_module_available("tensorflow")) skip("tensorflow not available")
+}
 test_that("summary.neuralGAM basic printing and invisibility (smooth-only, fast)", {
-  skip_if_not_installed("neuralGAM")
-  skip_if_not_installed("ggplot2")     # plotted classes sometimes attached
-  skip_if_not_installed("patchwork")   # not strictly needed but often suggested
+  skip_if_no_keras()
 
   set.seed(1234)
   n  <- 160
@@ -45,7 +51,7 @@ test_that("summary.neuralGAM basic printing and invisibility (smooth-only, fast)
 })
 
 test_that("summary.neuralGAM prints linear component coefficients when present", {
-  skip_if_not_installed("neuralGAM")
+  skip_if_no_keras()
 
   set.seed(5678)
   n  <- 150

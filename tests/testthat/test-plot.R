@@ -1,7 +1,16 @@
 # tests/testthat/test-plot-neuralGAM.R
 
+
+library(testthat)
+library(reticulate)
+
+skip_if_no_keras <- function() {
+  if (!reticulate::py_module_available("keras"))      skip("keras not available")
+  if (!reticulate::py_module_available("tensorflow")) skip("tensorflow not available")
+}
+
 test_that("plot.neuralGAM works on real trained models (no stubs)", {
-  skip_if_not_installed("reticulate")
+  skip_if_no_keras()
 
   # Require Python deps; otherwise skip gracefully
   if (!reticulate::py_module_available("tensorflow")) {

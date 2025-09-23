@@ -27,11 +27,11 @@
 #' @param loss Loss function to use.
 #'   - When `uncertainty_method` is `aleatoric` or `both`, this is the **mean-head loss** inside
 #'     `make_quantile_loss()` and can be any `keras` built-in loss name (e.g., `"mse"`, `"mae"`, `"huber"`,
-#'     `"logcosh"`, …) or a custom function.
+#'     `"logcosh"`, ...) or a custom function.
 #'   - In any other case, this is used directly in `compile()`.
 #' @param name Optional character string. Name assigned to the model.
 #' @param alpha Numeric. Desired significance level for **symmetric** prediction intervals.
-#'   Defaults to 0.05 (i.e., 95% PI using quantiles alpha/2 and 1−alpha/2).
+#'   Defaults to 0.05 (i.e., 95% PI using quantiles alpha/2 and 1-alpha/2).
 #' @param w_mean Non-negative numeric. Weight for the mean-head loss within the composite PI loss.
 #' @param order_penalty_lambda Non-negative numeric. Strength of a soft monotonicity penalty
 #'   `ReLU(lwr - upr)` to discourage interval inversions.
@@ -66,7 +66,7 @@
 #' @references
 #' Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
 #' arXiv:1412.6980.
-#' Koenker, R., & Bassett Jr, G. (1978). Regression quantiles. *Econometrica*, 46(1), 33–50.
+#' Koenker, R., & Bassett Jr, G. (1978). Regression quantiles. *Econometrica*, 46(1), 33-50.
 #' @author Ines Ortega-Fernandez, Marta Sestelo
 #'
 #' @inheritDotParams neuralGAM

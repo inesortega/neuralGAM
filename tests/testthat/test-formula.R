@@ -4,8 +4,20 @@ library(neuralGAM)
 ## ----------------------------
 ## Base cases (yours, kept)
 ## ----------------------------
+library(testthat)
+library(reticulate)
+
+skip_if_no_keras <- function() {
+
+  if (!tryCatch(
+    reticulate::py_module_available("keras"),
+    error = function(e) return(FALSE)
+  )
+  ) skip("keras not available for testing...")
+}
 
 test_that("get_formula_elements returns the correct output for a linear formula", {
+  skip_if_no_keras()
   formula <- y ~ x1 + x2 + x3
   result <- get_formula_elements(formula)
   expect_equal(as.character(result$y), "y")
@@ -20,6 +32,7 @@ test_that("get_formula_elements returns the correct output for a linear formula"
 })
 
 test_that("get_formula_elements returns the correct output for a formula with smooth terms", {
+  skip_if_no_keras()
   formula <- y ~ x1 + s(x2) + s(x3)
   result <- get_formula_elements(formula)
   expect_equal(as.character(result$y), "y")
@@ -33,6 +46,7 @@ test_that("get_formula_elements returns the correct output for a formula with sm
 })
 
 test_that("get_formula_elements returns the correct output for a smooth formula", {
+  skip_if_no_keras()
   formula <- y ~ s(x1) + s(x2)
   result <- get_formula_elements(formula)
   expect_equal(as.character(result$y), "y")
@@ -45,6 +59,7 @@ test_that("get_formula_elements returns the correct output for a smooth formula"
 })
 
 test_that("get_formula_elements handles variable names containing 's' (not smooths)", {
+  skip_if_no_keras()
   formula <- y ~ s(x1) + s(x2) + sample_var
   result <- get_formula_elements(formula)
   expect_equal(as.character(result$y), "y")
@@ -57,6 +72,7 @@ test_that("get_formula_elements handles variable names containing 's' (not smoot
 })
 
 test_that("get_formula_elements with a single smooth term", {
+  skip_if_no_keras()
   formula <- y ~ s(sample_var)
   result <- get_formula_elements(formula)
   expect_equal(as.character(result$y), "y")
@@ -73,6 +89,7 @@ test_that("get_formula_elements with a single smooth term", {
 ## ----------------------------
 
 test_that("get_formula_elements parses per-term num_units and activation", {
+  skip_if_no_keras()
   formula <- y ~ s(x1, num_units = c(128, 64), activation = "tanh") + s(x2, num_units = 32)
   result <- get_formula_elements(formula)
 
@@ -95,6 +112,7 @@ test_that("get_formula_elements parses per-term num_units and activation", {
 ## ----------------------------
 
 test_that("get_formula_elements handles whitespace and multiline s(...) calls", {
+  skip_if_no_keras()
   formula <- y ~
     s( x1 ,
        num_units = c(64,32) ,
@@ -121,6 +139,7 @@ test_that("get_formula_elements handles whitespace and multiline s(...) calls", 
 ## ----------------------------
 
 test_that("get_formula_elements does not treat sin(x) as a smooth term", {
+  skip_if_no_keras()
   formula <- y ~ sin(x1) + s(x2)
   result <- get_formula_elements(formula)
   expect_equal(result$terms, c("x1","x2"))
@@ -130,13 +149,6 @@ test_that("get_formula_elements does not treat sin(x) as a smooth term", {
   expect_equal(as.character(result$p_formula), "y ~ x1")
 })
 
-## ----------------------------
-## New: Keras object arguments (initializers/regularizers)
-## ----------------------------
-
-skip_if_no_keras <- function() {
-  if (!requireNamespace("keras", quietly = TRUE)) skip("keras not available")
-}
 
 test_that("get_formula_elements captures Keras initializers and regularizers as objects", {
   skip_if_no_keras()
@@ -172,6 +184,7 @@ test_that("get_formula_elements captures Keras initializers and regularizers as 
 ## ----------------------------
 
 test_that("get_formula_elements returns NULL np_terms and empty np_architecture when there are no s(...) terms", {
+  skip_if_no_keras()
   formula <- y ~ x + z + w
   result <- get_formula_elements(formula)
   expect_null(result$np_terms)

@@ -54,7 +54,7 @@ If character, it must be valid for \code{tf$keras$activations$get()}.}
 \item{name}{Optional character string. Name assigned to the model.}
 
 \item{alpha}{Numeric. Desired significance level for \strong{symmetric} prediction intervals.
-Defaults to 0.05 (i.e., 95\% PI using quantiles α/2 and 1−α/2).}
+Defaults to 0.05 (i.e., 95\% PI using quantiles alpha/2 and 1−alpha/2).}
 
 \item{w_mean}{Non-negative numeric. Weight for the mean-head loss within the composite PI loss.}
 

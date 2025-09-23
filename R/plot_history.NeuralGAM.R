@@ -17,8 +17,7 @@
 #' @importFrom rlang .data
 #' @importFrom utils tail
 #' @author Ines Ortega-Fernandez, Marta Sestelo
-#' @examples
-#' if (requireNamespace("neuralGAM", quietly = TRUE)) {
+#' @examples \dontrun{
 #'   set.seed(123)
 #'   n <- 200
 #'   x1 <- runif(n, -2, 2)

@@ -31,7 +31,7 @@
 #'   - In any other case, this is used directly in `compile()`.
 #' @param name Optional character string. Name assigned to the model.
 #' @param alpha Numeric. Desired significance level for **symmetric** prediction intervals.
-#'   Defaults to 0.05 (i.e., 95% PI using quantiles α/2 and 1−α/2).
+#'   Defaults to 0.05 (i.e., 95% PI using quantiles alpha/2 and 1−alpha/2).
 #' @param w_mean Non-negative numeric. Weight for the mean-head loss within the composite PI loss.
 #' @param order_penalty_lambda Non-negative numeric. Strength of a soft monotonicity penalty
 #'   `ReLU(lwr - upr)` to discourage interval inversions.

@@ -24,7 +24,7 @@ for each term-specific model in a fitted \code{neuralGAM} object. It is designed
 \code{history} component of a trained \code{neuralGAM} model.
 }
 \examples{
-if (requireNamespace("neuralGAM", quietly = TRUE)) {
+\dontrun{
   set.seed(123)
   n <- 200
   x1 <- runif(n, -2, 2)

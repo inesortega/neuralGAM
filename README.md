@@ -35,24 +35,11 @@ install_neuralGAM()
 In the following example, we use synthetic data to showcase the performance of neuralGAM by fitting a model with a single layer with 1024 units.
 
 ```r
-n <- 5000
+dat <- sim_neuralGAM_data(n = 5000)
+train <- dat$train
+test <- dat$test
 seed <- 42
 set.seed(seed)
-
-x1 <- runif(n, -2.5, 2.5)
-x2 <- runif(n, -2.5, 2.5)
-x3 <- runif(n, -2.5, 2.5)
-
-f1 <- x1**2
-f2 <- 2 * x2
-f3 <- sin(x3)
-f1 <- f1 - mean(f1)
-f2 <- f2 - mean(f2)
-f3 <- f3 - mean(f3)
-
-eta0 <- 2 + f1 + f2 + f3
-y <- eta0 + rnorm(n, 0.25)
-train <- data.frame(x1, x2, x3, y)
 
 ngam <- neuralGAM(
   y ~ s(x1) + x2 + s(x3), 
@@ -65,7 +52,7 @@ ngam <- neuralGAM(
   seed = seed
 )
 
-summary(ngam)
+ngam
 ```
 
 You can then use the `plot` function to visualize the learnt partial effects: 
@@ -81,13 +68,6 @@ autoplot(ngam, which="terms", term = "x1", interval = "confidence")
 To obtain predictions from new data, use the `predict` function: 
 
 ```r
-n <- 5000
-x1 <- runif(n, -2.5, 2.5)
-x2 <- runif(n, -2.5, 2.5)
-x3 <- runif(n, -2.5, 2.5)
-
-test <- data.frame(x1, x2, x3)
-
 # Obtain linear predictor
 eta <- predict(ngam, newdata = test, type = "link")
 
@@ -110,7 +90,7 @@ terms <- predict(ngam, newdata = test, type = "terms", terms = c("x1", "x2"))
 
 ```r
 ngam <- neuralGAM(
-  y ~ s(x1, num_units = 32) + x2 + s(x3, activation = "tanh"), 
+  y ~ s(x1, num_units = 32, kernel_regularizer = keras::regularizer_l2(1e-4)) + x2 + s(x3, activation = "tanh"), 
   data = train,
   num_units = 64,  # default for terms without explicit num_units
   seed = seed
@@ -143,11 +123,33 @@ ngam <- neuralGAM(
 )
 ```
 
+Moreover, \CRANpkg{neuralGAM} allows the user to fit the model with any custom-built loss function, in addition to the standard losses provided by \CRANpkg{keras}. The loss can be passed as a \code{keras} or \code{tensorflow} loss object, or defined directly by the user as an R function returning a valid tensor operation. This feature enables advanced use cases such as optimizing alternative objectives (e.g. Huber loss for robustness) or incorporating problem-specific penalties (e.g. monotonicity penalties). 
+
+```r
+huber_delta <- function(delta = 0.3) {
+  function(y_true, y_pred) {
+    tensorflow::tf$keras$losses$Huber(delta = delta)(y_true, y_pred)
+  }
+}
+
+fit_ng <- neuralGAM(
+  formula = y ~ s(x1) + s(x2) + s(x3),
+  data = train,
+  num_units = c(32, 32),
+  activation = "relu",
+  learning_rate = 1e-3,
+  uncertainty_method = "epistemic",
+  alpha = 0.95,
+  # Use custom loss
+  loss = huber_delta(0.3)
+)
+```
+
 The `summary()` now prints each smooth terms configuration and the essential parameters of each network's architecture. 
 
 ### Prediction Intervals
 
-Enable predictive intervals by setting `uncertainty_method` and specifying a confidence level via `alpha`. For epistemic variance, `forward_passes > 100` is recommended.
+Enable predictive intervals by setting `uncertainty_method` and specifying a confidence level via `alpha`. For epistemic variance, `forward_passes > 300` is recommended.
 
 ```r
 ngam <- neuralGAM(
@@ -156,7 +158,7 @@ ngam <- neuralGAM(
   uncertainty_method = "epistemic",
   forward_passes = 100,
   alpha = 0.95,
-  num_units = 1024,
+  num_units = 128,
   seed = seed
 )
 pred <- predict(ngam, newdata = test, type = "response")

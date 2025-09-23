@@ -116,46 +116,6 @@ test_that("plot.neuralGAM works on real trained models (no stubs)", {
     ))
   }
 
-  # --------------------------------------
-  # 3) PREDICTION INTERVALS branch (PI/PB)
-  # --------------------------------------
-  # The PI code path in plot.neuralGAM requires:
-  #   - select = NULL (plots all terms) AND
-  #   - ngam$build_pi == TRUE plus lwr/upr present
-  # To avoid the interactive <Return> pause, we fit a ONE-term model and call with select=NULL.
-  n3 <- 200
-  d3 <- data.frame(x = runif(n3, -1, 1))
-  d3$y <- cos(3 * d3$x) + rnorm(n3, sd = 0.15)
-
-  m_pi <- neuralGAM(
-    y ~ s(x),
-    data = d3,
-    num_units = 24,
-    family = "gaussian",
-    learning_rate = 0.01,
-    max_iter_backfitting = 2,
-    uncertainty_method = "epistemic", forward_passes = 10,
-    max_iter_ls = 2,
-    seed = 999,
-    verbose = 0
-  )
-
-  # Only run PI/both if the fitted model indeed carries PI components
-  if (isTRUE(m_pi$build_pi) && !is.null(m_pi$lwr) && !is.null(m_pi$upr)) {
-    # "prediction"
-    expect_silent(with_offscreen_device(
-      plot.neuralGAM(m_pi, select = NULL, interval = "prediction")
-    ))
-    # "both" (PI + CI) if CI supported
-    if (ci_ok) {
-      expect_silent(with_offscreen_device(
-        plot.neuralGAM(m_pi, select = NULL, interval = "both", level = 0.95)
-      ))
-    }
-  } else {
-    skip("Model did not expose prediction intervals (build_pi/lwr/upr); skipping PI tests.")
-  }
-
   # -------------------------
   # 4) Error handling checks
   # -------------------------

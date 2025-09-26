@@ -1,6 +1,7 @@
 clean_environment <- function() {
   library(withr)
   library(fs)
+  Sys.setenv(TF_CPP_MIN_LOG_LEVEL = "1")
 
   # Clean up tensorflow-generated files and caches
   python_temp_dir <- dirname(reticulate::py_run_string(

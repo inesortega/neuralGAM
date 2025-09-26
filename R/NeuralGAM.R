@@ -574,9 +574,6 @@ neuralGAM <-
 }
 
 .onAttach <- function(libname, pkgname) {
-  envname <- getOption("neuralGAM.envName")
-  if(is.null(envname)){
-    envname = "neuralGAM-venv"
-  }
-  .setup_virtualenv(envname = envname)
+  envname <- getOption("neuralGAM.envName", "neuralGAM-venv")
+  try(.setup_virtualenv(envname = envname), silent = TRUE)
 }

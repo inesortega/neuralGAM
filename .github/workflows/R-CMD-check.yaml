@@ -48,11 +48,6 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
-      - if: runner.os == 'ubuntu-latest'
-        name: setup python3-venv
-        run: |
-          sudo apt-get install -y python3-pip python3-venv
-
       - name: Set up virtualenv
         run: |
           python -m venv neuralGAM-venv

@@ -35,19 +35,13 @@ jobs:
         run: |
           sudo apt-get install -y python3-pip python3-venv
 
-      - name: Set up virtualenv (cross-platform)
-        run: |
-          PY="$([[ $RUNNER_OS == Windows ]] && echo "$PWD\\venv\\Scripts\\python.exe" || echo "$PWD/venv/bin/python")"
-          python -m venv venv
-          $PY -m pip install --upgrade pip "tensorflow==2.15.*" "keras==2.15.*"
-          echo "RETICULATE_PYTHON=$PY" >> $GITHUB_ENV
-
-      - name: Test coverage
-        run: |
-          cov <- covr::package_coverage()
-          covr::codecov(coverage = cov, quiet = FALSE, clean = FALSE)
-          covr::to_cobertura(cov, "coverage.xml")
-        shell: Rscript {0}
+      - uses: getsentry/action-setup-venv@v2.2.0
+        id: neuralGAM-venv
+        with:
+          python-version: 3.9
+          cache-dependency-path: |
+            python-req.txt
+          install-cmd: pip install -r python-req.txt
 
       - name: Show testthat output
         if: always()

@@ -43,12 +43,13 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Set up virtualenv (cross-platform)
-        run: |
-          PY="$([[ $RUNNER_OS == Windows ]] && echo "$PWD\\venv\\Scripts\\python.exe" || echo "$PWD/venv/bin/python")"
-          python -m venv venv
-          $PY -m pip install --upgrade pip "tensorflow==2.15.*" "keras==2.15.*"
-          echo "RETICULATE_PYTHON=$PY" >> $GITHUB_ENV
+      - uses: getsentry/action-setup-venv@v2.2.0
+        id: neuralGAM-venv
+        with:
+          python-version: 3.9
+          cache-dependency-path: |
+            python-req.txt
+          install-cmd: pip install -r python-req.txt
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:

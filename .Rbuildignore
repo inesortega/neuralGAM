@@ -10,3 +10,11 @@
 ^pkgdown$
 ^codecov\.yml$
 ^CRAN-SUBMISSION$
+^neuralGAM-venv$
+^venv$
+^.venv$
+^python$
+^env$
+^.*\\.pyc$
+^__pycache__/
+^.cache/

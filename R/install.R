@@ -16,10 +16,6 @@
 #' @usage install_neuralGAM(envname = "neuralGAM-venv", python_version = "3.9", force = FALSE)
 #' @return NULL
 #' @export
-#'
-#' @examples
-#' install_neuralGAM(envname = "test", python_version = "3.9", force = TRUE)
-#'
 #' @importFrom reticulate py_module_available virtualenv_create virtualenv_python use_virtualenv py_config
 install_neuralGAM <- function(envname = "neuralGAM-venv", python_version = "3.9", force = FALSE) {
   venv_root <- file.path(tools::R_user_dir("neuralGAM", "cache"), "venv")
@@ -39,12 +35,15 @@ install_neuralGAM <- function(envname = "neuralGAM-venv", python_version = "3.9"
     status_tf <- tryCatch(
       reticulate::virtualenv_create(venv_path, python=python, force = force, packages = c("tensorflow-macos==2.15.*",
                                                                                           "keras==2.15.*",
-                                                                                          "tensorflow-metal")),
+                                                                                          "tensorflow-metal",
+                                                                                          "silence_tensorflow")),
       error = function(e) { packageStartupMessage(e$message); TRUE }
     )
   } else {
     status_tf <- tryCatch(
-      reticulate::virtualenv_create(venv_path, python=python, force = TRUE, packages = c("tensorflow==2.15", "keras==2.15")),
+      reticulate::virtualenv_create(venv_path, python=python, force = TRUE, packages = c("tensorflow==2.15",
+                                                                                         "keras==2.15",
+                                                                                         "silence_tensorflow")),
       error = function(e) { packageStartupMessage(e$message); TRUE }
     )
   }
@@ -67,11 +66,11 @@ install_neuralGAM <- function(envname = "neuralGAM-venv", python_version = "3.9"
     packageStartupMessage("Could not resolve python in the virtualenv. Reinstall the venv using install_neuralGAM(force=TRUE).")
     return(invisible(NULL))
   }
-
-  Sys.setenv(RETICULATE_PYTHON = py)
-
   # Fast: point directly to python and initialize
   reticulate::use_virtualenv(venv_path, required = TRUE)
+
+  silence <- reticulate::import("silence_tensorflow")
+  silence$silence_tensorflow(level="ERROR")
 
   reticulate::py_config()  # force initialization
   suppressWarnings(tensorflow::tf$config$list_physical_devices("CPU"))  # last check

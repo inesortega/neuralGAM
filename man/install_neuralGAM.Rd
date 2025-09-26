@@ -34,10 +34,6 @@ given by:
 
 \code{tools::R_user_dir('neuralGAM', 'cache')}
 }
-\examples{
-install_neuralGAM(envname = "test", python_version = "3.9", force = TRUE)
-
-}
 \author{
 Ines Ortega-Fernandez, Marta Sestelo
 }

@@ -43,27 +43,12 @@ jobs:
         with:
           python-version: '3.9'
 
-      # --- Create venv + install deps: Unix ---
-      - name: Set up virtualenv (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
+      - name: Set up virtualenv (cross-platform)
         run: |
-          python -m venv neuralGAM-venv
-          ./neuralGAM-venv/bin/python -m pip install --upgrade pip
-          ./neuralGAM-venv/bin/python -m pip install "tensorflow==2.15.*" "keras==2.15.*"
-          # make venv visible to reticulate in subsequent steps
-          echo "RETICULATE_PYTHON=$PWD/neuralGAM-venv/bin/python" >> $GITHUB_ENV
-
-      # --- Create venv + install deps: Windows ---
-      - name: Set up virtualenv (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          python -m venv neuralGAM-venv
-          .\neuralGAM-venv\Scripts\python.exe -m pip install --upgrade pip
-          .\neuralGAM-venv\Scripts\python.exe -m pip install "tensorflow==2.15.*" "keras==2.15.*"
-          # make venv visible to reticulate in subsequent steps
-          echo "RETICULATE_PYTHON=$PWD\neuralGAM-venv\Scripts\python.exe" >> $env:GITHUB_ENV
+          PY="$([[ $RUNNER_OS == Windows ]] && echo "$PWD\\venv\\Scripts\\python.exe" || echo "$PWD/venv/bin/python")"
+          python -m venv venv
+          $PY -m pip install --upgrade pip "tensorflow==2.15.*" "keras==2.15.*"
+          echo "RETICULATE_PYTHON=$PY" >> $GITHUB_ENV
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:

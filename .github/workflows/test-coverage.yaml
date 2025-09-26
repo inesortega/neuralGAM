@@ -35,11 +35,12 @@ jobs:
         run: |
           sudo apt-get install -y python3-pip python3-venv
 
-      - name: Set up virtualenv
+      - name: Set up virtualenv (cross-platform)
         run: |
-          python -m venv neuralGAM-venv
-          source neuralGAM-venv/bin/activate
-          pip install --upgrade pip tensorflow==2.15.* keras==2.15.*
+          PY="$([[ $RUNNER_OS == Windows ]] && echo "$PWD\\venv\\Scripts\\python.exe" || echo "$PWD/venv/bin/python")"
+          python -m venv venv
+          $PY -m pip install --upgrade pip "tensorflow==2.15.*" "keras==2.15.*"
+          echo "RETICULATE_PYTHON=$PY" >> $GITHUB_ENV
 
       - name: Test coverage
         run: |

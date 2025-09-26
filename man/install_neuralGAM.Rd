@@ -4,12 +4,12 @@
 \alias{install_neuralGAM}
 \title{Install neuralGAM python requirements (with virtualenv)}
 \usage{
-install_neuralGAM(envname = "neuralGAM-venv", python_version = "3.9", force = FALSE)
+install_neuralGAM(envname = "neuralGAM-env", python_version = "3.9", force = FALSE)
 
 install_neuralGAM(envname = "neuralGAM-env")
 }
 \arguments{
-\item{envname}{character, name of the virtualenv (default "neuralGAM-venv").}
+\item{envname}{character, name of the virtualenv (default "neuralGAM-env").}
 
 \item{python_version}{Optional. Python version to be used (minimum 3.9).
 If \code{NULL}, uses \code{Sys.which('python3')} (must be >= 3.9).}

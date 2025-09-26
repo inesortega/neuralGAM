@@ -18,3 +18,4 @@
 ^.*\\.pyc$
 ^__pycache__/
 ^.cache/
+^python-req\.txt$

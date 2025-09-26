@@ -573,9 +573,12 @@ neuralGAM <-
   )
 }
 
+.onLoad <- function(libname, pkgname) {
+  if (Sys.getenv("TF_CPP_MIN_LOG_LEVEL", "") == "") Sys.setenv(TF_CPP_MIN_LOG_LEVEL = "2")
+}
+
 .onAttach <- function(libname, pkgname) {
   Sys.unsetenv("RETICULATE_PYTHON")
-  Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
   envname <- getOption("neuralGAM.envName")
   if(is.null(envname)){
     envname = "neuralGAM-venv"

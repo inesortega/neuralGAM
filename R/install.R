@@ -12,8 +12,14 @@
 #' @param envname character, name of the virtualenv (default "neuralGAM-venv").
 #' @param python_version Optional. Python version to be used (minimum 3.9).
 #'        If \code{NULL}, uses \code{Sys.which('python3')} (must be >= 3.9).
+#' @param force Force installation and creation of virtualenv (default FALSE).
+#' @usage install_neuralGAM(envname = "neuralGAM-venv", python_version = "3.9", force = FALSE)
 #' @return NULL
 #' @export
+#'
+#' @examples
+#' install_neuralGAM(envname = "test", python_version = "3.9", force = TRUE)
+#'
 #' @importFrom reticulate py_module_available virtualenv_create virtualenv_python use_virtualenv py_config
 install_neuralGAM <- function(envname = "neuralGAM-venv", python_version = "3.9", force = FALSE) {
   venv_root <- file.path(tools::R_user_dir("neuralGAM", "cache"), "venv")
@@ -50,6 +56,7 @@ install_neuralGAM <- function(envname = "neuralGAM-venv", python_version = "3.9"
   venv_root <- file.path(tools::R_user_dir("neuralGAM", "cache"), "venv")
   venv_path <- file.path(venv_root, envname)
 
+  Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
   if (!dir.exists(venv_path)) {
     packageStartupMessage(paste("NOTE: virtualenv",envname, "not found. Run install_neuralGAM( ) - see ?install_neuralGAM for help on setting up a custom environment"))
     return(invisible(NULL))
@@ -65,8 +72,9 @@ install_neuralGAM <- function(envname = "neuralGAM-venv", python_version = "3.9"
 
   # Fast: point directly to python and initialize
   reticulate::use_virtualenv(venv_path, required = TRUE)
+
   reticulate::py_config()  # force initialization
-  suppressMessages(tensorflow::tf$config$list_physical_devices("CPU"))  # last check
+  suppressWarnings(tensorflow::tf$config$list_physical_devices("CPU"))  # last check
   invisible(NULL)
 }
 
@@ -86,6 +94,7 @@ install_neuralGAM <- function(envname = "neuralGAM-venv", python_version = "3.9"
 
 # helper to ensure Python at given exists
 .ensure_python <- function(version) {
+  Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
   # look through available pythons
   reticulate::use_python_version(version)
 
@@ -96,4 +105,23 @@ install_neuralGAM <- function(envname = "neuralGAM-venv", python_version = "3.9"
     return(cfg$python)  # good, already a 3.9
   }
   message("No Python 3.9 found; install it via reticulate using reticulate::install_python(version = '3.9') and reload library")
+}
+
+.quiet_tf_logs <- function() {
+  Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
+  if (!reticulate::py_module_available("tensorflow")) return(invisible())
+  tf <- reticulate::import("tensorflow", convert = FALSE)
+
+  # TF 2.x Python logger
+  # Try the public API first, fall back to compat.v1
+  try(tf$get_logger()$setLevel("ERROR"), silent = TRUE)
+  try(tf$compat$v1$logging$set_verbosity(tf$compat$v1$logging$ERROR), silent = TRUE)
+
+  # Optional: mute common Keras/Future warnings
+  warnings_mod <- reticulate::import("warnings", convert = FALSE)
+  futurewarn   <- reticulate::import("builtins", convert = FALSE)[['FutureWarning']]
+  warnings_mod$filterwarnings("ignore", category = futurewarn)
+  # Keras deprecation strings
+  warnings_mod$filterwarnings("ignore", message = ".*deprecated.*", module = "keras.*")
+  invisible()
 }

@@ -48,25 +48,20 @@ ggplot2::autoplot
 #'   uncertainty_method = "epistemic", forward_passes = 10
 #' )
 #' ## --- Autoplot (epistemic-only) ---
-#' # Per-term effect (link scale) with CI band
-#' autoplot(ngam, which = "terms", term = "x1", interval = "confidence")
+#' # Per-term effect with CI band
+#' autoplot(ngam, which = "terms", term = "x1", interval = "confidence")  +
+#'   ggplot2::xlab("x1") + ggplot2::ylab("Partial effect")
 #'
 #' # Request a different number of forward passes or CI level:
 #' autoplot(ngam, which = "terms", term = "x1", interval = "confidence",
 #' forward_passes = 15, level = 0.7)
+
 #' # Response panel with CI
 #' autoplot(ngam, which = "response", interval = "confidence")
 #'
 #' # Link panel with CI
-#' autoplot(ngam, which = "link", interval = "confidence")
-#'
-#' # Add custom title
-#' autoplot(ngam, which = "terms", term = "x1", interval = "confidence") +
+#' autoplot(ngam, which = "link", interval = "confidence")  +
 #'   ggplot2::ggtitle("Main Title")
-#'
-#' # Add axis labels
-#' autoplot(ngam, which = "terms", term = "x1", interval = "confidence") +
-#'   ggplot2::xlab("x1") + ggplot2::ylab("Partial effect")
 #'
 #' }
 #' @importFrom ggplot2 ggplot aes geom_line geom_ribbon geom_rug geom_boxplot

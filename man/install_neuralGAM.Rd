@@ -4,7 +4,7 @@
 \alias{install_neuralGAM}
 \title{Install neuralGAM python requirements (with virtualenv)}
 \usage{
-install_neuralGAM(envname = "neuralGAM-env")
+install_neuralGAM(envname = "neuralGAM-venv", python_version = "3.9", force = FALSE)
 
 install_neuralGAM(envname = "neuralGAM-env")
 }
@@ -13,6 +13,8 @@ install_neuralGAM(envname = "neuralGAM-env")
 
 \item{python_version}{Optional. Python version to be used (minimum 3.9).
 If \code{NULL}, uses \code{Sys.which('python3')} (must be >= 3.9).}
+
+\item{force}{Force installation and creation of virtualenv (default FALSE).}
 }
 \description{
 Creates a \strong{virtualenv} and installs the Python requirements
@@ -31,6 +33,10 @@ Miniconda and related environments are generated in the user's cache directory
 given by:
 
 \code{tools::R_user_dir('neuralGAM', 'cache')}
+}
+\examples{
+install_neuralGAM(envname = "test", python_version = "3.9", force = TRUE)
+
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo

@@ -5,29 +5,22 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  release:
+    types: [published]
+  workflow_dispatch:
 
-name: R-CMD-check
+name: Build Web Site
 
 jobs:
-  R-CMD-check:
-    runs-on: ${{ matrix.config.os }}
-
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
-
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - {os: macos-latest,   r: 'release'}
-          - {os: windows-latest, r: 'release'}
-          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-latest,   r: 'release'}
-          - {os: ubuntu-latest,   r: 'oldrel-1'}
-
+  pkgdown:
+    runs-on: ubuntu-latest
+    # Only restrict concurrency for non-PR jobs
+    concurrency:
+      group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      R_KEEP_PKG_SOURCE: yes
-
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
 
@@ -35,61 +28,52 @@ jobs:
 
       - uses: r-lib/actions/setup-r@v2
         with:
-          r-version: ${{ matrix.config.r }}
-          http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - uses: actions/setup-python@v5
+      - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          python-version: "3.9"
-
-      - name: Create virtualenv and install requirements
-        shell: bash
-        run: |
-          set -e
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            python -m venv neuralGAM-venv
-            ./neuralGAM-venv/Scripts/python.exe -m pip install --upgrade pip
-            ./neuralGAM-venv/Scripts/python.exe -m pip install -r python-req.txt
-            echo "RETICULATE_PYTHON=$PWD/neuralGAM-venv/Scripts/python.exe" >> $GITHUB_ENV
-          else
-            python -m venv neuralGAM-venv
-            ./neuralGAM-venv/bin/python -m pip install --upgrade pip
-            ./neuralGAM-venv/bin/python -m pip install -r python-req.txt
-            echo "RETICULATE_PYTHON=$PWD/neuralGAM-venv/bin/python" >> $GITHUB_ENV
-          fi
-
-      # Make RETICULATE_PYTHON persist for R sessions (Unix)
-      - name: Persist RETICULATE_PYTHON for R (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          echo "RETICULATE_PYTHON=$PWD/neuralGAM-venv/bin/python" >> ~/.Renviron
-          echo "RETICULATE_PYTHON set to $(grep RETICULATE_PYTHON ~/.Renviron)"
-
-      # Make RETICULATE_PYTHON persist for R sessions (Windows)
-      - name: Persist RETICULATE_PYTHON for R (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $renv = Join-Path $env:USERPROFILE "Documents\.Renviron"
-          "RETICULATE_PYTHON=$PWD\neuralGAM-venv\Scripts\python.exe" | Out-File -FilePath $renv -Append -Encoding ASCII
-          Write-Output "Wrote RETICULATE_PYTHON to $renv"
+          extra-packages: any::pkgdown, local::.
+          needs: website
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck
           needs: check
 
+      - if: runner.os == 'ubuntu-latest'
+        name: setup python3-venv
+        run: |
+          sudo apt-get install -y python3-pip python3-venv
+
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: "3.10"
+
+      - name: Set up conda environment
+        run: |
+          conda create --name neuralGAM-env python=3.10
+
       - name: Set up python requirements
         shell: Rscript {0}
         run: |
           library(tensorflow)
-          tensorflow::install_tensorflow(version = "2.15", method = "virtualenv", envname = "neuralGAM-venv")
+          tensorflow::install_tensorflow(version = "2.13", method = "conda", envname = "neuralGAM-env")
           library(keras)
-          keras::install_keras(version = "2.13", method = "virtualenv", envname = "neuralGAM-venv")
+          keras::install_keras(version = "2.13", method = "conda", envname = "neuralGAM-env")
 
-      - uses: r-lib/actions/check-r-package@v2
+      - name: Build site
+        run: pkgdown::build_site_github_pages(new_process = FALSE, install = TRUE, run_dont_run = TRUE)
+        shell: Rscript {0}
+
+      - name: Deploy to GitHub pages 🚀
+        if: github.event_name != 'pull_request'
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
         with:
-          upload-snapshots: true
-          args: 'c("--no-manual", "--as-cran", "--run-dontrun")'
+          clean: false
+          branch: gh-pages
+          folder: docs

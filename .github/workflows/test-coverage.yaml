@@ -21,54 +21,43 @@ jobs:
         with:
           use-public-rspm: true
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
-
-      - name: Create virtualenv and install requirements
-        shell: bash
-        run: |
-          set -e
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            python -m venv neuralGAM-venv
-            ./neuralGAM-venv/Scripts/python.exe -m pip install --upgrade pip
-            ./neuralGAM-venv/Scripts/python.exe -m pip install -r python-req.txt
-            echo "RETICULATE_PYTHON=$PWD/neuralGAM-venv/Scripts/python.exe" >> $GITHUB_ENV
-          else
-            python -m venv neuralGAM-venv
-            ./neuralGAM-venv/bin/python -m pip install --upgrade pip
-            ./neuralGAM-venv/bin/python -m pip install -r python-req.txt
-            echo "RETICULATE_PYTHON=$PWD/neuralGAM-venv/bin/python" >> $GITHUB_ENV
-          fi
-
-      # Make RETICULATE_PYTHON persist for R sessions (Unix)
-      - name: Persist RETICULATE_PYTHON for R (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          echo "RETICULATE_PYTHON=$PWD/neuralGAM-venv/bin/python" >> ~/.Renviron
-          echo "RETICULATE_PYTHON set to $(grep RETICULATE_PYTHON ~/.Renviron)"
+          python-version: '3.9'
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::covr
           needs: coverage
 
+      - if: runner.os == 'ubuntu-latest'
+        name: setup python3-venv
+        run: |
+          sudo apt-get install -y python3-pip python3-venv
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: "3.10"
+
+      - name: Set up conda environment
+        run: |
+          conda create --name neuralGAM-env python=3.10
+
       - name: Set up python requirements
         shell: Rscript {0}
         run: |
           library(tensorflow)
-          tensorflow::install_tensorflow(version = "2.15", method = "virtualenv", envname = "neuralGAM-venv")
+          tensorflow::install_tensorflow(version = "2.13", method = "conda", envname = "neuralGAM-env")
           library(keras)
-          keras::install_keras(version = "2.13", method = "virtualenv", envname = "neuralGAM-venv")
+          keras::install_keras(version = "2.13", method = "conda", envname = "neuralGAM-env")
+
 
       - name: Test coverage
         run: |
-          covr::codecov(
-            quiet = FALSE,
-            clean = FALSE,
-            install_path = file.path(Sys.getenv("RUNNER_TEMP"), "package")
-          )
+          cov <- covr::package_coverage()
+          covr::codecov(coverage = cov, quiet = FALSE, clean = FALSE)
+          covr::to_cobertura(cov, "coverage.xml")
         shell: Rscript {0}
 
       - name: Show testthat output
@@ -92,4 +81,3 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
           files: coverage.xml
-

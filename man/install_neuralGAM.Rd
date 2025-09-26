@@ -2,31 +2,16 @@
 % Please edit documentation in R/install.R
 \name{install_neuralGAM}
 \alias{install_neuralGAM}
-\title{Install neuralGAM python requirements (with virtualenv)}
+\title{Install neuralGAM python requirements}
 \usage{
-install_neuralGAM(
-  envname = "neuralGAM-venv",
-  python_version = "3.9",
-  force = FALSE
-)
-}
-\arguments{
-\item{envname}{character, name of the virtualenv (default "neuralGAM-venv").}
-
-\item{python_version}{character, Python version to be used (minimum 3.9).
-If \code{NULL}, uses \code{Sys.which("python3")} (must be >= 3.9).}
-
-\item{force}{logical, whether to force reinstallation of the virtualenv
-even if it already exists (default \code{FALSE}).}
+install_neuralGAM()
 }
 \description{
-Creates a \strong{virtualenv} and installs the Python requirements
-to run neuralGAM (Python 3.9, TensorFlow and Keras, version 2.15).
-}
-\details{
-The virtualenv is created inside the user's cache directory:
-\code{file.path(tools::R_user_dir('neuralGAM', 'cache'), 'venv', envname)}.
+Creates a conda environment (installing miniconda if required) and set ups the
+Python requirements to run neuralGAM (Tensorflow and Keras).
 
-On Apple Silicon (arm64), installs \code{tensorflow-macos} (and \code{tensorflow-metal})
-instead of the standard \code{tensorflow} wheel.
+Miniconda and related environments are generated in the user's cache directory
+given by:
+
+\code{tools::R_user_dir('neuralGAM', 'cache')}
 }

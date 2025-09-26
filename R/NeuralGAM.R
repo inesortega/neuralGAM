@@ -574,6 +574,6 @@ neuralGAM <-
 }
 
 .onAttach <- function(libname, pkgname) {
-  envname <- getOption("neuralGAM.envName", "neuralGAM-venv")
-  try(.setup_virtualenv(envname = envname), silent = TRUE)
+  Sys.unsetenv("RETICULATE_PYTHON")
+  .setupConda(.getConda())
 }

@@ -59,10 +59,35 @@ jobs:
             echo "RETICULATE_PYTHON=$PWD/neuralGAM-venv/bin/python" >> $GITHUB_ENV
           fi
 
+      # Make RETICULATE_PYTHON persist for R sessions (Unix)
+      - name: Persist RETICULATE_PYTHON for R (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          echo "RETICULATE_PYTHON=$PWD/neuralGAM-venv/bin/python" >> ~/.Renviron
+          echo "RETICULATE_PYTHON set to $(grep RETICULATE_PYTHON ~/.Renviron)"
+
+      # Make RETICULATE_PYTHON persist for R sessions (Windows)
+      - name: Persist RETICULATE_PYTHON for R (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $renv = Join-Path $env:USERPROFILE "Documents\.Renviron"
+          "RETICULATE_PYTHON=$PWD\neuralGAM-venv\Scripts\python.exe" | Out-File -FilePath $renv -Append -Encoding ASCII
+          Write-Output "Wrote RETICULATE_PYTHON to $renv"
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck
           needs: check
+
+      - name: Set up python requirements
+        shell: Rscript {0}
+        run: |
+          library(tensorflow)
+          tensorflow::install_tensorflow(version = "2.15", method = "virtualenv", envname = "neuralGAM-venv")
+          library(keras)
+          keras::install_keras(version = "2.13", method = "virtualenv", envname = "neuralGAM-venv")
 
       - uses: r-lib/actions/check-r-package@v2
         with:

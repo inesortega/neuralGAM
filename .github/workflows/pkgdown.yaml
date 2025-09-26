@@ -55,6 +55,14 @@ jobs:
             echo "RETICULATE_PYTHON=$PWD/neuralGAM-venv/bin/python" >> $GITHUB_ENV
           fi
 
+      # Make RETICULATE_PYTHON persist for R sessions (Unix)
+      - name: Persist RETICULATE_PYTHON for R (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          echo "RETICULATE_PYTHON=$PWD/neuralGAM-venv/bin/python" >> ~/.Renviron
+          echo "RETICULATE_PYTHON set to $(grep RETICULATE_PYTHON ~/.Renviron)"
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck

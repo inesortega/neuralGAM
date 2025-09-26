@@ -12,7 +12,7 @@ This version introduces new functionality and internal improvements:
 * New **diagnosis plots** via `diagnose()` to evaluate fitted models using QQ plots, residual histogram, residuals vs linear predictor and observed vs fitted values.  
 * Internal refactoring for family-specific deviance/link functions, consistent handling of sample weights, and improved numerical stability (clamping in log/exp/probabilities).
 * Expanded **test coverage** for new features: confidence intervals, Poisson/multinomial families, cross-validation, plotting, and per-term configs achieving a 80% test coverage. 
-
+* Python dependencies installation improved: now `install_neuralGAM` uses `virtualenv` instead of `conda` which is faster, and supports the definition of user-created virtualenvs via `options(neuralGAM.envName = "myEnvName")`
 ## R CMD check results
 
 ── R CMD check results ──── neuralGAM 2.0 ────

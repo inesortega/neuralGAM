@@ -120,7 +120,7 @@ diagnose <- function(object,
   # --- Deviance residuals per family -----------------------------------------
   .eps <- 1e-12
 
-  # CDF helpers per family (for quantile residuals)
+  # CDF helpers per family
   cdf_fun <- switch(
     family,
     "gaussian" = function(yv, muv, disp, wv) stats::pnorm(yv, mean = muv, sd = disp),

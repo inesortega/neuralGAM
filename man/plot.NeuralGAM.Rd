@@ -9,7 +9,7 @@
   select = NULL,
   xlab = NULL,
   ylab = NULL,
-  interval = c("none", "confidence", "prediction", "both"),
+  interval = c("none", "confidence"),
   level = 0.95,
   ...
 )
@@ -24,8 +24,8 @@ all terms are plotted.}
 
 \item{ylab}{Optional custom y-axis label(s).}
 
-\item{interval}{One of \code{c("none","confidence","prediction","both")}.
-Default \code{"none"}. Controls whether intervals are plotted.}
+\item{interval}{One of \code{c("none","confidence")}.
+Default \code{"none"}. Controls whether CI are plotted.}
 
 \item{level}{Coverage level for intervals (e.g. \code{0.95}). Default \code{0.95}.}
 
@@ -37,7 +37,7 @@ Produces plots on the current graphics device.
 \description{
 Visualization of a fitted \code{neuralGAM}. Plots learned partial effects, either as
 scatter/line plots for continuous covariates or s for factor covariates.
-Confidence and/or prediction intervals can be added if available.
+Confidence intervals can be added if available.
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.

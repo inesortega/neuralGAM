@@ -1,174 +1,99 @@
-#' Install neuralGAM python requirements
+#' Install neuralGAM python requirements (with virtualenv)
 #' @description
-#' Creates a conda environment (installing miniconda if required) and set ups the
-#' Python requirements to run neuralGAM (Tensorflow and Keras).
+#' Creates a **virtualenv** and installs the Python requirements
+#' to run neuralGAM (Python 3.9, TensorFlow and Keras, version 2.15).
 #'
-#' Miniconda and related environments are generated in the user's cache directory
-#' given by:
+#' The virtualenv is created inside the user's cache directory:
+#' \code{file.path(tools::R_user_dir('neuralGAM', 'cache'), 'venv', envname)}.
 #'
-#' \code{tools::R_user_dir('neuralGAM', 'cache')}
-#' @author Ines Ortega-Fernandez, Marta Sestelo
+#' On Apple Silicon (arm64), installs \code{tensorflow-macos} (and \code{tensorflow-metal})
+#' instead of the standard \code{tensorflow} wheel.
+#'
+#' @param envname character, name of the virtualenv (default "neuralGAM-venv").
+#' @param python_version Optional. Python version to be used (minimum 3.9).
+#'        If \code{NULL}, uses \code{Sys.which('python3')} (must be >= 3.9).
 #' @return NULL
 #' @export
-#' @importFrom reticulate py_module_available conda_binary install_miniconda py_config use_condaenv conda_list conda_create
-#' @importFrom tensorflow install_tensorflow
-#' @importFrom keras install_keras
-install_neuralGAM <- function() {
+#' @importFrom reticulate py_module_available virtualenv_create virtualenv_python use_virtualenv py_config
+install_neuralGAM <- function(envname = "neuralGAM-venv", python_version = "3.9", force = FALSE) {
+  venv_root <- file.path(tools::R_user_dir("neuralGAM", "cache"), "venv")
+  venv_path <- file.path(venv_root, envname)
+  if (!dir.exists(venv_root)) dir.create(venv_root, recursive = TRUE, showWarnings = FALSE)
 
-  conda <- .getConda()
+  # 1) Check if python3.9 is available, otherwise install it with reticulate
+  python <- .ensure_python(python_version)
 
-  if(is.null(conda)){
-    .installConda()
-    conda <- .getConda()
-  }
+  # 2) create the virtualenv
+  # 3) Install TensorFlow & Keras 2.15 into this virtualenv
+  is_mac_arm <- .isMacARM()
 
-  channel <- NULL
-  if(.isMac()){
-    channel <- "apple"
-  }
-
-  reticulate::conda_create(envname = "neuralGAM-env",
-                           conda = conda,
-                           python_version = "3.10",
-                           channel = channel)
-
-  packageStartupMessage("Installing tensorflow...")
-  status4 <- tryCatch(
-    tensorflow::install_tensorflow(
-      version = "2.13",
-      method = "conda",
-      conda = conda,
-      envname = "neuralGAM-env",
-      restart_session = FALSE,
-      force = TRUE
-    ),
-    error = function(e) {
-      packageStartupMessage(e)
-      return(TRUE)
-    }
-  )
-  if (isTRUE(status4)) {
-    stop("Error during tensorflow installation.",
-         call. = FALSE)
-  }
-
-  packageStartupMessage("Installing keras...")
-  status3 <- tryCatch(
-    keras::install_keras(
-      version = "2.13",
-      method = "conda",
-      conda = conda,
-      envname = "neuralGAM-env",
-      force = TRUE
-    ),
-    error = function(e) {
-      packageStartupMessage(e)
-      return(TRUE)
-    }
-  )
-  if (isTRUE(status3)) {
-    packageStartupMessage(status3)
-    stop("Error during keras installation.",
-         call. = FALSE)
-  }
-
-  packageStartupMessage("Installation completed! Restarting R session...")
-
-}
-
-.setupConda <- function(conda) {
-
-  if(is.null(conda)){
-    packageStartupMessage("NOTE: conda not found... run 'install_neuralGAM()' and load library again...")
-  }
-  else{
-    envs <- reticulate::conda_list(conda)
-    if("neuralGAM-env" %in% envs$name){
-      i <- which(envs$name == "neuralGAM-env")
-      Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
-      Sys.setenv(RETICULATE_PYTHON = envs$python[i])
-      reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
-      reticulate::py_config() # ensure python is initialized
-    }
-    else{
-      packageStartupMessage("NOTE: conda environment not found... run 'install_neuralGAM()' and load library again...")
-    }
-  }
-
-}
-.installConda <- function() {
-  packageStartupMessage("No miniconda detected, installing it using reticulate R package")
-  dir <- tools::R_user_dir("neuralGAM", "cache")
-  user_dir <- normalizePath(dir, winslash = "\\", mustWork = NA)
-
-  status <- tryCatch(
-    reticulate::install_miniconda(path = user_dir),
-    error = function(e) {
-      packageStartupMessage(e)
-      return(TRUE)
-    }
-  )
-  if (isTRUE(status)) {
-    stop("Error in Miniconda Installation.", call. = FALSE)
-  }
-
-  return(.getConda())
-}
-
-.getCondaDir <- function() {
-  user_dir <- tools::R_user_dir("neuralGAM", "cache")
-  # set up conda_dir according to platform:
-  if (.isWindows()) {
-    conda_dir <- paste0(user_dir, "/condabin/conda.bat")
-  }
-  else {
-    conda_dir <- paste0(user_dir, "/bin/conda")
-  }
-  return(conda_dir)
-}
-
-.getConda <- function() {
-
-  # Try to find custom conda installation:
-  conda_dir <- .getCondaDir()
-  conda <- tryCatch(
-    reticulate::conda_binary(conda_dir),
-    error = function(e)
-      NULL
-  )
-  if(is.null(conda)){
-    # Try to obtain default conda installation
-    conda <- tryCatch(
-      reticulate::conda_binary("auto"),
-      error = function(e)
-        NULL
+  packageStartupMessage(sprintf("Creating virtualenv at: %s", venv_path))
+  if (is_mac_arm) {
+    # Apple Silicon: tensorflow-macos + metal plugin
+    status_tf <- tryCatch(
+      reticulate::virtualenv_create(venv_path, python=python, force = force, packages = c("tensorflow-macos==2.15.*",
+                                                                                          "keras==2.15.*",
+                                                                                          "tensorflow-metal")),
+      error = function(e) { packageStartupMessage(e$message); TRUE }
+    )
+  } else {
+    status_tf <- tryCatch(
+      reticulate::virtualenv_create(venv_path, python=python, force = TRUE, packages = c("tensorflow==2.15", "keras==2.15")),
+      error = function(e) { packageStartupMessage(e$message); TRUE }
     )
   }
-  return(conda)
+  packageStartupMessage("Installation completed! Restarting R session is recommended.")
+  invisible(NULL)
 }
 
-.isTensorFlow <- function() {
-  tfAvailable <- reticulate::py_module_available("tensorflow")
-  return(tfAvailable)
+.setup_virtualenv <- function(envname = "neuralGAM-venv") {
+  venv_root <- file.path(tools::R_user_dir("neuralGAM", "cache"), "venv")
+  venv_path <- file.path(venv_root, envname)
+
+  if (!dir.exists(venv_path)) {
+    packageStartupMessage(paste("NOTE: virtualenv",envname, "not found. Run install_neuralGAM( ) - see ?install_neuralGAM for help on setting up a custom environment"))
+    return(invisible(NULL))
+  }
+
+  py <- reticulate::virtualenv_python(venv_path)
+  if (!nzchar(py)) {
+    packageStartupMessage("Could not resolve python in the virtualenv. Reinstall the venv using install_neuralGAM(force=TRUE).")
+    return(invisible(NULL))
+  }
+
+  Sys.setenv(RETICULATE_PYTHON = py)
+
+  # Fast: point directly to python and initialize
+  reticulate::use_virtualenv(venv_path, required = TRUE)
+  reticulate::py_config()  # force initialization
+  suppressMessages(tensorflow::tf$config$list_physical_devices("CPU"))  # last check
+  invisible(NULL)
 }
 
-.isKeras <- function(){
-  kerasAvailable <- reticulate::py_module_available("keras")
-  return(kerasAvailable)
-}
-
+# ---- helpers (same as your originals) ----
 .isMac <- function() {
   sys_info <- Sys.info()
-  return(sys_info[["sysname"]] == "Darwin")
+  sys_info[["sysname"]] == "Darwin"
 }
-
 .isWindows <- function() {
   sys_info <- Sys.info()
-  return(sys_info[["sysname"]] == "Windows")
+  sys_info[["sysname"]] == "Windows"
 }
-
 .isMacARM <- function() {
   sys_info <- Sys.info()
-  return(sys_info[["sysname"]] == "Darwin" &&
-           sys_info[["machine"]] == "arm64")
+  sys_info[["sysname"]] == "Darwin" && sys_info[["machine"]] == "arm64"
+}
+
+# helper to ensure Python at given exists
+.ensure_python <- function(version) {
+  # look through available pythons
+  reticulate::use_python_version(version)
+
+  cfg <- reticulate::py_discover_config(required_module = NULL)
+
+  # check if current python matches 3.9
+  if (grepl(version, cfg$version)) {
+    return(cfg$python)  # good, already a 3.9
+  }
+  message("No Python 3.9 found; install it via reticulate using reticulate::install_python(version = '3.9') and reload library")
 }

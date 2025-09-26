@@ -3,15 +3,15 @@
 #' @description
 #' Visualization of a fitted \code{neuralGAM}. Plots learned partial effects, either as
 #' scatter/line plots for continuous covariates or s for factor covariates.
-#' Confidence intervals can be added if available.
+#' Confidence and/or prediction intervals can be added if available.
 #'
 #' @param x A fitted \code{neuralGAM} object as produced by \code{neuralGAM()}.
 #' @param select Character vector of terms to plot. If \code{NULL} (default),
 #'   all terms are plotted.
 #' @param xlab Optional custom x-axis label(s).
 #' @param ylab Optional custom y-axis label(s).
-#' @param interval One of \code{c("none","confidence")}.
-#'   Default \code{"none"}. Controls whether CI are plotted.
+#' @param interval One of \code{c("none","confidence","prediction","both")}.
+#'   Default \code{"none"}. Controls whether intervals are plotted.
 #' @param level Coverage level for intervals (e.g. \code{0.95}). Default \code{0.95}.
 #' @param ... Additional graphical arguments passed to \code{plot()}.
 #'
@@ -21,7 +21,7 @@
 #' @export
 plot.neuralGAM <- function(x, select = NULL,
                            xlab = NULL, ylab = NULL,
-                           interval = c("none","confidence"),
+                           interval = c("none","confidence","prediction","both"),
                            level = 0.95,
                            ...) {
 
@@ -50,11 +50,10 @@ plot.neuralGAM <- function(x, select = NULL,
     lwr_mat <- ngam$lwr[, colnames(X), drop = FALSE]
     upr_mat <- ngam$upr[, colnames(X), drop = FALSE]
   }
-  if(!is.null(select)){
-    # Filter after predict, since predict with newdata requires all covariates to be present
-    X <- X[, select, drop = FALSE]
-    f <- f[, select, drop = FALSE]
-  }
+
+  # Filter after predict, since predict with newdata requires all covariates to be present
+  X <- X[, select, drop = FALSE]
+  f <- f[, select, drop = FALSE]
 
   plot_names <- colnames(X)
   z <- stats::qnorm(1 - (1 - level)/2)

@@ -1,6 +1,6 @@
 # neuralGAM 2.0.0
 
-This version introduces new functionality and internal improvements:
+This version introduces major new functionality and internal improvements:
 
 * Adds support for additional distribution family **Poisson**.
 * New **per-term architecture configuration**: hyperparameters (units, activation, initializers, regularizers) can be specified inside `s()`, overriding global defaults.
@@ -25,7 +25,7 @@ This version introduces new functionality and internal improvements:
 * Local: `R CMD check` passed on Windows 11 (x86_64, mingw32, R 4.4.1 2024-06-14 ucrt).
 * NOTE related to unability of R to verify current time, which is a known issue reported [here](https://forum.posit.co/t/r-devel-r-cmd-check-failing-because-of-time-unable-to-verify-current-time/25589):
 * GitHub Actions: [R-CMD-check](https://github.com/inesortega/neuralGAM/actions/workflows/R-CMD-check.yaml) passes on macOS, Windows, and Ubuntu (R-release, R-devel, R-oldrel).
-* Coverage: Improved test coverage (from ~50% to ~80% test coverage confirmed with [codecov](https://app.codecov.io/gh/inesortega/neuralGAM)).
+* Coverage: >80% test coverage confirmed with [codecov](https://app.codecov.io/gh/inesortega/neuralGAM).
 
 # neuralGAM 1.1.1
 

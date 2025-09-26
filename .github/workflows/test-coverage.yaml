@@ -21,27 +21,30 @@ jobs:
         with:
           use-public-rspm: true
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: "3.9"
+
+      - name: Create virtualenv and install requirements
+        shell: bash
+        run: |
+          set -e
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            python -m venv neuralGAM-venv
+            ./venv/Scripts/python.exe -m pip install --upgrade pip
+            ./venv/Scripts/python.exe -m pip install -r python-req.txt
+            echo "RETICULATE_PYTHON=$PWD/venv/Scripts/python.exe" >> $GITHUB_ENV
+          else
+            python -m venv venv
+            ./venv/bin/python -m pip install --upgrade pip
+            ./venv/bin/python -m pip install -r python-req.txt
+            echo "RETICULATE_PYTHON=$PWD/venv/bin/python" >> $GITHUB_ENV
+          fi
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::covr
           needs: coverage
-
-      - if: runner.os == 'ubuntu-latest'
-        name: setup python3-venv
-        run: |
-          sudo apt-get install -y python3-pip python3-venv
-
-      - uses: getsentry/action-setup-venv@v2.2.0
-        id: neuralGAM-venv
-        with:
-          python-version: 3.9
-          cache-dependency-path: |
-            python-req.txt
-          install-cmd: pip install -r python-req.txt
 
       - name: Show testthat output
         if: always()

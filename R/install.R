@@ -1,5 +1,5 @@
 #' Install neuralGAM python requirements (with virtualenv)
-#' @description
+#'
 #' Creates a **virtualenv** and installs the Python requirements
 #' to run neuralGAM (Python 3.9, TensorFlow and Keras, version 2.15).
 #'
@@ -9,15 +9,16 @@
 #' On Apple Silicon (arm64), installs \code{tensorflow-macos} (and \code{tensorflow-metal})
 #' instead of the standard \code{tensorflow} wheel.
 #'
-#' @param envname character, name of the virtualenv (default "neuralGAM-env").
-#' @param python_version Optional. Python version to be used (minimum 3.9).
-#'        If \code{NULL}, uses \code{Sys.which('python3')} (must be >= 3.9).
-#' @param force Force installation and creation of virtualenv (default FALSE).
-#' @usage install_neuralGAM(envname = "neuralGAM-env", python_version = "3.9", force = FALSE)
+#' @param envname character, name of the virtualenv (default "neuralGAM-venv").
+#' @param python_version character, Python version to be used (minimum 3.9).
+#'   If \code{NULL}, uses \code{Sys.which("python3")} (must be >= 3.9).
+#' @param force logical, whether to force reinstallation of the virtualenv
+#'   even if it already exists (default \code{FALSE}).
 #' @return NULL
 #' @export
 #' @importFrom reticulate py_module_available virtualenv_create virtualenv_python use_virtualenv py_config
-install_neuralGAM <- function(envname = "neuralGAM-env", python_version = "3.9", force = FALSE) {
+
+install_neuralGAM <- function(envname = "neuralGAM-venv", python_version = "3.9", force = FALSE) {
   venv_root <- file.path(tools::R_user_dir("neuralGAM", "cache"), "venv")
   venv_path <- file.path(venv_root, envname)
   if (!dir.exists(venv_root)) dir.create(venv_root, recursive = TRUE, showWarnings = FALSE)
@@ -51,7 +52,7 @@ install_neuralGAM <- function(envname = "neuralGAM-env", python_version = "3.9",
   invisible(NULL)
 }
 
-.setup_virtualenv <- function(envname = "neuralGAM-env") {
+.setup_virtualenv <- function(envname = "neuralGAM-venv") {
   venv_root <- file.path(tools::R_user_dir("neuralGAM", "cache"), "venv")
   venv_path <- file.path(venv_root, envname)
 

@@ -45,14 +45,14 @@ jobs:
           set -e
           if [ "${{ runner.os }}" = "Windows" ]; then
             python -m venv neuralGAM-venv
-            ./venv/Scripts/python.exe -m pip install --upgrade pip
-            ./venv/Scripts/python.exe -m pip install -r python-req.txt
-            echo "RETICULATE_PYTHON=$PWD/venv/Scripts/python.exe" >> $GITHUB_ENV
+            ./neuralGAM-venv/Scripts/python.exe -m pip install --upgrade pip
+            ./neuralGAM-venv/Scripts/python.exe -m pip install -r python-req.txt
+            echo "RETICULATE_PYTHON=$PWD/neuralGAM-venv/Scripts/python.exe" >> $GITHUB_ENV
           else
-            python -m venv venv
-            ./venv/bin/python -m pip install --upgrade pip
-            ./venv/bin/python -m pip install -r python-req.txt
-            echo "RETICULATE_PYTHON=$PWD/venv/bin/python" >> $GITHUB_ENV
+            python -m venv neuralGAM-venv
+            ./neuralGAM-venv/bin/python -m pip install --upgrade pip
+            ./neuralGAM-venv/bin/python -m pip install -r python-req.txt
+            echo "RETICULATE_PYTHON=$PWD/neuralGAM-venv/bin/python" >> $GITHUB_ENV
           fi
 
       - uses: r-lib/actions/setup-r-dependencies@v2

@@ -574,7 +574,6 @@ neuralGAM <-
 }
 
 .onAttach <- function(libname, pkgname) {
-  Sys.unsetenv("RETICULATE_PYTHON")
   envname <- getOption("neuralGAM.envName")
   if(is.null(envname)){
     envname = "neuralGAM-venv"

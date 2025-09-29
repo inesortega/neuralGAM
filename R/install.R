@@ -92,10 +92,12 @@ install_neuralGAM <- function() {
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
       reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
 
-      if(reticulate::py_module_available("silence_tensorflow")){
-        silence <- reticulate::import("silence_tensorflow")
-        silence$silence_tensorflow(level="ERROR")
+      # Turn off tensorflow warnings during package load / install
+      if(!reticulate::py_module_available("silence_tensorflow")){
+        reticulate::py_install("silence_tensorflow")
       }
+      silence <- reticulate::import("silence_tensorflow")
+      silence$silence_tensorflow(level="ERROR")
 
       reticulate::py_config() # ensure python is initialized
       tfVersion <- tensorflow::tf$`__version__`

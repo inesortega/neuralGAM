@@ -75,9 +75,7 @@ install_neuralGAM <- function() {
     stop("Error during keras installation.",
          call. = FALSE)
   }
-
   packageStartupMessage("Installation completed! Remember to restart your R session!")
-  .rs.restartR()
 }
 
 .setupConda <- function(conda) {

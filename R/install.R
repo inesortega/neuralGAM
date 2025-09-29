@@ -31,16 +31,35 @@ install_neuralGAM <- function() {
                            conda = conda,
                            python_version = "3.10",
                            channel = channel)
-  packageStartupMessage("Installing keras and tensorflow...")
+
+  packageStartupMessage("Installing tensorflow...")
+  status4 <- tryCatch(
+    tensorflow::install_tensorflow(
+      version = "2.15",
+      method = "conda",
+      conda = conda,
+      envname = "neuralGAM-env",
+      restart_session = FALSE,
+      force = TRUE
+    ),
+    error = function(e) {
+      packageStartupMessage(e)
+      return(TRUE)
+    }
+  )
+  if (isTRUE(status4)) {
+    stop("Error during tensorflow installation.",
+         call. = FALSE)
+  }
+
+  packageStartupMessage("Installing keras...")
   status3 <- tryCatch(
     keras::install_keras(
       version = "2.15",
       method = "conda",
       conda = conda,
       envname = "neuralGAM-env",
-      tensorflow = "2.15",
-      force = TRUE,
-
+      force = TRUE
     ),
     error = function(e) {
       packageStartupMessage(e)
@@ -52,7 +71,9 @@ install_neuralGAM <- function() {
     stop("Error during keras installation.",
          call. = FALSE)
   }
-  packageStartupMessage("Installation completed! Remember to restart your R session!")
+
+  packageStartupMessage("Installation completed! Restarting R session...")
+
 }
 
 .setupConda <- function(conda) {
@@ -67,9 +88,6 @@ install_neuralGAM <- function() {
       Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
       reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
-      reticulate::py_run_string("
-import warnings
-warnings.simplefilter('ignore', DeprecationWarning)")
       reticulate::py_config() # ensure python is initialized
       tfVersion <- tensorflow::tf$`__version__`
     }

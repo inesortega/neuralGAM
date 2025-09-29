@@ -94,7 +94,7 @@ install_neuralGAM <- function() {
 
       # Turn off tensorflow warnings during package load / install
       if(!reticulate::py_module_available("silence_tensorflow")){
-        reticulate::py_install("silence_tensorflow")
+        reticulate::py_install("silence-tensorflow")
       }
       silence <- reticulate::import("silence_tensorflow")
       silence$silence_tensorflow(level="ERROR")

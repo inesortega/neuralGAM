@@ -61,7 +61,9 @@ install_neuralGAM <- function() {
       conda = conda,
       envname = "neuralGAM-env",
       extra_packages = "silence_tensorflow",
-      force = TRUE
+      tensorflow = "2.15",
+      force = TRUE,
+
     ),
     error = function(e) {
       packageStartupMessage(e)
@@ -74,8 +76,8 @@ install_neuralGAM <- function() {
          call. = FALSE)
   }
 
-  packageStartupMessage("Installation completed! Restarting R session...")
-
+  packageStartupMessage("Installation completed! Remember to restart your R session!")
+  .rs.restartR()
 }
 
 .setupConda <- function(conda) {
@@ -89,11 +91,14 @@ install_neuralGAM <- function() {
       i <- which(envs$name == "neuralGAM-env")
       Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 3)
 
-      silence <- reticulate::import("silence_tensorflow")
-      silence$silence_tensorflow(level="ERROR")
-
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
       reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
+
+      if(reticulate::py_module_available("silence_tensorflow")){
+        silence <- reticulate::import("silence_tensorflow")
+        silence$silence_tensorflow(level="ERROR")
+      }
+
       reticulate::py_config() # ensure python is initialized
       tfVersion <- tensorflow::tf$`__version__`
     }

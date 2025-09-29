@@ -394,7 +394,7 @@ neuralGAM <-
           #### Update model and obtain predictions
           t <- Sys.time()
           nonparametric_update = .update_nonparametric_component(model = model, family = family,
-                                                                 term = term, eta = eta, f = g, W = W, Z = Z,
+                                                                 term = term, eta = eta, f = f, W = W, Z = Z,
                                                                  x_np = x_np,
                                                                  validation_split = validation_split,
                                                                  verbose = verbose,

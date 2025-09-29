@@ -52,8 +52,10 @@ plot.neuralGAM <- function(x, select = NULL,
   }
 
   # Filter after predict, since predict with newdata requires all covariates to be present
-  X <- X[, select, drop = FALSE]
-  f <- f[, select, drop = FALSE]
+  if(!is.null(select)){
+    X <- X[, select, drop = FALSE]
+    f <- f[, select, drop = FALSE]
+  }
 
   plot_names <- colnames(X)
   z <- stats::qnorm(1 - (1 - level)/2)

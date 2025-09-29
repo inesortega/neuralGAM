@@ -31,28 +31,6 @@ install_neuralGAM <- function() {
                            conda = conda,
                            python_version = "3.10",
                            channel = channel)
-
-  # packageStartupMessage("Installing tensorflow...")
-  # status4 <- tryCatch(
-  #   tensorflow::install_tensorflow(
-  #     version = "2.15",
-  #     method = "conda",
-  #     conda = conda,
-  #     envname = "neuralGAM-env",
-  #     restart_session = FALSE,
-  #     force = TRUE,
-  #     extra_packages = "silence_tensorflow"
-  #   ),
-  #   error = function(e) {
-  #     packageStartupMessage(e)
-  #     return(TRUE)
-  #   }
-  # )
-  # if (isTRUE(status4)) {
-  #   stop("Error during tensorflow installation.",
-  #        call. = FALSE)
-  # }
-
   packageStartupMessage("Installing keras and tensorflow...")
   status3 <- tryCatch(
     keras::install_keras(
@@ -60,7 +38,6 @@ install_neuralGAM <- function() {
       method = "conda",
       conda = conda,
       envname = "neuralGAM-env",
-      extra_packages = "silence_tensorflow",
       tensorflow = "2.15",
       force = TRUE,
 
@@ -87,18 +64,12 @@ install_neuralGAM <- function() {
     envs <- reticulate::conda_list(conda)
     if("neuralGAM-env" %in% envs$name){
       i <- which(envs$name == "neuralGAM-env")
-      Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 3)
-
+      Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
       reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
-
-      # Turn off tensorflow warnings during package load / install
-      if(!reticulate::py_module_available("silence_tensorflow")){
-        reticulate::py_install("silence-tensorflow")
-      }
-      silence <- reticulate::import("silence_tensorflow")
-      silence$silence_tensorflow(level="ERROR")
-
+      reticulate::py_run_string("
+import warnings
+warnings.simplefilter('ignore', DeprecationWarning)")
       reticulate::py_config() # ensure python is initialized
       tfVersion <- tensorflow::tf$`__version__`
     }

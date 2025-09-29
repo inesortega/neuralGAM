@@ -32,33 +32,35 @@ install_neuralGAM <- function() {
                            python_version = "3.10",
                            channel = channel)
 
-  packageStartupMessage("Installing tensorflow...")
-  status4 <- tryCatch(
-    tensorflow::install_tensorflow(
-      version = "2.13",
-      method = "conda",
-      conda = conda,
-      envname = "neuralGAM-env",
-      restart_session = FALSE,
-      force = TRUE
-    ),
-    error = function(e) {
-      packageStartupMessage(e)
-      return(TRUE)
-    }
-  )
-  if (isTRUE(status4)) {
-    stop("Error during tensorflow installation.",
-         call. = FALSE)
-  }
+  # packageStartupMessage("Installing tensorflow...")
+  # status4 <- tryCatch(
+  #   tensorflow::install_tensorflow(
+  #     version = "2.15",
+  #     method = "conda",
+  #     conda = conda,
+  #     envname = "neuralGAM-env",
+  #     restart_session = FALSE,
+  #     force = TRUE,
+  #     extra_packages = "silence_tensorflow"
+  #   ),
+  #   error = function(e) {
+  #     packageStartupMessage(e)
+  #     return(TRUE)
+  #   }
+  # )
+  # if (isTRUE(status4)) {
+  #   stop("Error during tensorflow installation.",
+  #        call. = FALSE)
+  # }
 
-  packageStartupMessage("Installing keras...")
+  packageStartupMessage("Installing keras and tensorflow...")
   status3 <- tryCatch(
     keras::install_keras(
-      version = "2.13",
+      version = "2.15",
       method = "conda",
       conda = conda,
       envname = "neuralGAM-env",
+      extra_packages = "silence_tensorflow",
       force = TRUE
     ),
     error = function(e) {
@@ -85,7 +87,11 @@ install_neuralGAM <- function() {
     envs <- reticulate::conda_list(conda)
     if("neuralGAM-env" %in% envs$name){
       i <- which(envs$name == "neuralGAM-env")
-      Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
+      Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 3)
+
+      silence <- reticulate::import("silence_tensorflow")
+      silence$silence_tensorflow(level="ERROR")
+
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
       reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
       reticulate::py_config() # ensure python is initialized

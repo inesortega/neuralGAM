@@ -77,52 +77,88 @@ install_neuralGAM <- function() {
 }
 
 .setupConda <- function(conda) {
-  .disable_tf_logs()
-  if(is.null(conda)){
-    packageStartupMessage("NOTE: conda not found... run 'install_neuralGAM()' and load library again...")
+  .disable_tf_logs()  # ensure logs are muted as early as possible
+
+  # If reticulate isn't even available, just inform and exit quietly.
+  if (!requireNamespace("reticulate", quietly = TRUE)) {
+    packageStartupMessage("NOTE: 'reticulate' not available; Python/TensorFlow will be skipped.")
+    return(invisible(FALSE))
   }
-  else{
-    envs <- reticulate::conda_list(conda)
-    if("neuralGAM-env" %in% envs$name){
-      i <- which(envs$name == "neuralGAM-env")
+
+  # No conda configured
+  if (is.null(conda)) {
+    packageStartupMessage(
+      "NOTE: conda not found... run 'install_neuralGAM()' and load the package again..."
+    )
+    return(invisible(FALSE))
+  }
+  # Query conda envs defensively
+  envs <- try(reticulate::conda_list(conda), silent = TRUE)
+  if (inherits(envs, "try-error") || is.null(envs) || !"name" %in% names(envs)) {
+    packageStartupMessage(
+      "NOTE: unable to list conda environments... run 'install_neuralGAM()' and load the package again..."
+    )
+    return(invisible(FALSE))
+  }
+
+  if ("neuralGAM-env" %in% envs$name) {
+    i <- which(envs$name == "neuralGAM-env")[1]
+    # Point RETICULATE_PYTHON, but do not force-init Python
+    if (!is.na(envs$python[i]) && nzchar(envs$python[i])) {
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
-      reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
-      .disable_tf_logs()
-      invisible(reticulate::py_config()) # ensure python is initialized
+    }
 
-    }
-    else{
-      packageStartupMessage("NOTE: conda environment not found... run 'install_neuralGAM()' and load library again...")
-    }
+    # Best-effort: don't fail if env can't be activated
+    suppressMessages(try(
+      reticulate::use_condaenv("neuralGAM-env", conda = conda, required = FALSE),
+      silent = TRUE
+    ))
+
+    # Re-assert quiet logging after potential Python selection
+    .disable_tf_logs()
+
+    # Optionally probe Python config without failing package load
+    suppressMessages(try(invisible(reticulate::py_config()), silent = TRUE))
+  } else {
+    packageStartupMessage(
+      "NOTE: conda environment 'neuralGAM-env' not found... run 'install_neuralGAM()' and load the package again..."
+    )
   }
-
+  invisible(TRUE)
 }
 
-.disable_tf_logs <- function(){
-  if(.Platform$OS.type == "windows"){
-    if(requireNamespace("tensorflow", quietly = TRUE) &
-       requireNamespace("keras", quietly = TRUE) & .Platform$OS.type != "windows"){
-      suppressMessages(try(tf$compat$v1$logging$set_verbosity(
-        tf$compat$v1$logging$ERROR)))
-      suppressMessages(try(tf$get_logger()$setLevel('ERROR')))
-      suppressMessages(try(tf$autograph$set_verbosity(level=0L)))
-      suppressMessages(try(keras::use_implementation("tensorflow"), silent = TRUE))
+.disable_tf_logs <- function() {
+  # 1) Silence logs BEFORE any TF import (works even if TF isn't installed)
+  #    0=all, 1=INFO, 2=WARNING, 3=ERROR
+  Sys.setenv(TF_CPP_MIN_LOG_LEVEL = "3")   # Silence TF C++ logs
+  Sys.setenv(ABSL_LOGLEVEL        = "3")   # Silence absl.logging (often used by TF)
 
-      suppressMessages(try(invisible(tfprobability::tfd_normal(0,1)), silent = TRUE))
-      suppressMessages(try(invisible(tfprobability::tfd_normal(0,1)), silent = TRUE))
-    }else{
-      tf <<- reticulate::import("tensorflow", delay_load = list(
-        on_load = function(){
-          tape <<- tf$GradientTape
-        }
-      )
-      )
-      keras <<- reticulate::import("keras", delay_load = TRUE)
-    }
-  }else{
-    tf <- reticulate::import("tensorflow")
-    tape <- tf$GradientTape
-  }
+  # If reticulate is missing, we can't set Python-side loggers — that's fine.
+  if (!requireNamespace("reticulate", quietly = TRUE)) return(invisible(FALSE))
+
+  # 2) Prepare lazy imports with on-load hooks so that when/if TF is imported,
+  #    Python-side verbosity is lowered. These calls are safe even if modules
+  #    don't exist yet. If Python isn't initialized yet, delay_load prevents hard failures.
+  tf_obj <- try(reticulate::import(
+    "tensorflow",
+    delay_load = list(
+      priority = 10,
+      on_load = function() {
+        # Guard each call; API surface may vary across TF versions
+        try(tf$compat$v1$logging$set_verbosity(tf$compat$v1$logging$ERROR), silent = TRUE)
+        try(tf$get_logger()$setLevel("ERROR"), silent = TRUE)
+        try(tf$autograph$set_verbosity(level = 0L), silent = TRUE)
+        invisible(NULL)
+      }
+    )
+  ), silent = TRUE)
+
+  # If TF is already initialized elsewhere, attempt to quiet logs now as well
+  # (these will no-op if 'tf' above is only a delay stub)
+  suppressMessages(try(tf$compat$v1$logging$set_verbosity(tf$compat$v1$logging$ERROR), silent = TRUE))
+  suppressMessages(try(tf$get_logger()$setLevel("ERROR"), silent = TRUE))
+  suppressMessages(try(tf$autograph$set_verbosity(level = 0L), silent = TRUE))
+  invisible(TRUE)
 }
 
 .installConda <- function() {

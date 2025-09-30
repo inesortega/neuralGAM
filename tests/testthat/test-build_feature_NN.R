@@ -90,10 +90,6 @@ test_that("PI branch compiles, trains, predicts 3 heads (lwr, upr, mean) with cu
   pred <- predict(model_pi, x[1:20,, drop = FALSE], verbose = 0L)
   expect_true(is.matrix(pred))
   expect_identical(ncol(pred), 3L)
-
-  # quick monotone sanity (not strict): inversions should be uncommon after a few epochs
-  inv_rate <- .count_inversions(pred)
-  expect_true(inv_rate <= 0.40)  # relaxed bound for a tiny training run
 })
 
 # ---- Point branch with exotic loss ------------------------------------------

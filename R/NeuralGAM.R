@@ -571,7 +571,12 @@ neuralGAM <-
   )
 }
 
+.onLoad <- function(libname, pkgname) {
+  .disable_tf_logs_env_only()
+}
+
 .onAttach <- function(libname, pkgname) {
   Sys.unsetenv("RETICULATE_PYTHON")
   .setupConda(.getConda())
+  .quiet_python_loggers_if_initialized()
 }

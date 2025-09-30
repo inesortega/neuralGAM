@@ -19,7 +19,7 @@ and is also available in Python at the following [Github repository](https://git
   
 ## Requirements
 
-neuralGAM is based on Deep Neural Networks, and depends on Tensorflow and Keras packages. Therefore, a working Python>3.9 installation with those packages installed is required. 
+neuralGAM is based on Deep Neural Networks, and depends on Tensorflow and Keras packages. Therefore, a working Python>3.10 installation with those packages installed is required. 
 
 We provide a helper function to get a working python installation from RStudio, which creates a miniconda environment with all the required packages.   
 

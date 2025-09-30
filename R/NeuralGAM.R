@@ -92,8 +92,6 @@
 #'   alpha = 0.05
 #' )
 #' ngam
-#' # Visualize point prediction and confidence intervals using autoplot:
-#' autoplot(ngam, which = "terms", term = "x1", interval = "confidence")
 #' }
 neuralGAM <-
   function(formula,

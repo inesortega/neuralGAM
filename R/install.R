@@ -77,7 +77,7 @@ install_neuralGAM <- function() {
 }
 
 .setupConda <- function(conda) {
-
+  .disable_tf_logs()
   if(is.null(conda)){
     packageStartupMessage("NOTE: conda not found... run 'install_neuralGAM()' and load library again...")
   }
@@ -85,11 +85,11 @@ install_neuralGAM <- function() {
     envs <- reticulate::conda_list(conda)
     if("neuralGAM-env" %in% envs$name){
       i <- which(envs$name == "neuralGAM-env")
-      Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
       reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
-      reticulate::py_config() # ensure python is initialized
-      tfVersion <- tensorflow::tf$`__version__`
+      .disable_tf_logs()
+      invisible(reticulate::py_config()) # ensure python is initialized
+
     }
     else{
       packageStartupMessage("NOTE: conda environment not found... run 'install_neuralGAM()' and load library again...")
@@ -97,6 +97,34 @@ install_neuralGAM <- function() {
   }
 
 }
+
+.disable_tf_logs <- function(){
+  if(.Platform$OS.type == "windows"){
+    if(requireNamespace("tensorflow", quietly = TRUE) &
+       requireNamespace("keras", quietly = TRUE) & .Platform$OS.type != "windows"){
+      suppressMessages(try(tf$compat$v1$logging$set_verbosity(
+        tf$compat$v1$logging$ERROR)))
+      suppressMessages(try(tf$get_logger()$setLevel('ERROR')))
+      suppressMessages(try(tf$autograph$set_verbosity(level=0L)))
+      suppressMessages(try(keras::use_implementation("tensorflow"), silent = TRUE))
+
+      suppressMessages(try(invisible(tfprobability::tfd_normal(0,1)), silent = TRUE))
+      suppressMessages(try(invisible(tfprobability::tfd_normal(0,1)), silent = TRUE))
+    }else{
+      tf <<- reticulate::import("tensorflow", delay_load = list(
+        on_load = function(){
+          tape <<- tf$GradientTape
+        }
+      )
+      )
+      keras <<- reticulate::import("keras", delay_load = TRUE)
+    }
+  }else{
+    tf <- reticulate::import("tensorflow")
+    tape <- tf$GradientTape
+  }
+}
+
 .installConda <- function() {
   packageStartupMessage("No miniconda detected, installing it using reticulate R package")
   dir <- tools::R_user_dir("neuralGAM", "cache")

@@ -56,11 +56,11 @@ ggplot2::autoplot
 #' autoplot(ngam, which = "terms", term = "x1", interval = "confidence",
 #' forward_passes = 15, level = 0.7)
 
-#' # Response panel with CI
-#' autoplot(ngam, which = "response", interval = "confidence")
+#' # Response panel
+#' autoplot(ngam, which = "response")
 #'
-#' # Link panel with CI
-#' autoplot(ngam, which = "link", interval = "confidence")  +
+#' # Link panel with custom title
+#' autoplot(ngam, which = "link")  +
 #'   ggplot2::ggtitle("Main Title")
 #'
 #' }

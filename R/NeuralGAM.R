@@ -481,11 +481,12 @@ neuralGAM <-
       mdl <- model[[term]]
 
       if (verbose == 1) {
-        sprintf("Computing CI/PI using uncertainty_method = %s, at alpha = %s", uncertainty_method, alpha)
+        print(paste("Computing CI/PI using uncertainty_method = ", uncertainty_method," at alpha = ", alpha))
       }
       preds <- .compute_uncertainty(model = mdl,
                                     x = x[[term]],
-                                    uncertainty_method = uncertainty_method, alpha = alpha,
+                                    uncertainty_method = uncertainty_method,
+                                    alpha = alpha,
                                     forward_passes = forward_passes)
       if(build_pi == TRUE){
         # Update prediction intervals
@@ -500,10 +501,10 @@ neuralGAM <-
 
     stats <-
       data.frame(
-        Timestamp = timestamp,
-        Model = model_i,
-        Epoch = epochs,
-        TrainLoss = loss_metric
+        "Timestamp" = timestamp,
+        "Model" = model_i,
+        "BF It." = epochs,
+        "Train Loss" = loss_metric
       )
 
     res <-

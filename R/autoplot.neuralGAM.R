@@ -1,6 +1,3 @@
-#' @importFrom ggplot2 autoplot
-#' @export
-ggplot2::autoplot
 #' @title Autoplot method for \code{neuralGAM} objects (epistemic-only)
 #'
 #' @description
@@ -64,6 +61,7 @@ ggplot2::autoplot
 #'   ggplot2::ggtitle("Main Title")
 #'
 #' }
+#' @importFrom ggplot2 autoplot
 #' @importFrom ggplot2 ggplot aes geom_line geom_ribbon geom_rug geom_boxplot
 #' @importFrom ggplot2 geom_point geom_errorbar labs theme_bw
 #' @importFrom stats predict qnorm

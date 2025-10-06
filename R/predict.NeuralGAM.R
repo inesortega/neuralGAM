@@ -78,6 +78,7 @@
 #'                     se.fit = TRUE, forward_passes = 10)
 #' }
 #' @importFrom stats predict qnorm setNames
+#' @method predict neuralGAM
 #' @export
 #' @author Ines Ortega-Fernandez, Marta Sestelo
 predict.neuralGAM <- function(object,
@@ -207,24 +208,28 @@ predict.neuralGAM <- function(object,
       if (!any(is.finite(lwr_ci)) || !any(is.finite(upr_ci))) {
         warning("Confidence intervals not available on link scale (missing epistemic variance).")
       }
-      return(data.frame(fit = eta, lwr = lwr_ci, upr = upr_ci))
+      return(data.frame(fit = eta, se.fit = se_eta,lwr = lwr_ci, upr = upr_ci))
     }
   }
 
   # ---- type="response" ----
-  mu <- inv_link(ngam$family, eta)
-  if (interval == "none") {
-    if (!se.fit) return(mu)
-    gprime <- abs(mu_eta(ngam$family, eta))
-    se_mu  <- gprime * se_eta
-    return(list(fit = mu, se.fit = se_mu))
-  } else {
-    z <- stats::qnorm(1 - (1 - level)/2)
-    gprime <- abs(mu_eta(ngam$family, eta)); se_mu <- gprime * se_eta
-    lwr_ci <- mu - z * se_mu; upr_ci <- mu + z * se_mu
-    if (any(is.na(se_mu))) warning("Confidence intervals not available (missing epistemic variance).")
-    return(data.frame(fit = mu, lwr = lwr_ci, upr = upr_ci))
+  if(type == "response"){
+    mu <- inv_link(ngam$family, eta)
+    if (interval == "none") {
+      if (!se.fit) return(mu)
+      gprime <- abs(mu_eta(ngam$family, eta))
+      se_mu  <- gprime * se_eta
+      return(list(fit = mu, se.fit = se_mu))
+    } else {
+      z <- stats::qnorm(1 - (1 - level)/2)
+      gprime <- abs(mu_eta(ngam$family, eta)); se_mu <- gprime * se_eta
+      lwr_ci <- mu - z * se_mu; upr_ci <- mu + z * se_mu
+      if (any(is.na(se_mu))) warning("Confidence intervals not available (missing epistemic variance).")
+      return(data.frame(fit = mu, se.fit = se_mu, lwr = lwr_ci, upr = upr_ci))
+    }
   }
+
+
 }
 
 .ngam_predict_term_epistemic <- function(ngam, xvec, term_name,

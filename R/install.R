@@ -78,57 +78,26 @@ install_neuralGAM <- function() {
 
 .setupConda <- function(conda) {
   .disable_tf_logs_env_only()  # keep process quiet as early as possible
-
-  # Never call py_config(), never touch tensorflow::tf here.
-  # Only point reticulate to the env WITHOUT requiring activation now.
-
-  if (is.null(conda)) {
-    packageStartupMessage(
-      "NOTE: conda not found... run 'install_neuralGAM()' and load the package again..."
-    )
-    return(invisible(FALSE))
+  if(is.null(conda)){
+    packageStartupMessage("NOTE: conda not found... run 'install_neuralGAM()' and load library again...")
   }
-
-  envs <- try(reticulate::conda_list(conda), silent = TRUE)
-  if (inherits(envs, "try-error") || is.null(envs) || !"name" %in% names(envs)) {
-    packageStartupMessage(
-      "NOTE: unable to list conda environments... run 'install_neuralGAM()' and load the package again..."
-    )
-    return(invisible(FALSE))
+  else{
+    envs <- reticulate::conda_list(conda)
+    if("neuralGAM-env" %in% envs$name){
+      i <- which(envs$name == "neuralGAM-env")
+      Sys.setenv(RETICULATE_PYTHON = envs$python[i])
+      reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
+    }
+    else{
+      packageStartupMessage("NOTE: conda environment not found... run 'install_neuralGAM()' and load library again...")
+    }
   }
-
-  if (!("neuralGAM-env" %in% envs$name)) {
-    packageStartupMessage(
-      "NOTE: conda environment 'neuralGAM-env' not found... run 'install_neuralGAM()' and load the package again..."
-    )
-    return(invisible(FALSE))
-  }
-
-  i <- which(envs$name == "neuralGAM-env")[1]
-  py <- envs$python[i]
-  if (is.na(py) || !nzchar(py)) {
-    packageStartupMessage("NOTE: 'neuralGAM-env' found but Python path missing. Recreate the env.")
-    return(invisible(FALSE))
-  }
-
-  # Set preference for later initialization; do NOT initialize now.
-  Sys.setenv(RETICULATE_PYTHON = normalizePath(py, winslash = "/", mustWork = FALSE))
-
-  # Suggest to reticulate but DO NOT require (avoids init at load)
-  suppressMessages(try(
-    reticulate::use_condaenv("neuralGAM-env", conda = conda, required = FALSE),
-    silent = TRUE
-  ))
-
-  # Do NOT call py_config(); do NOT import TF/Keras here.
-  invisible(TRUE)
 }
 
 .disable_tf_logs_env_only <- function() {
   Sys.setenv(TF_CPP_MIN_LOG_LEVEL = "3")  # 0=all,1=INFO,2=WARNING,3=ERROR
   Sys.setenv(ABSL_LOGLEVEL        = "3")
   Sys.setenv(PYTHONWARNINGS       = "ignore")
-  options(keras.view_metrics = FALSE)
   invisible(TRUE)
 }
 
@@ -162,6 +131,7 @@ for name in ('tensorflow', 'absl'):
 "), silent = TRUE))
   invisible(TRUE)
 }
+
 .installConda <- function() {
   packageStartupMessage("No miniconda detected, installing it using reticulate R package")
   dir <- tools::R_user_dir("neuralGAM", "cache")

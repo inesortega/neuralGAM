@@ -174,12 +174,9 @@ summary.neuralGAM <- function(object, ...) {
 
   # --- Training history (compact) ---------------------------------------------
   if (!is.null(ngam$stats) && NROW(ngam$stats)) {
-    cat("Training history (head)\n")
-    print(utils::head(ngam$stats, 10))
-  } else {
-    cat("Training history: (none)\n")
+    cat("Training history \n")
+    print(ngam$stats[order(ngam$stats$Model), ])
   }
-
   invisible(object)
 }
 

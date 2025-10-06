@@ -19,7 +19,7 @@ the history. If \code{NULL} (default), all terms are included.}
 A \code{ggplot} object showing the loss curves by backfitting iteration, with facets per term.
 }
 \description{
-This function visualizes the training and/or validation loss over backfitting iterations
+This function visualizes the training and/or validation loss at the end of each backfitting iteration
 for each term-specific model in a fitted \code{neuralGAM} object. It is designed to work with the
 \code{history} component of a trained \code{neuralGAM} model.
 }

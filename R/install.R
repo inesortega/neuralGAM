@@ -35,7 +35,7 @@ install_neuralGAM <- function() {
   packageStartupMessage("Installing tensorflow...")
   status4 <- tryCatch(
     tensorflow::install_tensorflow(
-      version = "2.15",
+      version = "2.15.0",
       method = "conda",
       conda = conda,
       envname = "neuralGAM-env",
@@ -55,7 +55,7 @@ install_neuralGAM <- function() {
   packageStartupMessage("Installing keras...")
   status3 <- tryCatch(
     keras::install_keras(
-      version = "2.15",
+      version = "2.15.0",
       method = "conda",
       conda = conda,
       envname = "neuralGAM-env",
@@ -73,7 +73,7 @@ install_neuralGAM <- function() {
   }
 
   packageStartupMessage("Installation completed! Restarting R session...")
-
+  .setupConda(conda)
 }
 
 .setupConda <- function(conda) {
@@ -211,4 +211,14 @@ for name in ('tensorflow', 'absl'):
   sys_info <- Sys.info()
   return(sys_info[["sysname"]] == "Darwin" &&
            sys_info[["machine"]] == "arm64")
+}
+
+.is_tensorflow_ready <- function() {
+  ok <- FALSE
+  try({
+    tf <- reticulate::import("tensorflow", delay_load = FALSE)
+    ver <- tf$`__version__`
+    if (!is.null(ver)) ok <- TRUE
+  }, silent = TRUE)
+  ok
 }

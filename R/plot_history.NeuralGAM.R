@@ -13,7 +13,7 @@
 #' @return A `ggplot` object showing the loss curves by backfitting iteration, with facets per term.
 #' @export
 #'
-#' @importFrom ggplot2 ggplot labs aes geom_line geom_point facet_wrap
+#' @importFrom ggplot2 ggplot labs aes geom_line geom_point facet_wrap scale_x_continuous
 #' @importFrom rlang .data
 #' @importFrom utils tail
 #' @author Ines Ortega-Fernandez, Marta Sestelo
@@ -54,28 +54,31 @@ plot_history <- function(model, select = NULL, metric = c("loss", "val_loss")) {
   }
 
   df_list <- list()
-
   for (term in names(history)) {
     term_hist <- history[[term]]
-    for (i in seq_along(term_hist)) {
-      h <- term_hist[[i]]
-      row <- list(Term = term, Iteration = i)
+    iteration <- 1
+    for (it_ls in seq_along(term_hist)) {
+      for(it_bf in seq_along(term_hist[[it_ls]])){
+        h <- term_hist[[it_ls]][[it_bf]]
+        row <- list(Term = term, Iteration = iteration)
 
-      # Handle scalar or length-1 loss
-      if ("loss" %in% metric) {
-        loss_val <- h$metrics$loss
-        if (length(loss_val) > 1) loss_val <- utils::tail(loss_val, 1)
-        row$Loss <- as.numeric(loss_val)
+        # Handle scalar or length-1 loss
+        if ("loss" %in% metric) {
+          loss_val <- h$metrics$loss
+          if (length(loss_val) > 1) loss_val <- utils::tail(loss_val, 1)
+          row$Loss <- as.numeric(loss_val)
+        }
+
+        # Handle validation loss if available
+        if ("val_loss" %in% metric && "val_loss" %in% names(h$metrics)) {
+          val_loss_val <- h$metrics$val_loss
+          if (length(val_loss_val) > 1) val_loss_val <- utils::tail(val_loss_val, 1)
+          row$ValLoss <- as.numeric(val_loss_val)
+        }
+
+        df_list[[length(df_list) + 1]] <- row
+        iteration <- iteration + 1
       }
-
-      # Handle validation loss if available
-      if ("val_loss" %in% metric && "val_loss" %in% names(h$metrics)) {
-        val_loss_val <- h$metrics$val_loss
-        if (length(val_loss_val) > 1) val_loss_val <- utils::tail(val_loss_val, 1)
-        row$ValLoss <- as.numeric(val_loss_val)
-      }
-
-      df_list[[length(df_list) + 1]] <- row
     }
   }
 
@@ -95,5 +98,6 @@ plot_history <- function(model, select = NULL, metric = c("loss", "val_loss")) {
   }
 
   plt + ggplot2::labs(title = "Loss per Backfitting Iteration",
-             y = "Loss", color = "Metric")
+             y = "Loss", color = "Metric") +
+    ggplot2::scale_x_continuous(breaks = function(x) floor(min(x)):ceiling(max(x)))
 }

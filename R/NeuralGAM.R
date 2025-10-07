@@ -417,9 +417,7 @@ neuralGAM <-
           ## Store training metrics for current backfitting iteration
           epochs <- c(epochs, it_back)
           loss_metric <- c(loss_metric, round(history$metrics$loss, 4))
-
-          model_history[[term]][[it_back]] <- history
-
+          model_history[[term]][[as.character(it)]][[as.character(it_back)]] <- history
           timestamp <- c(timestamp, format(t, "%Y-%m-%d %H:%M:%S"))
           model_i <- c(model_i, term)
 
@@ -476,13 +474,13 @@ neuralGAM <-
     }
 
     #### Compute uncertainty when all models are fitted
+    if (verbose == 1 && build_pi == TRUE) {
+      print(paste("Computing CI/PI using uncertainty_method = ", uncertainty_method," at alpha = ", alpha))
+    }
     for (k in 1:ncol(x_np)) {
       term <- colnames(x_np)[[k]]
       mdl <- model[[term]]
 
-      if (verbose == 1) {
-        print(paste("Computing CI/PI using uncertainty_method = ", uncertainty_method," at alpha = ", alpha))
-      }
       preds <- .compute_uncertainty(model = mdl,
                                     x = x[[term]],
                                     uncertainty_method = uncertainty_method,
@@ -577,7 +575,14 @@ neuralGAM <-
 }
 
 .onAttach <- function(libname, pkgname) {
-  Sys.unsetenv("RETICULATE_PYTHON")
-  .setupConda(.getConda())
+  tf_check <- .is_tensorflow_ready()
+  if(tf_check){
+    reticulate::py_require(packages = c("tensorflow==2.15", "keras==2.15"),
+                           action = "add")
+  }
+  else{
+    Sys.unsetenv("RETICULATE_PYTHON")
+    .setupConda(.getConda())
+  }
   .quiet_python_loggers_if_initialized()
 }

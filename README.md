@@ -73,7 +73,7 @@ You can then use the `plot` function to visualize the learnt partial effects:
 ```r
 plot(ngam)
 ```
-Or the custom `autoplot` function for more advanced graphics using the ggplot2 library, including Confidence / Prediction Intervals (if available)
+Or the custom `autoplot` function for more advanced graphics using the ggplot2 library, including Confidence Intervals (if available)
 
 ```r
 autoplot(ngam, which="terms", term = "x1", interval = "confidence")
@@ -145,9 +145,9 @@ ngam <- neuralGAM(
 
 The `summary()` now prints each smooth terms configuration and the essential parameters of each network's architecture. 
 
-### Prediction Intervals
+### Confidence Intervals
 
-Enable predictive intervals by setting `uncertainty_method` and specifying a confidence level via `alpha`. For epistemic variance, `forward_passes > 100` is recommended.
+Enable confidence intervals by setting `uncertainty_method` and specifying a sensitivity level via `alpha` (i.e. `0.05` for 95% coverage). For epistemic variance, `forward_passes > 150` is recommended.
 
 ```r
 ngam <- neuralGAM(
@@ -155,7 +155,7 @@ ngam <- neuralGAM(
   data = train,
   uncertainty_method = "epistemic",
   forward_passes = 100,
-  alpha = 0.95,
+  alpha = 0.05,
   num_units = 1024,
   seed = seed
 )

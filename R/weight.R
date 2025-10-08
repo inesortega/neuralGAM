@@ -5,9 +5,10 @@
 #' @param w weights
 #' @param muhat fitted values
 #' @param family A description of the link function used in the model:
-#' \code{"gaussian"} or \code{"binomial"}
+#' \code{"gaussian"}, \code{"binomial"}, or \code{"poisson"}.
 #' @return computed weights for the Local Scoring algorithm
 #' according to the \code{"family"} distribution
+#' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @keywords internal
 weight <- function(w, muhat, family) {
 
@@ -23,8 +24,10 @@ weight <- function(w, muhat, family) {
     stop("Argument \"family\" is missing, with no default")
   }
 
-  if (family != "gaussian" & family != "binomial") {
-    stop("Unsupported distribution family. Supported values are \"gaussian\" and \"binomial\"")
+  supported_families <- c("gaussian", "binomial", "poisson")
+  if (!family %in% supported_families) {
+    stop(paste0("Unsupported distribution family. Supported values are: ",
+                paste(supported_families, collapse = ", ")))
   }
 
 
@@ -36,6 +39,13 @@ weight <- function(w, muhat, family) {
     muhat[muhat >= 0.999] <- 0.999
     temp <- diriv(family, muhat)
     aux <- muhat * (1 - muhat) * (temp**2)
+    aux[aux <= 0.001] <- 0.001
+    wei <- w / aux
+  }
+  if (family == "poisson") {
+    muhat <- pmax(muhat, 0.001)
+    temp <- diriv(family, muhat)
+    aux <- muhat * (temp^2)
     aux[aux <= 0.001] <- 0.001
     wei <- w / aux
   }

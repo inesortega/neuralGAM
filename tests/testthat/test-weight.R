@@ -9,7 +9,7 @@ skip_if_no_keras <- function() {
   )
   ) skip("keras not available for testing...")
 }
-# Test case 1: Check the weights for gaussian family
+# Check the weights for gaussian family
 test_that("Weights for gaussian family should be equal to input weights", {
   skip_if_no_keras()
 
@@ -21,7 +21,7 @@ test_that("Weights for gaussian family should be equal to input weights", {
   expect_equal(actual_output, expected_output)
 })
 
-# Test case 2: Check the weights for binomial family
+# Check the weights for binomial family
 test_that("Weights for binomial family should be correctly calculated", {
   skip_if_no_keras()
 
@@ -39,7 +39,7 @@ test_that("Weights for binomial family should be correctly calculated", {
   expect_equal(actual_output, expected_output)
 })
 
-# Test case 3: Check for missing 'muhat' argument
+# Check for missing 'muhat' argument
 test_that("Function should throw an error for missing 'muhat' argument", {
   skip_if_no_keras()
 
@@ -48,7 +48,7 @@ test_that("Function should throw an error for missing 'muhat' argument", {
   expect_error(weight(w, family))
 })
 
-# Test case 4: Check for missing 'w' argument
+# Check for missing 'w' argument
 test_that("Function should throw an error for missing 'w' argument", {
   skip_if_no_keras()
 
@@ -57,7 +57,7 @@ test_that("Function should throw an error for missing 'w' argument", {
   expect_error(weight(muhat, family))
 })
 
-# Test case 5: Check for missing 'family' argument
+# Check for missing 'family' argument
 test_that("Function should throw an error for missing 'family' argument", {
   skip_if_no_keras()
 
@@ -66,17 +66,17 @@ test_that("Function should throw an error for missing 'family' argument", {
   expect_error(weight(w, muhat))
 })
 
-# Test case 6: Check for unsupported family
+# Check for unsupported family
 test_that("Function should throw an error for unsupported 'family'", {
   skip_if_no_keras()
 
-  family <- "poisson"
+  family <- "unknown"
   muhat <- c(0.1, 0.5, 0.9)
   w <- c(0.2, 0.6, 0.8)
   expect_error(weight(w, muhat, family))
 })
 
-# Test case 7: Check that weights calculation handles extreme muhat values for binomial family
+# Check that weights calculation handles extreme muhat values for binomial family
 test_that("Weights calculation should handle extreme muhat values for binomial family", {
   skip_if_no_keras()
 

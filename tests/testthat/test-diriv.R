@@ -49,7 +49,7 @@ test_that("Function should throw an error for missing 'family' argument", {
 # Test case 5: Check for unsupported family
 test_that("Function should throw an error for unsupported 'family'", {
   skip_if_no_keras()
-  family <- "poisson"
+  family <- "unknown"
   muhat <- c(0.1, 0.5, 0.9)
   expect_error(neuralGAM:::diriv(family, muhat))
 })

@@ -1,127 +1,111 @@
-#' Visualization of \code{neuralGAM} object with base graphics
+#' @title Visualization of \code{neuralGAM} object with base graphics
 #'
-#' @description Visualization of \code{neuralGAM} object. Plots the learned partial effects by the neuralGAM object.
-#' @param x a fitted \code{neuralGAM} object as produced by \code{neuralGAM()}.
-#' @param select allows to plot a set of selected terms. e.g. if you just want to plot the first term,
-#' select="X0"
-#' @param xlab if supplied, this value will be used as the \code{x} label for all plots
-#' @param ylab if supplied, this value will be used as the \code{y} label for all plots
-#' @param \ldots other graphics parameters to pass on to plotting commands.
-#' @return Returns the partial effects plot.
+#' @description
+#' Visualization of a fitted \code{neuralGAM}. Plots learned partial effects, either as
+#' scatter/line plots for continuous covariates or s for factor covariates.
+#' Confidence and/or prediction intervals can be added if available.
+#'
+#' @param x A fitted \code{neuralGAM} object as produced by \code{neuralGAM()}.
+#' @param select Character vector of terms to plot. If \code{NULL} (default),
+#'   all terms are plotted.
+#' @param xlab Optional custom x-axis label(s).
+#' @param ylab Optional custom y-axis label(s).
+#' @param interval One of \code{c("none","confidence","prediction","both")}.
+#'   Default \code{"none"}. Controls whether intervals are plotted.
+#' @param level Coverage level for intervals (e.g. \code{0.95}). Default \code{0.95}.
+#' @param ... Additional graphical arguments passed to \code{plot()}.
+#'
+#' @return Produces plots on the current graphics device.
 #' @author Ines Ortega-Fernandez, Marta Sestelo.
+#' @importFrom graphics  arrows lines points
 #' @export
-#' @examples \dontrun{
-#'
-#' n <- 24500
-#'
-#' seed <- 42
-#' set.seed(seed)
-#'
-#' x1 <- runif(n, -2.5, 2.5)
-#' x2 <- runif(n, -2.5, 2.5)
-#' x3 <- runif(n, -2.5, 2.5)
-#'
-#' f1 <-x1**2
-#' f2 <- 2*x2
-#' f3 <- sin(x3)
-#' f1 <- f1 - mean(f1)
-#' f2 <- f2 - mean(f2)
-#' f3 <- f3 - mean(f3)
-#'
-#' eta0 <- 2 + f1 + f2 + f3
-#' epsilon <- rnorm(n, 0.25)
-#' y <- eta0 + epsilon
-#' train <- data.frame(x1, x2, x3, y)
-#'
-#' library(neuralGAM)
-#' ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
-#'                  num_units = 1024, family = "gaussian",
-#'                  activation = "relu",
-#'                  learning_rate = 0.001, bf_threshold = 0.001,
-#'                  max_iter_backfitting = 10, max_iter_ls = 10,
-#'                  seed = seed
-#'                  )
-#' plot(ngam)
-#' }
-plot.neuralGAM <- function(x, select=NULL, xlab = NULL, ylab = NULL, ...) {
+plot.neuralGAM <- function(x, select = NULL,
+                           xlab = NULL, ylab = NULL,
+                           interval = c("none","confidence","prediction","both"),
+                           level = 0.95,
+                           ...) {
 
-  if (!inherits(x, "neuralGAM")) {
+  if (!inherits(x, "neuralGAM"))
     stop("Argument 'x' must be of class 'neuralGAM'")
-  }
 
+  interval <- match.arg(interval)
   ngam <- x
 
-  x <- ngam$x
+  X <- ngam$x
   f <- ngam$partial
 
-  if(!is.null(select) && ncol(x) > 10){
-    stop("We can only plot 10 terms at the same time. Please use the select argument
-         to choose a subset of terms to plot")
+  if (!is.null(select)) {
+    if (!all(select %in% colnames(X)))
+      stop("Invalid select argument. Valid options are: ",
+           paste(colnames(X), collapse = ", "))
   }
 
-  if (!is.null(select) && !all(select %in% colnames(x))){
-    stop(paste("Invalid select argument. Valid options are: ", paste(colnames(x), collapse=",")))
+  # compute SEs and/or PIs if requested
+  se_mat <- lwr_mat <- upr_mat <- NULL
+  if (interval %in% c("confidence","both")) {
+    pr <- predict(ngam, newdata = X, type = "terms", terms = select, se.fit = TRUE)
+    se_mat <- pr$se.fit
+  }
+  if (interval %in% c("prediction","both") && isTRUE(ngam$build_pi) && is.null(select)) {
+    lwr_mat <- ngam$lwr[, colnames(X), drop = FALSE]
+    upr_mat <- ngam$upr[, colnames(X), drop = FALSE]
   }
 
-  if (!is.null(select)){
-    # plot only selected terms
-    x <- data.frame(x[,select])
-    f <- data.frame(f[,select])
-    colnames(x) <- select
-    colnames(f) <- select
+  # Filter after predict, since predict with newdata requires all covariates to be present
+  if(!is.null(select)){
+    X <- X[, select, drop = FALSE]
+    f <- f[, select, drop = FALSE]
   }
 
-  if(!is.null(xlab) && length(xlab) != length(ncol(x))){
-    stop(paste("xlab must have labels for all the selected columns: "))
-  }
-  if(!is.null(ylab) && length(ylab) != length(ncol(x))){
-    stop(paste("ylab must have labels for all the selected columns: "))
-  }
+  plot_names <- colnames(X)
+  z <- stats::qnorm(1 - (1 - level)/2)
 
-  plots_list <- (vector("list", length = ncol(x)))
+  for (i in seq_along(plot_names)) {
+    term <- plot_names[i]
+    xv <- X[[term]]
+    yv <- f[[term]]
 
-  # Generate custom labels if xlab or ylab is provided
-  if(!is.null(xlab)){
-    x_lab <- rep(xlab, ncol(x))
-  }
-  else{
-    x_lab <- colnames(x)
-  }
-  if(!is.null(ylab)){
-    y_lab <- rep(ylab, ncol(x))
-  }
-  else{
-    y_lab <- rep(as.character(ngam$formula$y), ncol(x))
-    for (i in 1:length(y_lab)){
-      if(colnames(x)[i] %in% ngam$formula$np_terms){
-        y_lab[i] <- paste("s(", x_lab[i], ")", sep="")
+    if (is.factor(xv)) {
+      # -------- factor term:  + optional mean ± SE
+      graphics::boxplot(yv ~ xv, xlab = term, ylab = paste("Partial for", term),
+              main = term, ...)
+
+      if (!is.null(se_mat)) {
+        means <- tapply(yv, xv, mean, na.rm = TRUE)
+        ses   <- tapply(se_mat[, term], xv, function(z) mean(z, na.rm = TRUE))
+        ci_lwr <- means - z * ses
+        ci_upr <- means + z * ses
+
+        graphics::points(seq_along(means), means, pch = 19, col = "red")
+        graphics::arrows(seq_along(means), ci_lwr, seq_along(means), ci_upr,
+               angle = 90, code = 3, length = 0.05, col = "red")
       }
-      else{ ## todo take into account factor terms!
-        if(is.factor(x[[colnames(x)[i]]])){
-          y_lab[i] <- paste("Partial for ", x_lab[i])
-        }
-        else{
-          y_lab[i] <- x_lab[i]
-        }
+
+    } else {
+      # -------- continuous term: scatter + line + intervals
+      ord <- order(xv)
+      plot(xv, yv, type = "p", xlab = term, ylab = paste("s(", term, ")", sep=""),
+           main = term, ...)
+      graphics::lines(xv[ord], yv[ord], col = "blue")
+
+      if (!is.null(se_mat)) {
+        se <- se_mat[, term]
+        lwr_ci <- yv - z * se
+        upr_ci <- yv + z * se
+        graphics::lines(xv[ord], lwr_ci[ord], col = "red", lty = 2)
+        graphics::lines(xv[ord], upr_ci[ord], col = "red", lty = 2)
+      }
+
+      if (!is.null(lwr_mat) && !is.null(upr_mat)) {
+        graphics::lines(xv[ord], lwr_mat[ord, term], col = "darkgreen", lty = 3)
+        graphics::lines(xv[ord], upr_mat[ord, term], col = "darkgreen", lty = 3)
       }
     }
-  }
 
-  plot_names <- colnames(x)
-
-  # Loop through the plots
-  for (i in seq_along(plot_names)) {
-
-    term <- colnames(x)[[i]]
-
-    # Generate the plot
-    plot(x[, i], f[,i], xlab=x_lab[i], ylab=y_lab[i], ...)
-
-    # Prompt the user to continue
+    # pause if multiple plots
     if (i < length(plot_names)) {
       message("Hit <Return> to see next plot: ")
       invisible(readLines(n = 1))
-      }
     }
-
+  }
 }

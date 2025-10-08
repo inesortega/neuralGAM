@@ -2,13 +2,13 @@
 % Please edit documentation in R/NeuralGAM.R
 \name{neuralGAM}
 \alias{neuralGAM}
-\title{Fit a \code{neuralGAM} model}
+\title{Fit a neuralGAM model}
 \usage{
 neuralGAM(
   formula,
   data,
-  num_units,
   family = "gaussian",
+  num_units = 64,
   learning_rate = 0.001,
   activation = "relu",
   kernel_initializer = "glorot_normal",
@@ -17,6 +17,11 @@ neuralGAM(
   bias_initializer = "zeros",
   activity_regularizer = NULL,
   loss = "mse",
+  uncertainty_method = c("none", "epistemic"),
+  alpha = 0.05,
+  forward_passes = 100,
+  dropout_rate = 0.1,
+  validation_split = NULL,
   w_train = NULL,
   bf_threshold = 0.001,
   ls_threshold = 0.1,
@@ -28,107 +33,112 @@ neuralGAM(
 )
 }
 \arguments{
-\item{formula}{An object of class "formula": a description of the model to be fitted. You can add smooth terms using \code{s()}.}
+\item{formula}{Model formula. Smooth terms must be wrapped in \code{s(...)}.
+You can specify per-term NN settings, e.g.:
+\code{y ~ s(x1, num_units = 1024) + s(x3, num_units = c(1024, 512))}.}
 
-\item{data}{A data frame containing the model response variable and covariates
-required by the formula. Additional terms not present in the formula will be ignored.}
+\item{data}{Data frame containing the variables.}
 
-\item{num_units}{Defines the architecture of each neural network.
-If a scalar value is provided, a single hidden layer neural network with that number of units is used.
-If a vector of values is provided, a multi-layer neural network with each element of the vector defining
-the number of hidden units on each hidden layer is used.}
+\item{family}{Response distribution: \code{"gaussian"}, \code{"binomial"}, \code{"poisson"}.}
 
-\item{family}{This is a family object specifying the distribution and link to use for fitting.
-By default, it is \code{"gaussian"} but also works to \code{"binomial"} for logistic regression.}
+\item{num_units}{Default hidden layer sizes for smooth terms (integer or vector).
+\strong{Mandatory} unless every \code{s(...)} specifies its own \code{num_units}.}
 
-\item{learning_rate}{Learning rate for the neural network optimizer.}
+\item{learning_rate}{Learning rate for Adam optimizer.}
 
-\item{activation}{Activation function of the neural network. Defaults to \code{relu}}
+\item{activation}{Activation function for hidden layers. Either a string understood by
+\code{tf$keras$activations$get()} or a function.}
 
-\item{kernel_initializer}{Kernel initializer for the Dense layers.
-Defaults to Xavier Initializer (\code{glorot_normal}).}
+\item{kernel_initializer, bias_initializer}{Initializers for weights and biases.}
 
-\item{kernel_regularizer}{Optional regularizer function applied to the kernel weights matrix.}
+\item{kernel_regularizer, bias_regularizer, activity_regularizer}{Optional Keras regularizers.}
 
-\item{bias_regularizer}{Optional regularizer function applied to the bias vector.}
+\item{loss}{Loss function to use. Can be any Keras built-in (e.g., \code{"mse"}, \code{"mae"},
+\code{"huber"}, \code{"logcosh"}) or a custom function, passed directly to \code{keras::compile()}.}
 
-\item{bias_initializer}{Optional initializer for the bias vector.}
+\item{uncertainty_method}{Character string indicating the type of uncertainty to estimate.
+One of:
+\itemize{
+\item \code{"none"} (default): no uncertainty estimation.
+\item \code{"epistemic"}: MC Dropout for mean uncertainty (CIs)
+}}
 
-\item{activity_regularizer}{Optional regularizer function applied to the output of the layer}
+\item{alpha}{Significance level for prediction intervals, e.g. \code{0.05} for 95\% coverage.}
 
-\item{loss}{Loss function to use during neural network training. Defaults to the mean squared error.}
+\item{forward_passes}{Integer. Number of MC-dropout forward passes used when
+\code{uncertainty_method \%in\% c("epistemic","both")}.}
 
-\item{w_train}{Optional sample weights}
+\item{dropout_rate}{Dropout probability in smooth-term NNs (0,1).
+\itemize{
+\item During training: acts as a regularizer.
+\item During prediction (if \code{uncertainty_method} is "epistemic"): enables MC Dropout sampling.
+}}
 
-\item{bf_threshold}{Convergence criterion of the backfitting algorithm.
-Defaults to \code{0.001}}
+\item{validation_split}{Optional fraction of training data used for validation.}
 
-\item{ls_threshold}{Convergence criterion of the local scoring algorithm.
-Defaults to \code{0.1}}
+\item{w_train}{Optional training weights.}
+
+\item{bf_threshold}{Convergence criterion of the backfitting algorithm. Defaults to \code{0.001}}
+
+\item{ls_threshold}{Convergence criterion of the local scoring algorithm. Defaults to \code{0.1}}
 
 \item{max_iter_backfitting}{An integer with the maximum number of iterations
 of the backfitting algorithm. Defaults to \code{10}.}
 
-\item{max_iter_ls}{An integer with the maximum number of iterations of the
-local scoring Algorithm. Defaults to \code{10}.}
+\item{max_iter_ls}{An integer with the maximum number of iterations of the local scoring Algorithm. Defaults to \code{10}.}
 
-\item{seed}{A positive integer which specifies the random number generator
-seed for algorithms dependent on randomization.}
+\item{seed}{Random seed.}
 
-\item{verbose}{Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.}
+\item{verbose}{Verbosity: \code{0} silent, \code{1} progress messages.}
 
-\item{\ldots}{Additional parameters for the Adam optimizer (see ?keras::optimizer_adam)}
+\item{...}{Additional arguments passed to \code{keras::optimizer_adam()}.}
 }
 \value{
-A trained \code{neuralGAM} object. Use \code{summary(ngam)} to see details.
+An object of class \code{"neuralGAM"}, a list with elements including:
+\describe{
+\item{muhat}{ Numeric vector of fitted mean predictions (training data).}
+\item{partial}{ Data frame of partial contributions \eqn{g_j(x_j)} per smooth term.}
+\item{y}{ Observed response values.}
+\item{eta}{ Linear predictor \eqn{\eta = \eta_0 + \sum_j g_j(x_j)}.}
+\item{lwr,upr}{ Lower/upper confidence interval bounds (response scale)}
+\item{x}{ Training covariates (inputs).}
+\item{model}{ List of fitted Keras models, one per smooth term (+ \code{"linear"} if present).}
+\item{eta0}{ Intercept estimate \eqn{\eta_0}.}
+\item{family}{ Model family.}
+\item{stats}{ Data frame of training/validation losses per backfitting iteration.}
+\item{mse}{ Training mean squared error.}
+\item{formula}{ Parsed model formula (via \code{get_formula_elements()}).}
+\item{history}{ List of Keras training histories per term.}
+\item{globals}{ Global hyperparameter defaults.}
+\item{alpha}{ PI significance level (if trained with uncertainty).}
+\item{build_pi}{ Logical; whether the model was trained with uancertainty estimation enabled}
+\item{uncertainty_method}{ Type of predictive uncertainty used ("none","epistemic").}
+\item{var_epistemic}{ Matrix of per-term epistemic variances (if computed).}
+}
 }
 \description{
-Fits a \code{neuralGAM} model by building a neural network to attend to each covariate.
-}
-\details{
-The function builds one neural network to attend to each feature in x,
-using the backfitting and local scoring algorithms to fit a weighted additive model
-using neural networks as function approximators. The adjustment of the
-dependent variable and the weights is determined by the distribution of the
-response \code{y}, adjusted by the \code{family} parameter.
+Fits a Generalized Additive Model where smooth terms are modeled by \code{keras} neural networks.
+In addition to point predictions, the model can optionally estimate \strong{uncertainty bands} via Monte Carlo Dropout across forward passes.
 }
 \examples{
 \dontrun{
-n <- 24500
-
-seed <- 42
-set.seed(seed)
-
-x1 <- runif(n, -2.5, 2.5)
-x2 <- runif(n, -2.5, 2.5)
-x3 <- runif(n, -2.5, 2.5)
-
-f1 <- x1 ** 2
-f2 <- 2 * x2
-f3 <- sin(x3)
-f1 <- f1 - mean(f1)
-f2 <- f2 - mean(f2)
-f3 <- f3 - mean(f3)
-
-eta0 <- 2 + f1 + f2 + f3
-epsilon <- rnorm(n, 0.25)
-y <- eta0 + epsilon
-train <- data.frame(x1, x2, x3, y)
 
 library(neuralGAM)
-ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
-                 num_units = 1024, family = "gaussian",
-                 activation = "relu",
-                 learning_rate = 0.001, bf_threshold = 0.001,
-                 max_iter_backfitting = 10, max_iter_ls = 10,
-                 seed = seed
-                 )
+dat <- sim_neuralGAM_data()
+train <- dat$train
+test  <- dat$test
 
+# Per-term architecture and confidence intervals
+ngam <- neuralGAM(
+  y ~ s(x1, num_units = c(128,64), activation = "tanh") +
+       s(x2, num_units = 256),
+  data = train,
+  uncertainty_method = "epistemic",
+  forward_passes = 10,
+  alpha = 0.05
+)
 ngam
 }
-}
-\references{
-Hastie, T., & Tibshirani, R. (1990). Generalized Additive Models. London: Chapman and Hall, 1931(11), 683–741.
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.

@@ -18,7 +18,7 @@ family specified in the "family" parameter.'><!-- mathjax --><script src="https:
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">neuralGAM</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.1.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.0</span>
       </span>
     </div>
 
@@ -55,7 +55,7 @@ family specified in the <code>"family"</code> parameter.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">dev</span><span class="op">(</span><span class="va">muhat</span>, <span class="va">y</span>, <span class="va">family</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">dev</span><span class="op">(</span><span class="va">muhat</span>, <span class="va">y</span>, <span class="va">family</span>, w <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -72,7 +72,11 @@ family specified in the <code>"family"</code> parameter.</p>
 
 <dt id="arg-family">family<a class="anchor" aria-label="anchor" href="#arg-family"></a></dt>
 <dd><p>A description of the link function used in the model:
-<code>"gaussian"</code> or <code>"binomial"</code></p></dd>
+<code>"gaussian"</code>, <code>"poisson"</code>, or <code>"binomial"</code></p></dd>
+
+
+<dt id="arg-w">w<a class="anchor" aria-label="anchor" href="#arg-w"></a></dt>
+<dd><p>weight assigned to each observation. Defaults to 1.</p></dd>
 
 </dl></div>
     <div id="value">
@@ -96,7 +100,7 @@ family specified in the <code>"family"</code> parameter.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.0.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
       </footer></div>

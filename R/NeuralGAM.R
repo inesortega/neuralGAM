@@ -575,14 +575,8 @@ neuralGAM <-
 }
 
 .onAttach <- function(libname, pkgname) {
-  tf_check <- .is_tensorflow_ready()
-  if(tf_check){
-    reticulate::py_require(packages = c("tensorflow==2.15", "keras==2.15"),
-                           action = "add")
-  }
-  else{
-    Sys.unsetenv("RETICULATE_PYTHON")
-    .setupConda(.getConda())
-  }
+  .disable_tf_logs_env_only()
+  Sys.unsetenv("RETICULATE_PYTHON")
+  .setupConda(.getConda())
   .quiet_python_loggers_if_initialized()
 }

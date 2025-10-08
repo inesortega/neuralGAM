@@ -1,18 +1,17 @@
-
 # neuralGAM 2.0
 
 * **Major update** with expanded flexibility, improved diagnosis tools, and uncertainty quantification.
-* **Additional distribution families**: now supports `poisson` and `multinomial` in addition to `gaussian` and `binomial`.
+* **Additional distribution families**: now supports `poisson` in addition to `gaussian` and `binomial`.
 * **Per-term architecture configuration**: hyperparameters (units, activation, learning rate, initializers, regularizers) can now be set per smooth term inside `s()`.  
-* **Prediction Intervals (PI)**:  
-  - `uncertainty_method` argument allows estimation of *epistemic*, *aleatoric*, or *both* sources of uncertainty.  
+* **Confidence Intervals (CI)**:  
+  - `uncertainty_method` argument allows estimation of *epistemic* uncertainty.  
   - Intervals integrated into `predict()` and `autoplot()`.  
 * **Cross-validation support**: new `validation_split` parameter for monitoring validation losses during training.  
 * **Training diagnostics**: new `plot_history()` function for visualizing training/validation loss curves per term and per backfitting iteration.  
 * **Improved summary()**: displays per-term configuration, layer architectures, linear coefficients, and compact training history.  
-* **Diagnosis plots**: new `diagnose()` function which provides a 2×2 diagnostic panel similar to `gratia::appraise()` for `mgcv` models.
-* **Autoplot enhancements**: ggplot2-based diagnostic and effect plots with support for CI and PI ribbons, per-term inspection, and factor vs continuous term visualization.  
-* **Testing**: expanded test coverage for new families, PI estimation, plotting, and per-term configuration.  
+* **Diagnosis plots**: new `diagnose()` function which provides a 2×2 diagnostic panel.
+* **Autoplot enhancements**: ggplot2-based diagnostic and effect plots with support for CI ribbons, per-term inspection, and factor vs continuous term visualization.  
+* **Testing**: expanded test coverage for new families, CI estimation, plotting, and per-term configuration.  
 * **Internal refactoring**:  
   - Clean separation of deviance and link functions per family.  
   - Consistent handling of sample weights.  

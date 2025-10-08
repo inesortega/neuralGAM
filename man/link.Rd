@@ -8,7 +8,7 @@ link(family, muhat)
 }
 \arguments{
 \item{family}{A description of the link function used in the model:
-\code{"gaussian"} or \code{"binomial"}}
+\code{"gaussian"}, \code{"poisson"}, or \code{"binomial"}}
 
 \item{muhat}{fitted values}
 }
@@ -22,5 +22,7 @@ specified in the \code{"family"} parameter.
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.
+
+Ines Ortega-Fernandez, Marta Sestelo
 }
 \keyword{internal}

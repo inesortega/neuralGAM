@@ -2,71 +2,93 @@
 % Please edit documentation in R/autoplot.neuralGAM.R
 \name{autoplot.neuralGAM}
 \alias{autoplot.neuralGAM}
-\title{Advanced \code{neuralGAM} visualization with ggplot2 library}
+\title{Autoplot method for \code{neuralGAM} objects (epistemic-only)}
 \usage{
-\method{autoplot}{neuralGAM}(object, select, xlab = NULL, ylab = NULL, ...)
+\method{autoplot}{neuralGAM}(
+  object,
+  newdata = NULL,
+  which = c("response", "link", "terms"),
+  interval = c("none", "confidence"),
+  level = 0.95,
+  forward_passes = 150,
+  term = NULL,
+  rug = TRUE,
+  ...
+)
 }
 \arguments{
-\item{object}{a fitted \code{neuralGAM} object as produced by \code{neuralGAM()}.}
+\item{object}{A fitted \code{neuralGAM} object.}
 
-\item{select}{selects the term to be plotted.}
+\item{newdata}{Optional \code{data.frame}/list of covariates. If omitted, training data are used.}
 
-\item{xlab}{A title for the \code{x} axis.}
+\item{which}{One of \code{c("response","link","terms")}. Default \code{"response"}.}
 
-\item{ylab}{A title for the \code{y} axis.}
+\item{interval}{One of \code{c("none","confidence")}. Default \code{"confidence"}.}
 
-\item{\ldots}{other graphics parameters to pass on to plotting commands.
-See details for ggplot2::geom_line options}
+\item{level}{Coverage level for confidence intervals (e.g., \code{0.95}). Default \code{0.95}.}
+
+\item{forward_passes}{Integer. Number of MC-dropout forward passes used when
+\code{uncertainty_method \%in\% c("epistemic","both")}.}
+
+\item{term}{Single term name to plot when \code{which = "terms"}.}
+
+\item{rug}{Logical; if \code{TRUE} (default), add rugs to continuous term plots.}
+
+\item{...}{Additional arguments passed to \code{predict.neuralGAM}.}
 }
 \value{
-A ggplot object, so you can use common features from the ggplot2 package
-to manipulate the plot.
+A single \code{ggplot} object.
 }
 \description{
-Advanced \code{neuralGAM} visualization with ggplot2 library
+Produce effect/diagnostic plots from a fitted \code{neuralGAM} model.
+Supported panels:
+\itemize{
+\item \code{which = "response"}: fitted response vs. index, with optional
+epistemic \emph{confidence intervals} (CI).
+\item \code{which = "link"}: linear predictor (link scale) vs. index,
+with optional CI.
+\item \code{which = "terms"}: single per-term contribution \eqn{g_j(x_j)} on the link scale,
+with optional CI band for the smooth (epistemic).
+}
+}
+\details{
+\strong{Uncertainty semantics (epistemic only)}
+\itemize{
+\item \strong{CI:} Uncertainty about the fitted mean.
+\item For the response, SEs are mapped via the delta method;
+\item For terms, bands are obtained as \eqn{\hat g_j \pm z \cdot SE(\hat g_j)} on the link scale.
+}
 }
 \examples{
 \dontrun{
-n <- 24500
-
-seed <- 42
-set.seed(seed)
-
-x1 <- runif(n, -2.5, 2.5)
-x2 <- runif(n, -2.5, 2.5)
-x3 <- runif(n, -2.5, 2.5)
-
-f1 <- x1 ** 2
-f2 <- 2 * x2
-f3 <- sin(x3)
-f1 <- f1 - mean(f1)
-f2 <- f2 - mean(f2)
-f3 <- f3 - mean(f3)
-
-eta0 <- 2 + f1 + f2 + f3
-epsilon <- rnorm(n, 0.25)
-y <- eta0 + epsilon
-train <- data.frame(x1, x2, x3, y)
 
 library(neuralGAM)
-ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
-                 num_units = 1024, family = "gaussian",
-                 activation = "relu",
-                 learning_rate = 0.001, bf_threshold = 0.001,
-                 max_iter_backfitting = 10, max_iter_ls = 10,
-                 seed = seed
-                 )
-autoplot(ngam, select="x1")
+dat <- sim_neuralGAM_data()
+train <- dat$train
+test  <- dat$test
 
-# add custom title
-autoplot(ngam, select="x1") + ggplot2::ggtitle("Main Title")
-# add labels
-autoplot(ngam, select="x1") + ggplot2::xlab("test") + ggplot2::ylab("my y lab")
-# plot multiple terms:
-plots <- lapply(c("x1", "x2", "x3"), function(x) autoplot(ngam, select = x))
-gridExtra::grid.arrange(grobs = plots, ncol = 3, nrow = 1)
+ngam <- neuralGAM(
+  y ~ s(x1) + x2 + s(x3),
+  data = train, family = "gaussian", num_units = 128,
+  uncertainty_method = "epistemic", forward_passes = 10
+)
+## --- Autoplot (epistemic-only) ---
+# Per-term effect with CI band
+autoplot(ngam, which = "terms", term = "x1", interval = "confidence")  +
+  ggplot2::xlab("x1") + ggplot2::ylab("Partial effect")
+
+# Request a different number of forward passes or CI level:
+autoplot(ngam, which = "terms", term = "x1", interval = "confidence",
+forward_passes = 15, level = 0.7)
+# Response panel
+autoplot(ngam, which = "response")
+
+# Link panel with custom title
+autoplot(ngam, which = "link")  +
+  ggplot2::ggtitle("Main Title")
+
 }
 }
 \author{
-Ines Ortega-Fernandez, Marta Sestelo.
+Ines Ortega-Fernandez, Marta Sestelo
 }

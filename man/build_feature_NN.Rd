@@ -2,7 +2,7 @@
 % Please edit documentation in R/build_feature_NN.R
 \name{build_feature_NN}
 \alias{build_feature_NN}
-\title{Build and compile a single Neural Network}
+\title{Build and compile a neural network feature model}
 \usage{
 build_feature_NN(
   num_units,
@@ -13,69 +13,126 @@ build_feature_NN(
   bias_regularizer = NULL,
   bias_initializer = "zeros",
   activity_regularizer = NULL,
-  loss = "mean_squared_error",
+  loss = "mse",
   name = NULL,
+  alpha = 0.05,
+  w_mean = 0.1,
+  order_penalty_lambda = 0,
+  uncertainty_method = "none",
+  dropout_rate = 0.1,
+  seed = NULL,
   ...
 )
 }
 \arguments{
-\item{num_units}{Defines the architecture of each neural network.
-If a scalar value is provided, a single hidden layer neural network with that number of units is used.
-If a vector of values is provided, a multi-layer neural network with each element of the vector defining
-the number of hidden units on each hidden layer is used.}
+\item{num_units}{Integer or vector of integers. Number of units in the hidden
+layer(s). If a vector is provided, multiple dense layers are added sequentially.}
 
-\item{learning_rate}{Learning rate for the neural network optimizer.}
+\item{learning_rate}{Numeric. Learning rate for the Adam optimizer.}
 
-\item{activation}{Activation function of the neural network. Defaults to \code{relu}}
+\item{activation}{Character string or function. Activation function to use in hidden layers.
+If character, it must be valid for \code{tf$keras$activations$get()}.}
 
-\item{kernel_initializer}{Kernel initializer for the Dense layers.
-Defaults to Xavier Initializer (\code{glorot_normal}).}
+\item{kernel_initializer}{Keras initializer object or string. Kernel initializer for dense layers.}
 
-\item{kernel_regularizer}{Optional regularizer function applied to the kernel weights matrix.}
+\item{kernel_regularizer}{Optional Keras regularizer for kernel weights.}
 
-\item{bias_regularizer}{Optional regularizer function applied to the bias vector.}
+\item{bias_regularizer}{Optional Keras regularizer for bias terms.}
 
-\item{bias_initializer}{Optional initializer for the bias vector.}
+\item{bias_initializer}{Keras initializer object or string. Initializer for bias terms.}
 
-\item{activity_regularizer}{Optional regularizer function applied to the output of the layer}
+\item{activity_regularizer}{Optional Keras regularizer for layer activations.}
 
-\item{loss}{Loss function to use during neural network training. Defaults to the mean squared error.}
+\item{loss}{Loss function to use.
+\itemize{
+\item When \code{uncertainty_method} is \code{aleatoric} or \code{both}, this is the \strong{mean-head loss} inside
+\code{make_quantile_loss()} and can be any \code{keras} built-in loss name (e.g., \code{"mse"}, \code{"mae"}, \code{"huber"},
+\code{"logcosh"}, ...) or a custom function.
+\item In any other case, this is used directly in \code{compile()}.
+}}
 
-\item{name}{Neural Network name.}
+\item{name}{Optional character string. Name assigned to the model.}
+
+\item{alpha}{Numeric. Desired significance level for \strong{symmetric} prediction intervals.
+Defaults to 0.05 (i.e., 95\% PI using quantiles alpha/2 and 1-alpha/2).}
+
+\item{w_mean}{Non-negative numeric. Weight for the mean-head loss within the composite PI loss.}
+
+\item{order_penalty_lambda}{Non-negative numeric. Strength of a soft monotonicity penalty
+\code{ReLU(lwr - upr)} to discourage interval inversions.}
+
+\item{uncertainty_method}{Character string indicating the type of uncertainty to estimate in prediction intervals.
+Must be one of \code{"none"}, \code{"aleatoric"}, \code{"epistemic"}, or \code{"both"}.}
+
+\item{dropout_rate}{Numeric in (0,1). Dropout rate used when \code{uncertainty_method \%in\% c("epistemic","both")}.}
+
+\item{seed}{Random seed.}
 
 \item{...}{
   Arguments passed on to \code{\link[=neuralGAM]{neuralGAM}}
   \describe{
-    \item{\code{formula}}{An object of class "formula": a description of the model to be fitted. You can add smooth terms using \code{s()}.}
-    \item{\code{data}}{A data frame containing the model response variable and covariates
-required by the formula. Additional terms not present in the formula will be ignored.}
-    \item{\code{family}}{This is a family object specifying the distribution and link to use for fitting.
-By default, it is \code{"gaussian"} but also works to \code{"binomial"} for logistic regression.}
-    \item{\code{bf_threshold}}{Convergence criterion of the backfitting algorithm.
-Defaults to \code{0.001}}
-    \item{\code{ls_threshold}}{Convergence criterion of the local scoring algorithm.
-Defaults to \code{0.1}}
+    \item{\code{formula}}{Model formula. Smooth terms must be wrapped in \code{s(...)}.
+You can specify per-term NN settings, e.g.:
+\code{y ~ s(x1, num_units = 1024) + s(x3, num_units = c(1024, 512))}.}
+    \item{\code{data}}{Data frame containing the variables.}
+    \item{\code{family}}{Response distribution: \code{"gaussian"}, \code{"binomial"}, \code{"poisson"}.}
+    \item{\code{kernel_initializer,bias_initializer}}{Initializers for weights and biases.}
+    \item{\code{kernel_regularizer,bias_regularizer,activity_regularizer}}{Optional Keras regularizers.}
+    \item{\code{forward_passes}}{Integer. Number of MC-dropout forward passes used when
+\code{uncertainty_method \%in\% c("epistemic","both")}.}
+    \item{\code{validation_split}}{Optional fraction of training data used for validation.}
+    \item{\code{w_train}}{Optional training weights.}
+    \item{\code{bf_threshold}}{Convergence criterion of the backfitting algorithm. Defaults to \code{0.001}}
+    \item{\code{ls_threshold}}{Convergence criterion of the local scoring algorithm. Defaults to \code{0.1}}
     \item{\code{max_iter_backfitting}}{An integer with the maximum number of iterations
 of the backfitting algorithm. Defaults to \code{10}.}
-    \item{\code{max_iter_ls}}{An integer with the maximum number of iterations of the
-local scoring Algorithm. Defaults to \code{10}.}
-    \item{\code{w_train}}{Optional sample weights}
-    \item{\code{seed}}{A positive integer which specifies the random number generator
-seed for algorithms dependent on randomization.}
-    \item{\code{verbose}}{Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.}
+    \item{\code{max_iter_ls}}{An integer with the maximum number of iterations of the local scoring Algorithm. Defaults to \code{10}.}
+    \item{\code{verbose}}{Verbosity: \code{0} silent, \code{1} progress messages.}
   }}
 }
 \value{
-compiled Neural Network
+A compiled \code{keras_model} object ready for training.
 }
 \description{
-Builds and compiles a neural network using the keras library.
-The architecture of the neural network is configurable using the
+Builds and compiles a \code{keras} neural network for a single smooth term in a
+\code{neuralGAM} model.
+
+The network can optionally be configured to output \strong{symmetric prediction intervals}
+(lower bound, upper bound, and mean prediction) using a custom quantile loss
+(\code{make_quantile_loss()}), or a standard single-output point prediction using
+any user-specified loss function.
+
+When \code{uncertainty_method} is \code{aleatoric} or \code{both} the model outputs three units corresponding to the
+lower bound, upper bound, and mean prediction, and is compiled with
+\code{make_quantile_loss(alpha, mean_loss, ...)}. In any other case, the model
+outputs a single unit (point prediction) and uses the loss function provided in \code{loss}.
+}
+\details{
+\strong{Prediction interval mode (\code{uncertainty_method \%in\% c("aleatoric", "both")})}:
+\itemize{
+\item Output layer has 3 units:
+\itemize{
+\item \code{lwr}: lower bound, \eqn{\tau = \alpha/2}
+\item \code{upr}: upper bound, \eqn{\tau = 1 - \alpha/2}
+\item \code{y_hat}: mean prediction
+}
+\item Loss function is \code{make_quantile_loss()} which combines two pinball losses
+(for lower and upper quantiles) with the chosen mean prediction loss and an optional
+non-crossing penalty.
+}
+
+\strong{Point prediction mode (\code{uncertainty_method \%in\% c("none", "epistemic")})}:
+\itemize{
+\item Output layer has 1 unit: point prediction only.
+\item Loss function is the one passed in \code{loss}.
+}
 }
 \references{
-Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization. arXiv preprint arXiv:1412.6980.
+Kingma, D. P., & Ba, J. (2014). Adam: A method for stochastic optimization.
+arXiv:1412.6980.
+Koenker, R., & Bassett Jr, G. (1978). Regression quantiles. \emph{Econometrica}, 46(1), 33-50.
 }
 \author{
-Ines Ortega-Fernandez, Marta Sestelo.
+Ines Ortega-Fernandez, Marta Sestelo
 }
 \keyword{internal}

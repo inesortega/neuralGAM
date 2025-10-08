@@ -4,82 +4,109 @@
 \alias{predict.neuralGAM}
 \title{Produces predictions from a fitted \code{neuralGAM} object}
 \usage{
-\method{predict}{neuralGAM}(object, newdata = NULL, type = "link", terms = NULL, verbose = 1, ...)
+\method{predict}{neuralGAM}(
+  object,
+  newdata = NULL,
+  type = c("link", "response", "terms"),
+  terms = NULL,
+  se.fit = FALSE,
+  interval = c("none", "confidence"),
+  level = 0.95,
+  forward_passes = 150,
+  verbose = 1,
+  ...
+)
 }
 \arguments{
-\item{object}{a fitted `neuralGAM` object}
+\item{object}{A fitted \code{neuralGAM} object.}
 
-\item{newdata}{A data frame or list containing the values of covariates at which
-predictions are required. If not provided, the function returns the predictions
-for the original training data.}
+\item{newdata}{Optional \code{data.frame}/list of covariates at which to predict.
+If omitted, the training data cached in the object are used.}
 
-\item{type}{when \code{type="link"} (default), the linear
-predictor is returned. When \code{type="terms"} each component of the linear
-predictor is returned separately on each column of a \code{data.frame}. When
-\code{type="response"} predictions on the scale of the response are returned.}
+\item{type}{One of \code{c("link","response","terms")}. Default \code{"link"}.}
 
-\item{terms}{If \code{type="terms"}, then only results for the terms named
-in this list will be returned. If \code{NULL} then no terms are excluded (default).}
+\item{terms}{If \code{type = "terms"}, character vector of term names to include.
+If \code{NULL}, all terms are returned. Intercept is not included (as in \pkg{mgcv}).}
 
-\item{verbose}{Verbosity mode (0 = silent, 1 = print messages). Defaults to 1.}
+\item{se.fit}{Logical; if \code{TRUE}, return SEs of the fitted mean (epistemic). Default \code{FALSE}.
+For \code{type="terms"}, returns a matrix of per-term SEs when available.}
 
-\item{\ldots}{Other options.}
+\item{interval}{One of \code{c("none","confidence")} (default \code{"none"}). For \code{type="terms"},
+setting \code{interval="confidence"} returns per-term CI matrices.}
+
+\item{level}{Coverage level for confidence intervals (e.g., \code{0.95}). Default \code{0.95}.}
+
+\item{forward_passes}{Integer; number of MC-dropout forward passes when computing
+epistemic uncertainty.}
+
+\item{verbose}{Integer (0/1). Default \code{1}.}
+
+\item{\ldots}{Other options (passed on to internal predictors).}
 }
 \value{
-Predicted values according to \code{type} parameter.
+\itemize{
+\item \code{type="terms"}:
+\itemize{
+\item \code{interval="none"}: matrix of per-term contributions; if \code{se.fit=TRUE}, a list with \code{$fit}, \code{$se.fit}.
+\item \code{interval="confidence"}: a list with matrices \code{$fit}, \code{$se.fit}, \code{$lwr}, \code{$upr}.
+}
+\item \code{type="link"} or \code{type="response"}:
+\itemize{
+\item \code{interval="none"}: vector (or list with \code{$fit}, \code{$se.fit} if \code{se.fit=TRUE}).
+\item \code{interval="confidence"}: data.frame with \code{fit}, \code{lwr}, \code{upr}.
+}
+}
 }
 \description{
-Takes a fitted \code{neuralGAM} object produced by
-\code{neuralGAM()} and produces predictions given a new set of values for the model covariates.
+Generate predictions from a fitted \code{neuralGAM} model. Supported types:
+\itemize{
+\item \code{type = "link"} (default): linear predictor on the link scale.
+\item \code{type = "response"}: predictions on the response scale.
+\item \code{type = "terms"}: per-term contributions to the linear predictor (no intercept).
+}
+
+\strong{Uncertainty estimation via MC Dropout (epistemic only)}
+\itemize{
+\item If \code{se.fit = TRUE}, standard errors (SE) of the \emph{fitted mean} are returned
+(mgcv-style via Monte Carlo Dropout).
+\item For \code{type = "response"}, SEs are mapped to the response scale by the delta method:
+\eqn{se_\mu = |d\mu/d\eta| \cdot se_\eta}.
+\item \code{interval = "confidence"} returns CI bands derived from SEs; prediction intervals are not supported.
+\item For \code{type = "terms"}, \code{interval="confidence"} returns per-term CI matrices (and \code{se.fit} when requested).
+}
+
+\strong{Details}
+
+\itemize{
+\item Epistemic SEs (CIs) are obtained via Monte Carlo Dropout. When \code{type != "terms"}
+and SEs/CIs are requested in the presence of smooth terms, uncertainty is aggregated
+\emph{jointly} to capture cross-term covariance in a single MC pass set. Otherwise,
+per-term variances are used (parametric variances are obtained from \code{stats::predict(..., se.fit=TRUE)}).
+\item For \code{type="terms"}, epistemic SEs and CI matrices are returned when requested.
+\item PIs are not defined on the link scale and are not supported.
+}
 }
 \examples{
 \dontrun{
 
-n <- 24500
-
-seed <- 42
-set.seed(seed)
-
-x1 <- runif(n, -2.5, 2.5)
-x2 <- runif(n, -2.5, 2.5)
-x3 <- runif(n, -2.5, 2.5)
-
-f1 <-x1**2
-f2 <- 2*x2
-f3 <- sin(x3)
-f1 <- f1 - mean(f1)
-f2 <- f2 - mean(f2)
-f3 <- f3 - mean(f3)
-
-eta0 <- 2 + f1 + f2 + f3
-epsilon <- rnorm(n, 0.25)
-y <- eta0 + epsilon
-train <- data.frame(x1, x2, x3, y)
-
 library(neuralGAM)
-ngam <- neuralGAM(y ~ s(x1) + x2 + s(x3), data = train,
-                 num_units = 1024, family = "gaussian",
-                 activation = "relu",
-                 learning_rate = 0.001, bf_threshold = 0.001,
-                 max_iter_backfitting = 10, max_iter_ls = 10,
-                 seed = seed
-                 )
-n <- 5000
-x1 <- runif(n, -2.5, 2.5)
-x2 <- runif(n, -2.5, 2.5)
-x3 <- runif(n, -2.5, 2.5)
-test <- data.frame(x1, x2, x3)
+dat <- sim_neuralGAM_data()
+train <- dat$train
+test  <- dat$test
 
-# Obtain linear predictor
-eta <- predict(ngam, test, type = "link")
-
-# Obtain predicted response
-yhat <- predict(ngam, test, type = "response")
-
-# Obtain each component of the linear predictor
-terms <- predict(ngam, test, type = "terms")
-
-# Obtain only certain terms:
-terms <- predict(ngam, test, type = "terms", terms = c("x1", "x2"))
+ngam0 <- neuralGAM(
+  y ~ s(x1) + x2 + s(x3),
+  data = train, family = "gaussian",
+  num_units = 128, uncertainty_method = "epistemic"
+)
+link_ci  <- predict(ngam0, type = "link", interval = "confidence",
+                    level = 0.95, forward_passes = 10)
+resp_ci  <- predict(ngam0, type = "response", interval = "confidence",
+                    level = 0.95, forward_passes = 10)
+trm_se   <- predict(ngam0, type = "terms",
+                    se.fit = TRUE, forward_passes = 10)
 }
+}
+\author{
+Ines Ortega-Fernandez, Marta Sestelo
 }

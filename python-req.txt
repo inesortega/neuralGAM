@@ -1,0 +1,3 @@
+tensorflow==2.15.*
+keras==2.15.*
+silence_tensorflow

@@ -12,7 +12,7 @@ weight(w, muhat, family)
 \item{muhat}{fitted values}
 
 \item{family}{A description of the link function used in the model:
-\code{"gaussian"} or \code{"binomial"}}
+\code{"gaussian"}, \code{"binomial"}, or \code{"poisson"}.}
 }
 \value{
 computed weights for the Local Scoring algorithm
@@ -23,5 +23,7 @@ Computes the weights for the Local Scoring Algorithm.
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo.
+
+Ines Ortega-Fernandez, Marta Sestelo
 }
 \keyword{internal}

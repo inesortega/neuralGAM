@@ -35,7 +35,7 @@ install_neuralGAM <- function() {
   packageStartupMessage("Installing tensorflow...")
   status4 <- tryCatch(
     tensorflow::install_tensorflow(
-      version = "2.13",
+      version = "2.15.0",
       method = "conda",
       conda = conda,
       envname = "neuralGAM-env",
@@ -55,7 +55,7 @@ install_neuralGAM <- function() {
   packageStartupMessage("Installing keras...")
   status3 <- tryCatch(
     keras::install_keras(
-      version = "2.13",
+      version = "2.15.0",
       method = "conda",
       conda = conda,
       envname = "neuralGAM-env",
@@ -73,11 +73,11 @@ install_neuralGAM <- function() {
   }
 
   packageStartupMessage("Installation completed! Restarting R session...")
-
+  .setupConda(conda)
 }
 
 .setupConda <- function(conda) {
-
+  .disable_tf_logs_env_only()  # keep process quiet as early as possible
   if(is.null(conda)){
     packageStartupMessage("NOTE: conda not found... run 'install_neuralGAM()' and load library again...")
   }
@@ -85,18 +85,53 @@ install_neuralGAM <- function() {
     envs <- reticulate::conda_list(conda)
     if("neuralGAM-env" %in% envs$name){
       i <- which(envs$name == "neuralGAM-env")
-      Sys.setenv(TF_CPP_MIN_LOG_LEVEL = 2)
       Sys.setenv(RETICULATE_PYTHON = envs$python[i])
       reticulate::use_condaenv("neuralGAM-env", conda = conda, required = TRUE)
-      reticulate::py_config() # ensure python is initialized
-      tfVersion <- tensorflow::tf$`__version__`
     }
     else{
       packageStartupMessage("NOTE: conda environment not found... run 'install_neuralGAM()' and load library again...")
     }
   }
-
 }
+
+.disable_tf_logs_env_only <- function() {
+  Sys.setenv(TF_CPP_MIN_LOG_LEVEL = "3")  # 0=all,1=INFO,2=WARNING,3=ERROR
+  Sys.setenv(ABSL_LOGLEVEL        = "3")
+  Sys.setenv(PYTHONWARNINGS       = "ignore")
+  invisible(TRUE)
+}
+
+.quiet_python_loggers_if_initialized <- function() {
+  if (!requireNamespace("reticulate", quietly = TRUE)) return(invisible(FALSE))
+  inited <- try(reticulate::py_available(initialize = FALSE), silent = TRUE)
+  if (inherits(inited, "try-error") || !isTRUE(inited)) return(invisible(FALSE))
+
+  # Run inside the already-initialized interpreter (no re-init at package load)
+  suppressMessages(try(reticulate::py_run_string("
+import os, logging, warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['ABSL_LOGLEVEL'] = '3'
+warnings.filterwarnings('ignore')
+try:
+    import tensorflow as tf
+    try: tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+    except Exception: pass
+    try: tf.get_logger().setLevel('ERROR')
+    except Exception: pass
+    try:
+        import tensorflow.autograph as ag
+        try: ag.set_verbosity(0)
+        except Exception: pass
+    except Exception: pass
+except Exception:
+    pass
+for name in ('tensorflow', 'absl'):
+    try: logging.getLogger(name).setLevel(logging.ERROR)
+    except Exception: pass
+"), silent = TRUE))
+  invisible(TRUE)
+}
+
 .installConda <- function() {
   packageStartupMessage("No miniconda detected, installing it using reticulate R package")
   dir <- tools::R_user_dir("neuralGAM", "cache")
@@ -176,4 +211,14 @@ install_neuralGAM <- function() {
   sys_info <- Sys.info()
   return(sys_info[["sysname"]] == "Darwin" &&
            sys_info[["machine"]] == "arm64")
+}
+
+.is_tensorflow_ready <- function() {
+  ok <- FALSE
+  try({
+    tf <- reticulate::import("tensorflow", delay_load = FALSE)
+    ver <- tf$`__version__`
+    if (!is.null(ver)) ok <- TRUE
+  }, silent = TRUE)
+  ok
 }

@@ -1,0 +1,103 @@
+#' Plot training loss history for a neuralGAM model
+#'
+#' This function visualizes the training and/or validation loss at the end of each backfitting iteration
+#' for each term-specific model in a fitted \code{neuralGAM} object. It is designed to work with the
+#' `history` component of a trained \code{neuralGAM} model.
+#'
+#' @param model A fitted \code{neuralGAM} model.
+#' @param select Optional character vector of term names (e.g. `"x1"` or `c("x1", "x3")`) to subset
+#' the history. If `NULL` (default), all terms are included.
+#' @param metric Character vector indicating which loss metric(s) to plot. Options are
+#' `"loss"`, `"val_loss"`, or both. Defaults to both.
+#'
+#' @return A `ggplot` object showing the loss curves by backfitting iteration, with facets per term.
+#' @export
+#'
+#' @importFrom ggplot2 ggplot labs aes geom_line geom_point facet_wrap scale_x_continuous
+#' @importFrom rlang .data
+#' @importFrom utils tail
+#' @author Ines Ortega-Fernandez, Marta Sestelo
+#' @examples \dontrun{
+#'   set.seed(123)
+#'   n <- 200
+#'   x1 <- runif(n, -2, 2)
+#'   x2 <- runif(n, -2, 2)
+#'   y <- 2 + x1^2 + sin(x2) + rnorm(n, 0, 0.1)
+#'   df <- data.frame(x1 = x1, x2 = x2, y = y)
+#'
+#'   model <- neuralGAM::neuralGAM(
+#'     y ~ s(x1) + s(x2),
+#'     data = df,
+#'     num_units = 8,
+#'     family = "gaussian",
+#'     max_iter_backfitting = 2,
+#'     max_iter_ls = 1,
+#'     learning_rate = 0.01,
+#'     seed = 42,
+#'     validation_split = 0.2,
+#'     verbose = 0
+#'   )
+#'
+#'   plot_history(model)                      # Plot all terms
+#'   plot_history(model, select = "x1")       # Plot just x1
+#'   plot_history(model, metric = "val_loss") # Plot only validation loss
+#' }
+plot_history <- function(model, select = NULL, metric = c("loss", "val_loss")) {
+    history <- model$history
+    metric <- match.arg(metric, several.ok = TRUE)
+
+  if (!is.null(select)) {
+    if (!all(select %in% names(history))) {
+      stop("Some selected terms are not in the history object.")
+    }
+    history <- history[select]
+  }
+
+  df_list <- list()
+  for (term in names(history)) {
+    term_hist <- history[[term]]
+    iteration <- 1
+    for (it_ls in seq_along(term_hist)) {
+      for(it_bf in seq_along(term_hist[[it_ls]])){
+        h <- term_hist[[it_ls]][[it_bf]]
+        row <- list(Term = term, Iteration = iteration)
+
+        # Handle scalar or length-1 loss
+        if ("loss" %in% metric) {
+          loss_val <- h$metrics$loss
+          if (length(loss_val) > 1) loss_val <- utils::tail(loss_val, 1)
+          row$Loss <- as.numeric(loss_val)
+        }
+
+        # Handle validation loss if available
+        if ("val_loss" %in% metric && "val_loss" %in% names(h$metrics)) {
+          val_loss_val <- h$metrics$val_loss
+          if (length(val_loss_val) > 1) val_loss_val <- utils::tail(val_loss_val, 1)
+          row$ValLoss <- as.numeric(val_loss_val)
+        }
+
+        df_list[[length(df_list) + 1]] <- row
+        iteration <- iteration + 1
+      }
+    }
+  }
+
+  df <- do.call(rbind, lapply(df_list, as.data.frame))
+
+  plt <- ggplot2::ggplot(df, ggplot2::aes(x = .data$Iteration)) +
+    ggplot2::facet_wrap(~ Term, scales = "free_y")
+
+  if ("Loss" %in% names(df)) {
+    plt <- plt + ggplot2::geom_line(ggplot2::aes(y = .data$Loss, color = "Train Loss")) +
+      ggplot2::geom_point(ggplot2::aes(y = .data$Loss, color = "Train Loss"))
+  }
+
+  if ("ValLoss" %in% names(df)) {
+    plt <- plt + ggplot2::geom_line(aes(y = .data$ValLoss, color = "Validation Loss")) +
+      ggplot2::geom_point(ggplot2::aes(y = .data$ValLoss, color = "Validation Loss"))
+  }
+
+  plt + ggplot2::labs(title = "Loss per Backfitting Iteration",
+             y = "Loss", color = "Metric") +
+    ggplot2::scale_x_continuous(breaks = function(x) floor(min(x)):ceiling(max(x)))
+}

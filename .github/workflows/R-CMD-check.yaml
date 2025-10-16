@@ -67,7 +67,6 @@ jobs:
           tensorflow::install_tensorflow(version = "2.15", method = "conda", envname = "neuralGAM-env")
           library(keras)
           keras::install_keras(version = "2.15", method = "conda", envname = "neuralGAM-env")
-          reticulate::py_install("silence_tensorflow")
 
       - uses: r-lib/actions/check-r-package@v2
         with:

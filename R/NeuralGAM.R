@@ -354,10 +354,6 @@ neuralGAM <-
         # Update eta with parametric component
         f[formula$p_terms] <- predict(linear_model, type = "terms", verbose = verbose)
         eta <- eta0 + rowSums(f)
-
-        # Do NOT create per-term PIs for parametric effects
-        # (prediction intervals are response-level; not meaningful per term)
-
         # Instead, store epistemic variance for CI of the mean contribution
         # using predict.lm(type="terms", se.fit=TRUE)
         for (tm in formula$p_terms) {

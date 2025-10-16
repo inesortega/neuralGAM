@@ -39,3 +39,5 @@ inv_link <- function(family, muhat) {
 
   return(out)
 }
+
+inv_link_mat <- function(fam, M) { matrix(inv_link(fam, as.numeric(M)), nrow = nrow(M)) }

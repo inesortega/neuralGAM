@@ -136,6 +136,7 @@
   out
 }
 
+
 #' Internal helper: combine epistemic and aleatoric uncertainties via mixture sampling
 #'
 #' @description
@@ -380,81 +381,3 @@
   var_eta <- var_ep_joint + var_param
   sqrt(pmax(var_eta, 0))
 }
-
-#' Internal helper: joint predictive interval (both) via variance combiner
-#' @keywords internal
-.joint_pi_both_variance <- function(ngam, x, level = 0.95, forward_passes = 50, verbose = 0) {
-  np_terms <- ngam$formula$np_terms %||% character(0L)
-  p_terms  <- ngam$formula$p_terms %||% character(0L)
-
-  n <- nrow(x)
-  if (!length(np_terms)) return(NULL)  # nothing to do
-
-  passes <- max(2L, as.integer(forward_passes))
-  alpha  <- 1 - level
-
-  # Accumulate per-pass sums of mean/lwr/upr across smooths
-  mean_pass <- matrix(0.0, nrow = passes, ncol = n)
-  lwr_pass  <- matrix(0.0, nrow = passes, ncol = n)
-  upr_pass  <- matrix(0.0, nrow = passes, ncol = n)
-
-  # Deterministic centerline (sum of mean-heads) for better stability
-  centerline <- rep(0.0, n)
-
-  for (tm in np_terms) {
-    mdl <- ngam$model[[tm]]
-    Xtm <- x[[tm]]; if (is.null(dim(Xtm))) Xtm <- matrix(Xtm, ncol = 1L)
-
-    probe <- try(as.matrix(mdl$predict(Xtm, verbose = 0)), silent = TRUE)
-    if (inherits(probe, "try-error") || is.null(dim(probe))) {
-      mu_det <- as.numeric(mdl$predict(Xtm, verbose = 0))
-      mean_pass <- sweep(mean_pass, 2L, mu_det, `+`)
-      centerline <- centerline + mu_det
-      next
-    }
-
-    nout <- ncol(probe)
-    # need 3 heads for aleatoric + mean
-    if (nout < 3L) {
-      # treat as mean-only; contributes no aleatoric width
-      mu_det <- as.numeric(probe[, min(1L, nout)])
-      mean_pass <- sweep(mean_pass, 2L, mu_det, `+`)
-      centerline <- centerline + mu_det
-      next
-    }
-
-    mu_det <- as.numeric(probe[, 3L])
-    lwr_det <- as.numeric(probe[, 1L])
-    upr_det <- as.numeric(probe[, 2L])
-    centerline <- centerline + mu_det
-
-    y_arr <- .mc_dropout_forward(mdl, Xtm, passes = passes, output_dim = 3L)
-    # y_arr: [passes, n, 3] -> split to [passes, n]
-    mean_pass <- mean_pass + y_arr[, , 3L, drop = TRUE]
-    lwr_pass  <- lwr_pass  + y_arr[, , 1L, drop = TRUE]
-    upr_pass  <- upr_pass  + y_arr[, , 2L, drop = TRUE]
-  }
-
-  # Add parametric part to centerline (intercept handled by eta0 later)
-  if (length(p_terms)) {
-    linmod <- ngam$model$linear
-    if (!is.null(linmod)) {
-      lm_data <- x[, p_terms, drop = FALSE]; colnames(lm_data) <- p_terms
-      pr_lin  <- stats::predict(linmod, newdata = lm_data, type = "terms", se.fit = FALSE)
-      # pr_lin is terms-only; add its row-sum
-      centerline <- centerline + rowSums(as.matrix(pr_lin))
-    }
-  }
-  # Finally add intercept
-  centerline <- centerline + (ngam$eta0 %||% 0)
-
-  # Combine across passes using your variance combiner
-  .combine_uncertainties_variance(
-    lwr_mat  = lwr_pass,
-    upr_mat  = upr_pass,
-    mean_mat = mean_pass,
-    alpha    = 1 - level,
-    centerline = centerline
-  )
-}
-

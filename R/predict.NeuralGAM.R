@@ -1,4 +1,4 @@
-#' Produces predictions from a fitted \code{neuralGAM} object
+#' Predict from a fitted \code{neuralGAM} (quantile-based epistemic uncertainty)
 #'
 #' @description
 #' Generate predictions from a fitted \code{neuralGAM} model. Supported types:
@@ -8,58 +8,79 @@
 #'   \item \code{type = "terms"}: per-term contributions to the linear predictor (no intercept).
 #' }
 #'
-#' \strong{Uncertainty estimation via MC Dropout (epistemic only)}
+#' \strong{Uncertainty estimation (epistemic only)}\cr
+#' Epistemic uncertainty is computed via \emph{joint draws}:
 #' \itemize{
-#'   \item If \code{se.fit = TRUE}, standard errors (SE) of the \emph{fitted mean} are returned
-#'         (mgcv-style via Monte Carlo Dropout).
-#'   \item For \code{type = "response"}, SEs are mapped to the response scale by the delta method:
-#'         \eqn{se_\mu = |d\mu/d\eta| \cdot se_\eta}.
-#'   \item \code{interval = "confidence"} returns CI bands derived from SEs; prediction intervals are not supported.
-#'   \item For \code{type = "terms"}, \code{interval="confidence"} returns per-term CI matrices (and \code{se.fit} when requested).
+#'   \item \strong{Nonparametric (smooth) part}: Monte Carlo Dropout across all smooth networks
+#'         in joint passes to capture cross-term covariance.
+#'   \item \strong{Parametric (linear) part}: Gaussian coefficient draws
+#'         \eqn{\beta^{(b)} \sim \mathcal{N}(\hat\beta,\widehat{\mathrm{Var}}(\hat\beta))} evaluated with the
+#'         linear submodel's design matrix.
+#' }
+#' For \code{type != "terms"}, the link-scale draws \eqn{\{\eta^{(b)}\}} are formed by summing the parametric
+#' and smooth contributions (plus intercept). For \code{type = "response"}, the inverse link is applied to
+#' each draw \eqn{\mu^{(b)} = h^{-1}(\eta^{(b)})} and uncertainty is summarized \emph{on the response scale}
+#' directly from these draws. \strong{Confidence intervals are empirical quantiles across draws}
+#' (no Normal or delta-method approximations).
+#'
+#' \strong{Returned standard errors}\cr
+#' If \code{se.fit = TRUE}, standard errors are the \emph{sample standard deviation of the draws}
+#' (on the requested scale): \eqn{\widehat{SE} = \mathrm{sd}\{\eta^{(b)}\}} for \code{type="link"} and
+#' \eqn{\widehat{SE} = \mathrm{sd}\{\mu^{(b)}\}} for \code{type="response"}.
+#'
+#' \strong{Confidence intervals}\cr
+#' If \code{interval = "confidence"}, the lower/upper bounds are empirical
+#' quantiles at levels \eqn{\alpha/2} and \eqn{1-\alpha/2} across the relevant draw set:
+#' \itemize{
+#'   \item \code{type="link"}: quantiles of \eqn{\{\eta^{(b)}\}}.
+#'   \item \code{type="response"}: quantiles of \eqn{\{\mu^{(b)}\}} with \eqn{\mu^{(b)} = h^{-1}(\eta^{(b)})}.
+#'   \item \code{type="terms"}: per-term quantiles; smooth terms use per-term dropout draws,
+#'         parametric terms use contributions from the coefficient draws.
 #' }
 #'
-#' \strong{Details}
-#'
+#' \strong{Notes}\cr
 #' \itemize{
-#'   \item Epistemic SEs (CIs) are obtained via Monte Carlo Dropout. When \code{type != "terms"}
-#'         and SEs/CIs are requested in the presence of smooth terms, uncertainty is aggregated
-#'         \emph{jointly} to capture cross-term covariance in a single MC pass set. Otherwise,
-#'         per-term variances are used (parametric variances are obtained from \code{stats::predict(..., se.fit=TRUE)}).
-#'   \item For \code{type="terms"}, epistemic SEs and CI matrices are returned when requested.
-#'   \item PIs are not defined on the link scale and are not supported.
+#'   \item Prediction intervals (aleatoric + epistemic) are not returned by this method.
+#'   \item Set a random seed for reproducibility of the Monte Carlo draws.
+#'   \item The number of passes \code{forward_passes} controls tail stability of the empirical quantiles.
 #' }
 #'
 #' @param object A fitted \code{neuralGAM} object.
-#' @param newdata Optional \code{data.frame}/list of covariates at which to predict.
+#' @param newdata Optional \code{data.frame} or \code{list} of covariates at which to predict.
 #'   If omitted, the training data cached in the object are used.
 #' @param type One of \code{c("link","response","terms")}. Default \code{"link"}.
 #' @param terms If \code{type = "terms"}, character vector of term names to include.
 #'   If \code{NULL}, all terms are returned. Intercept is not included (as in \pkg{mgcv}).
-#' @param se.fit Logical; if \code{TRUE}, return SEs of the fitted mean (epistemic). Default \code{FALSE}.
-#'   For \code{type="terms"}, returns a matrix of per-term SEs when available.
-#' @param interval One of \code{c("none","confidence")} (default \code{"none"}). For \code{type="terms"},
-#'   setting \code{interval="confidence"} returns per-term CI matrices.
+#' @param se.fit Logical; if \code{TRUE}, return \emph{SD of draws} as standard errors.
+#'   For \code{type="terms"}, returns a matrix of per-term SDs when available. Default \code{FALSE}.
+#' @param interval One of \code{c("none","confidence")} (default \code{"none"}).
+#'   For \code{type="terms"}, \code{interval="confidence"} returns per-term CI matrices.
 #' @param level Coverage level for confidence intervals (e.g., \code{0.95}). Default \code{0.95}.
-#' @param forward_passes Integer; number of MC-dropout forward passes when computing
-#'   epistemic uncertainty.
+#' @param forward_passes Integer; number of joint Monte Carlo passes (dropout + parametric draws)
+#'   used to compute uncertainty. Larger values stabilize tail quantiles. Default \code{150}.
 #' @param verbose Integer (0/1). Default \code{1}.
-#' @param \ldots Other options (passed on to internal predictors).
+#' @param \ldots Other options (passed to internal predictors).
 #'
 #' @return
 #' \itemize{
 #'   \item \code{type="terms"}:
 #'     \itemize{
-#'       \item \code{interval="none"}: matrix of per-term contributions; if \code{se.fit=TRUE}, a list with \code{$fit}, \code{$se.fit}.
-#'       \item \code{interval="confidence"}: a list with matrices \code{$fit}, \code{$se.fit}, \code{$lwr}, \code{$upr}.
+#'       \item \code{interval="none"}: matrix of per-term contributions;
+#'             if \code{se.fit=TRUE}, a list with \code{$fit}, \code{$se.fit}.
+#'       \item \code{interval="confidence"}: a list with matrices \code{$fit}, \code{$se.fit}, \code{$lwr}, \code{$upr}
+#'             (per-term empirical quantile bands).
 #'     }
 #'   \item \code{type="link"} or \code{type="response"}:
 #'     \itemize{
-#'       \item \code{interval="none"}: vector (or list with \code{$fit}, \code{$se.fit} if \code{se.fit=TRUE}).
-#'       \item \code{interval="confidence"}: data.frame with \code{fit}, \code{lwr}, \code{upr}.
+#'       \item \code{interval="none"}: vector (or list with \code{$fit}, \code{$se.fit} if \code{se.fit=TRUE}),
+#'             where \code{se.fit} is the SD of draws on the requested scale.
+#'       \item \code{interval="confidence"}: \code{data.frame} with \code{fit}, \code{se.fit}, \code{lwr}, \code{upr},
+#'             where \code{lwr}/\code{upr} are empirical quantiles across draws.
 #'     }
 #' }
-#' @examples \dontrun{
 #'
+#' @examples \dontrun{
+#' set.seed(1)
 #' library(neuralGAM)
 #' dat <- sim_neuralGAM_data()
 #' train <- dat$train
@@ -70,14 +91,21 @@
 #'   data = train, family = "gaussian",
 #'   num_units = 128, uncertainty_method = "epistemic"
 #' )
-#' link_ci  <- predict(ngam0, type = "link", interval = "confidence",
-#'                     level = 0.95, forward_passes = 10)
-#' resp_ci  <- predict(ngam0, type = "response", interval = "confidence",
-#'                     level = 0.95, forward_passes = 10)
-#' trm_se   <- predict(ngam0, type = "terms",
-#'                     se.fit = TRUE, forward_passes = 10)
+#'
+#' # Link-scale empirical-quantile CIs (joint dropout + beta draws)
+#' link_ci <- predict(ngam0, type = "link", interval = "confidence",
+#'                    level = 0.95, forward_passes = 300)
+#'
+#' # Response-scale empirical-quantile CIs (transform draws then take quantiles)
+#' resp_ci <- predict(ngam0, type = "response", interval = "confidence",
+#'                    level = 0.95, forward_passes = 300)
+#'
+#' # Per-term bands: smooth terms via per-term dropout, parametric via beta draws
+#' trm_ci <- predict(ngam0, type = "terms", se.fit = TRUE, interval = "confidence",
+#'                   level = 0.95, forward_passes = 300)
 #' }
-#' @importFrom stats predict qnorm setNames
+#'
+#' @importFrom stats predict setNames
 #' @method predict neuralGAM
 #' @export
 #' @author Ines Ortega-Fernandez, Marta Sestelo
@@ -95,16 +123,18 @@ predict.neuralGAM <- function(object,
   interval <- match.arg(interval)
   ngam     <- object
 
-  # ---- data ----
-  if (is.null(newdata)){
+  # -------------------------------
+  # Prepare data
+  # -------------------------------
+  if (is.null(newdata)) {
     x <- ngam$x; use_cache <- TRUE
   } else {
     x <- as.data.frame(newdata); use_cache <- FALSE
   }
   needed <- colnames(ngam$x)
   if (!all(needed %in% colnames(x))) {
-    miss <- setdiff(needed, colnames(x))
-    stop("newdata is missing required columns: ", paste(miss, collapse = ", "))
+    stop("newdata is missing required columns: ",
+         paste(setdiff(needed, colnames(x)), collapse = ", "))
   }
   x <- x[, needed, drop = FALSE]
 
@@ -112,125 +142,146 @@ predict.neuralGAM <- function(object,
   np_terms <- ngam$formula$np_terms %||% character(0L)
   all_terms <- c(p_terms, np_terms)
   sel_terms <- if (is.null(terms)) all_terms else {
-    if (!all(terms %in% all_terms)) stop("Unknown term(s) in `terms`: ", paste(setdiff(terms, all_terms), collapse = ", "))
+    if (!all(terms %in% all_terms))
+      stop("Unknown term(s) in `terms`: ",
+           paste(setdiff(terms, all_terms), collapse = ", "))
     terms
   }
 
-  # ---- per-term link-scale ----
-  n <- nrow(x); p <- length(all_terms)
-  term_fit <- matrix(0, n, p, dimnames = list(NULL, all_terms))
-  var_epi  <- matrix(NA_real_, n, p, dimnames = list(NULL, all_terms))
+  n <- nrow(x)
+  need_unc <- isTRUE(se.fit) || interval == "confidence"
 
-  need_se_req <- isTRUE(se.fit) || interval == "confidence"
-  has_np <- length(np_terms) > 0L
+  # -------------------------------
+  # 2️ Compute per-term contributions
+  # -------------------------------
+  term_fit <- matrix(0, n, length(all_terms), dimnames = list(NULL, all_terms))
+  var_epi  <- matrix(NA_real_, n, length(all_terms), dimnames = list(NULL, all_terms))
 
   if (use_cache) {
     term_fit[,] <- as.matrix(ngam$partial[, all_terms, drop = FALSE])
-    if (!is.null(ngam$var_epistemic)) var_epi[,] <- as.matrix(ngam$var_epistemic[, all_terms, drop = FALSE])
+    if (!is.null(ngam$var_epistemic))
+      var_epi[,] <- as.matrix(ngam$var_epistemic[, all_terms, drop = FALSE])
   } else {
-    # parametric terms (batch)
+    # ---- parametric terms ----
     if (length(p_terms)) {
-      lm_data <- x[, p_terms, drop = FALSE]; colnames(lm_data) <- p_terms
       linmod <- ngam$model$linear
       if (!is.null(linmod)) {
-        pr_terms <- stats::predict(linmod, newdata = lm_data, type = "terms", se.fit = need_se_req)
-        if(need_se_req && !is.null(pr_terms$se.fit)){
-          term_fit[, p_terms] <- unname(as.matrix(pr_terms$fit))
-          var_epi[, p_terms] <- unname(as.matrix(pr_terms$se.fit))^2
-        }
-        else{
-          term_fit[, p_terms] <- pr_terms
-        }
+        pr <- stats::predict(linmod, newdata = x[, p_terms, drop = FALSE],
+                             type = "terms", se.fit = FALSE)
+        term_fit[, p_terms] <- unname(as.matrix(pr))
       }
     }
-    # nonparametric terms (epistemic only)
+
+    # ---- smooth (nonparametric) terms ----
     if (length(np_terms)) {
       for (tm in np_terms) {
-        need_se <- isTRUE(se.fit) || interval == "confidence"
         pt <- .ngam_predict_term_epistemic(
           ngam, x[[tm]], term_name = tm,
-          want_se = need_se, level = level,
+          want_se = need_unc, level = level,
           forward_passes = forward_passes, verbose = verbose
         )
-        center <- (ngam$term_center %||% setNames(rep(0, length(all_terms)), all_terms))[tm]
-        term_fit[, tm] <- pt$fit - center
+        center_j <- (ngam$term_center %||%
+                       setNames(rep(0, length(all_terms)), all_terms))[tm]
+        term_fit[, tm] <- pt$fit - center_j
         var_epi[, tm]  <- pt$var_epistemic
       }
     }
   }
 
-  # assemble link
-  eta0 <- ngam$eta0 %||% 0
-  eta  <- eta0 + rowSums(term_fit, na.rm = FALSE)
-
-  # epistemic SE on link
-  se_eta <- NULL
-  if (need_se_req) {
-    # per-term aggregation: LM full-fit variance + sum of smooth variances
-    var_np_sum <- if (has_np) .row_sum_var(var_epi[, np_terms, drop=FALSE]) else rep(0, n)
-    var_param_full <- rep(0, n)
-    if (length(p_terms)) {
-      linmod <- ngam$model$linear
-      if (!is.null(linmod)) {
-        lm_data <- x[, p_terms, drop = FALSE]; colnames(lm_data) <- p_terms
-        pr_lin_all <- stats::predict(linmod, newdata = lm_data, se.fit = TRUE)
-        var_param_full <- (as.numeric(pr_lin_all$se.fit))^2
-      }
-    }
-    row_var <- var_param_full + var_np_sum
-    se_eta  <- sqrt(pmax(row_var, 0))
+  # -------------------------------
+  # Joint link-scale draws (parametric + NP)
+  # -------------------------------
+  if (type %in% c("link","response") && need_unc) {
+    eta_draws <- .joint_draws_eta(ngam, x, forward_passes = forward_passes, verbose = verbose)
+    # sanitize
+    eta_draws[!is.finite(eta_draws)] <- NA_real_
+    se_link  <- apply(eta_draws, 2L, stats::sd, na.rm = TRUE)
+    lwr_link <- matrixStats::colQuantiles(eta_draws, probs = (1 - level)/2, na.rm = TRUE)
+    upr_link <- matrixStats::colQuantiles(eta_draws, probs = 1 - (1 - level)/2, na.rm = TRUE)
   }
 
-  # ---- type="terms" (now supports CI matrices) ----
+  # -------------------------------
+  # Type = "terms" : per-term bands
+  # -------------------------------
   if (type == "terms") {
     fit_terms <- term_fit[, sel_terms, drop = FALSE]
-    if (!need_se_req) return(fit_terms)
+    if (!need_unc) return(fit_terms)
 
-    se_terms <- sqrt(pmax(var_epi[, sel_terms, drop = FALSE], 0))
-    if (interval == "none" && isTRUE(se.fit)) {
-      return(list(fit = fit_terms, se.fit = se_terms))
+    B <- max(2L, as.integer(forward_passes))
+    term_sd  <- term_lwr <- term_upr <- matrix(NA_real_, nrow = n, ncol = length(sel_terms),
+                                               dimnames = list(NULL, sel_terms))
+
+    # Get parametric draws once
+    par_out <- .parametric_draws(ngam, x, forward_passes = forward_passes)
+
+    for (tm in sel_terms) {
+      if (tm %in% np_terms) {
+        # MC Dropout draws for smooth term
+        mdl <- ngam$model[[tm]]
+        Xtm <- if (is.null(dim(x[[tm]]))) matrix(x[[tm]], ncol = 1L) else x[[tm]]
+        probe <- try(as.matrix(mdl$predict(Xtm, verbose = 0)), silent = TRUE)
+
+        if (inherits(probe, "try-error") || is.null(dim(probe))) {
+          draw_mat <- matrix(NA_real_, nrow = B, ncol = n)
+        } else {
+          nout <- ncol(probe); mean_col <- if (nout >= 3L) 3L else 1L
+          y_arr <- .mc_dropout_forward(mdl, Xtm, passes = B, output_dim = nout)
+          draw_mat <- if (length(dim(y_arr)) == 2L) y_arr else y_arr[, , mean_col, drop = TRUE]
+          center_j <- (ngam$term_center %||% setNames(rep(0, length(all_terms)), all_terms))[tm]
+          draw_mat <- sweep(draw_mat, 2L, center_j, `-`)
+        }
+      } else {
+        # Parametric term draws from precomputed .parametric_draws()
+        draw_mat <- par_out$term_draws[[tm]]
+        if (is.null(draw_mat))
+          draw_mat <- matrix(NA_real_, nrow = B, ncol = n)
+      }
+
+      term_sd[, tm]  <- apply(draw_mat, 2L, stats::sd, na.rm = TRUE)
+      term_lwr[, tm] <- as.numeric(matrixStats::colQuantiles(draw_mat, probs = (1 - level)/2, na.rm = TRUE))
+      term_upr[, tm] <- as.numeric(matrixStats::colQuantiles(draw_mat, probs = 1 - (1 - level)/2, na.rm = TRUE))
     }
-    # interval == "confidence": return CI matrices (and se.fit for convenience)
-    z <- stats::qnorm(1 - (1 - level)/2)
-    lwr <- fit_terms - z * se_terms
-    upr <- fit_terms + z * se_terms
-    return(list(fit = fit_terms, se.fit = se_terms, lwr = lwr, upr = upr))
+
+    if (interval == "none" && isTRUE(se.fit))
+      return(list(fit = fit_terms, se.fit = term_sd))
+
+    return(list(fit = fit_terms, se.fit = term_sd, lwr = term_lwr, upr = term_upr))
   }
 
-  # ---- type="link" ----
+  # -------------------------------
+  # Type = "link" : link-scale CIs
+  # -------------------------------
   if (type == "link") {
     if (interval == "none") {
-      if (!se.fit) return(eta)
-      return(list(fit = eta, se.fit = se_eta))
-    } else {
-      z <- stats::qnorm(1 - (1 - level)/2)
-      lwr_ci <- eta - z * se_eta; upr_ci <- eta + z * se_eta
-      if (!any(is.finite(lwr_ci)) || !any(is.finite(upr_ci))) {
-        warning("Confidence intervals not available on link scale (missing epistemic variance).")
-      }
-      return(data.frame(fit = eta, se.fit = se_eta,lwr = lwr_ci, upr = upr_ci))
+      if (!isTRUE(se.fit)) return(eta)
+      return(list(fit = eta, se.fit = se_link))
     }
+    return(data.frame(fit = eta, se.fit = se_link,
+                      lwr = as.numeric(lwr_link),
+                      upr = as.numeric(upr_link)))
   }
 
-  # ---- type="response" ----
-  if(type == "response"){
+  # -------------------------------
+  # Type = "response" : transform each draw
+  # -------------------------------
+  if (type == "response") {
     mu <- inv_link(ngam$family, eta)
-    if (interval == "none") {
-      if (!se.fit) return(mu)
-      gprime <- abs(mu_eta(ngam$family, eta))
-      se_mu  <- gprime * se_eta
+    if (!need_unc) return(mu)
+
+    mu_draws <- inv_link(ngam$family, eta_draws)
+    se_mu  <- apply(mu_draws, 2L, stats::sd, na.rm = TRUE)
+    lwr_mu <- matrixStats::colQuantiles(mu_draws, probs = (1 - level)/2, na.rm = TRUE)
+    upr_mu <- matrixStats::colQuantiles(mu_draws, probs = 1 - (1 - level)/2, na.rm = TRUE)
+
+    if (interval == "none" && isTRUE(se.fit))
       return(list(fit = mu, se.fit = se_mu))
-    } else {
-      z <- stats::qnorm(1 - (1 - level)/2)
-      gprime <- abs(mu_eta(ngam$family, eta)); se_mu <- gprime * se_eta
-      lwr_ci <- mu - z * se_mu; upr_ci <- mu + z * se_mu
-      if (any(is.na(se_mu))) warning("Confidence intervals not available (missing epistemic variance).")
-      return(data.frame(fit = mu, se.fit = se_mu, lwr = lwr_ci, upr = upr_ci))
-    }
+
+    return(data.frame(fit = mu, se.fit = se_mu,
+                      lwr = as.numeric(lwr_mu),
+                      upr = as.numeric(upr_mu)))
   }
-
-
 }
+
 
 .ngam_predict_term_epistemic <- function(ngam, xvec, term_name,
                                          want_se = FALSE,
@@ -248,7 +299,6 @@ predict.neuralGAM <- function(object,
   nout <- ncol(y_det)
   mean_col <- if (nout >= 3L) 3L else 1L
   mu_det <- as.numeric(y_det[, mean_col])
-  # Do not center here. Centering is applied upstream using training-time term_center.
 
   var_ep <- rep(NA_real_, length(mu_det))
   if (isTRUE(want_se)) {
@@ -268,100 +318,237 @@ predict.neuralGAM <- function(object,
 
 `%||%` <- function(a, b) if (!is.null(a)) a else b
 
-#' Internal helper: joint epistemic SE on link scale
+#' Joint MC-Dropout draws of the additive predictor on the link scale
 #'
 #' @description
-#' Computes joint epistemic standard errors on the link scale by aggregating
-#' across all smooth terms via MC Dropout, capturing cross-term covariance.
-#' Parametric model uncertainty (from the linear submodel) is added assuming
-#' independence from NN-based epistemic uncertainty.
+#' Generate \strong{joint} draws of the additive predictor \eqn{\eta(\boldsymbol{x})}
+#' on the link scale by combining:
+#' \itemize{
+#'   \item \emph{Parametric} uncertainty via Gaussian draws of the linear
+#'         coefficients \eqn{\beta^{(b)} \sim \mathcal{N}(\hat\beta, \widehat{\mathrm{Var}}(\hat\beta))},
+#'         evaluated with the linear model matrix; and
+#'   \item \emph{Nonparametric} (smooth) epistemic uncertainty via Monte Carlo
+#'         Dropout draws, summing all smooth terms per pass.
+#' }
+#' The function returns a \eqn{B \times n} matrix of link-scale draws, where
+#' \eqn{B} is the number of MC passes and \eqn{n} is the number of rows in \code{x}.
 #'
-#' @param ngam Fitted \code{neuralGAM} object.
-#' @param x New data frame of covariates.
-#' @param forward_passes Number of MC Dropout passes (default 300).
-#' @param verbose Verbosity (0/1).
+#' @param ngam A fitted \code{neuralGAM} object containing:
+#'   \itemize{
+#'     \item \code{model$linear}: the fitted linear (parametric) submodel, or \code{NULL};
+#'     \item \code{model[[tm]]}: Keras models for each smooth term \code{tm};
+#'     \item \code{formula$p_terms}, \code{formula$np_terms}: character vectors with
+#'           parametric and nonparametric term names;
+#'     \item \code{eta0}: (numeric) intercept on the link scale.
+#'   }
+#' @param x A \code{data.frame} or \code{matrix} of covariates with the columns
+#'   expected by \code{ngam}. The number of rows defines \eqn{n}.
+#' @param forward_passes Integer \eqn{B \ge 2}; number of Monte Carlo passes (default \code{300L}).
+#' @param verbose Integer flag (0/1); controls optional messaging (unused at present).
 #'
-#' @return A numeric vector of length \code{nrow(x)} giving epistemic SEs on the link scale.
+#' @return A numeric matrix of dimension \code{B x n} containing draws of
+#'   \eqn{\eta(\boldsymbol{x})} on the link scale (each row is one pass, each
+#'   column an observation).
 #'
 #' @details
-#' Steps:
-#' \enumerate{
-#'   \item Parametric part: mean + variance from linear model.
-#'   \item Nonparametric part: pass-level sums across all smooths.
-#'   \item Joint across-pass variance captures covariance between smooths.
-#'   \item Combined with parametric variance (assumed independent).
-#' }
+#' \strong{Parametric part:} draws are generated with \code{MASS::mvrnorm} from
+#' \code{coef(linmod)} and \code{vcov(linmod)}; predictions are computed using the
+#' linear submodel’s \emph{exact} model matrix (via \code{stats::model.frame} and
+#' \code{stats::model.matrix}). If no parametric terms exist, this part contributes zeros.
+#'
+#' \strong{Nonparametric part:} for each smooth term, the function calls
+#' \code{.mc_dropout_forward()} and sums the chosen “mean” head across terms per pass.
+#' If a smooth model cannot produce draws (e.g., errors), a deterministic prediction
+#' is used (no extra variance contribution).
+#'
+#' The returned draws include the intercept \code{eta0}.
+#'
+#' @seealso \code{\link{.parametric_draws}}, \code{\link{.mc_dropout_forward}}
+#'
 #' @keywords internal
-.joint_se_eta_mcdropout <- function(ngam, x,
-                                    forward_passes = 300,   # 300–1000 recommended for smooth bands
-                                    verbose = 0) {
+#' @importFrom MASS mvrnorm
+#' @importFrom stats coef vcov model.frame model.matrix formula
+.joint_draws_eta <- function(ngam, x, forward_passes = 300L, verbose = 0L) {
+  stopifnot(is.data.frame(x) || is.matrix(x))
   p_terms  <- ngam$formula$p_terms %||% character(0L)
   np_terms <- ngam$formula$np_terms %||% character(0L)
-
+  B <- max(2L, as.integer(forward_passes))
   n <- nrow(x)
-  # 1) Parametric component: mean & SE (includes intercept)
-  eta_param_fit <- rep(0, n)
-  var_param     <- rep(0, n)
+
+  ## --- Parametric draws (include intercept via model matrix) ---
+  eta_param_draws <- matrix(0.0, nrow = B, ncol = n)
+  eta0_use <- ngam$eta0 %||% 0  # may be set to 0 below if design has intercept
+
   if (length(p_terms)) {
-    lm_data <- x[, p_terms, drop = FALSE]
-    colnames(lm_data) <- p_terms
     linmod <- ngam$model$linear
     if (!is.null(linmod)) {
-      pr_lin <- stats::predict(linmod, newdata = lm_data, se.fit = TRUE)
-      eta_param_fit <- as.numeric(pr_lin$fit)               # includes intercept
-      var_param     <- (as.numeric(pr_lin$se.fit))^2
-    } else {
-      eta_param_fit <- rep(ngam$eta0 %||% 0, n)
+      new_df <- as.data.frame(x)
+      tt <- stats::terms(linmod)
+      mf_new <- stats::model.frame(tt, data = new_df, na.action = stats::na.pass,
+                                   xlev = linmod$xlevels)
+      Xmm <- stats::model.matrix(tt, mf_new, contrasts.arg = linmod$contrasts)
+
+      has_int <- "(Intercept)" %in% colnames(Xmm)
+      if (has_int) eta0_use <- 0  # avoid double intercept
+
+      beta_hat <- stats::coef(linmod)
+      Vb <- try(stats::vcov(linmod), silent = TRUE)
+      if (inherits(Vb, "try-error") || anyNA(Vb)) Vb <- diag(length(beta_hat))
+      Beta <- MASS::mvrnorm(n = B, mu = beta_hat, Sigma = Vb)
+
+      eta_param_draws <- unname(Beta %*% t(Xmm))  # B x n
     }
   } else {
-    # If no parametric part, intercept lives in eta0; keep var_param = 0
-    eta_param_fit <- rep(ngam$eta0 %||% 0, n)
+    # No parametric terms: keep zeros; intercept handled by eta0
+    eta_param_draws[,] <- 0
   }
 
-  # 2) Nonparametric component: joint MC Dropout over all smooths
-  if (!length(np_terms)) {
-    # No smooths: SE = sqrt(var_param)
-    return(sqrt(pmax(var_param, 0)))
-  }
+  ## --- Nonparametric joint dropout: sum across smooths per pass ---
+  eta_np_draws <- matrix(0.0, nrow = B, ncol = n)
+  if (length(np_terms)) {
+    centers <- (ngam$term_center %||% setNames(rep(0, length(np_terms)), np_terms))
+    for (tm in np_terms) {
+      mdl <- ngam$model[[tm]]
+      Xtm <- x[[tm]]; if (is.null(dim(Xtm))) Xtm <- matrix(Xtm, ncol = 1L)
+      center_j <- centers[[tm]]
 
-  passes <- max(2L, as.integer(forward_passes))
-  eta_np_pass <- matrix(0.0, nrow = passes, ncol = n)  # each row = one pass
-
-  for (tm in np_terms) {
-    mdl <- ngam$model[[tm]]
-    Xtm <- x[[tm]]; if (is.null(dim(Xtm))) Xtm <- matrix(Xtm, ncol = 1L)
-
-    probe <- try(as.matrix(mdl$predict(Xtm, verbose = 0)), silent = TRUE)
-    if (inherits(probe, "try-error") || is.null(dim(probe))) {
-      # fallback: deterministic mean only, no extra variance
-      mu_det <- as.numeric(mdl$predict(Xtm, verbose = 0))
-      eta_np_pass <- sweep(eta_np_pass, 2L, mu_det, `+`)
-      next
+      probe <- try(as.matrix(mdl$predict(Xtm, verbose = 0)), silent = TRUE)
+      if (inherits(probe, "try-error") || is.null(dim(probe))) {
+        mu_det <- as.numeric(mdl$predict(Xtm, verbose = 0))
+        eta_np_draws <- sweep(eta_np_draws, 2L, mu_det - center_j, `+`)  # subtract center
+      } else {
+        nout <- ncol(probe); mean_col <- if (nout >= 3L) 3L else 1L
+        y_arr <- .mc_dropout_forward(mdl, Xtm, passes = B, output_dim = nout)
+        y_mat <- if (length(dim(y_arr)) == 2L) y_arr else y_arr[, , mean_col, drop = TRUE]  # B x n
+        eta_np_draws <- eta_np_draws + sweep(y_mat, 2L, center_j, `-`)   # subtract center
+      }
     }
-    nout <- ncol(probe)
-    mean_col <- if (nout >= 3L) 3L else 1L
+  }
+  ## --- Intercept ---
+  eta_draws <- eta_param_draws + eta_np_draws + (eta0_use %||% 0)
+  eta_draws
+}
 
-    # MC Dropout forward: returns [passes, n, nout] or [passes, n] if nout==1 --> this is prepared for future integration of aleatoric uncertainty via Quantile Regression.
-    y_arr <- .mc_dropout_forward(mdl, Xtm, passes = passes, output_dim = nout)
-    y_mat <- if (length(dim(y_arr)) == 2L) {
-      y_arr                               # [passes, n] (single-head)
-    } else {
-      y_arr[, , mean_col, drop = TRUE]    # [passes, n] (mean head)
+#' Parametric draws and per-term parametric contributions
+#'
+#' @description
+#' Generate Gaussian draws of the linear coefficients \eqn{\beta} from the fitted
+#' parametric submodel and compute:
+#' \itemize{
+#'   \item \strong{\code{beta_draws}}: a \eqn{B \times p_\beta} matrix of coefficient draws,
+#'   \item \strong{\code{eta_param_draws}}: a \eqn{B \times n} matrix of the parametric
+#'         part of the linear predictor \eqn{X\beta^{(b)}}, and
+#'   \item \strong{\code{term_draws}}: a named list of \eqn{B \times n} matrices, one per
+#'         parametric term, giving its per-observation contribution across draws.
+#' }
+#' Returns empty placeholders if no parametric terms are present or the linear submodel is \code{NULL}.
+#'
+#' @param ngam A fitted \code{neuralGAM} object with a linear submodel at \code{$model$linear}.
+#' @param x A \code{data.frame}/\code{matrix} with the parametric covariates required by
+#'   the linear submodel. The number of rows defines \eqn{n}.
+#' @param forward_passes Integer \eqn{B \ge 2}; number of coefficient draws (default \code{300L}).
+#'
+#' @return A list with components:
+#' \itemize{
+#'   \item \code{beta_draws}: \eqn{B \times p_\beta} matrix of coefficient draws (or \code{NULL});
+#'   \item \code{eta_param_draws}: \eqn{B \times n} matrix of parametric predictor draws (or \code{NULL});
+#'   \item \code{term_draws}: named list of \eqn{B \times n} matrices with term-wise contributions.
+#' }
+#'
+#' @details
+#' The function reconstructs the linear submodel’s design matrix using
+#' \code{stats::model.frame} and \code{stats::model.matrix} to ensure exact alignment with
+#' the fitted formula (including factors, contrasts, and interactions). For each named
+#' parametric term in \code{ngam$formula$p_terms}, the per-term contribution is computed
+#' by selecting the subset of design columns associated with that term and multiplying
+#' by the corresponding subset of coefficient draws. If a term cannot be matched to
+#' specific design columns (e.g., aliased), it is skipped.
+#'
+#' @seealso \code{\link{.joint_draws_eta}}
+#'
+#' @keywords internal
+#' @importFrom MASS mvrnorm
+#' @importFrom stats coef vcov model.frame model.matrix formula
+#' Parametric draws and per-term parametric contributions (robust)
+.parametric_draws <- function(ngam, x, forward_passes = 300L) {
+  `%||%` <- function(a, b) if (!is.null(a)) a else b
+
+  p_terms <- ngam$formula$p_terms %||% character(0L)
+  out <- list(beta_draws = NULL, term_draws = list(), eta_param_draws = NULL)
+  if (!length(p_terms)) return(out)
+
+  linmod <- ngam$model$linear
+  if (is.null(linmod)) return(out)
+
+  # --- Set up ---
+  B <- max(2L, as.integer(forward_passes))
+  new_df <- as.data.frame(x)[p_terms]
+
+  tt <- stats::terms(linmod)
+  ttX <- stats::delete.response(tt)
+
+  # --- Build model.frame and design matrix exactly like training ---
+  mf_new <- stats::model.frame(
+    ttX,
+    data = new_df,
+    na.action = stats::na.pass,
+    xlev = linmod$xlevels
+  )
+
+  Xmm <- stats::model.matrix(ttX, mf_new, contrasts.arg = linmod$contrasts)
+
+
+  # --- Handle aliased coefficients (NA in coef, rank-deficiency) ---
+  beta_hat <- stats::coef(linmod)
+  keep_coef <- !is.na(beta_hat)
+  beta_hat <- beta_hat[keep_coef]
+
+  # Align columns of X with kept coefficients
+  # (names(Xmm) must match names(beta_hat))
+  if (!all(names(beta_hat) %in% colnames(Xmm))) {
+    stop("Column names of model matrix do not match coefficients after aliasing.")
+  }
+  Xmm <- Xmm[, names(beta_hat), drop = FALSE]
+
+  Vb <- try(stats::vcov(linmod), silent = TRUE)
+  if (inherits(Vb, "try-error") || anyNA(Vb)) {
+    Vb <- diag(length(stats::coef(linmod)))
+  }
+  Vb <- Vb[keep_coef, keep_coef, drop = FALSE]
+
+  # Gaussian draws of beta
+  Beta <- MASS::mvrnorm(n = B, mu = beta_hat, Sigma = Vb)
+  if (is.vector(Beta)) Beta <- matrix(Beta, nrow = B)
+
+  # --- Full parametric linear predictor draws: B x n ---
+  eta_param_draws <- Beta %*% t(Xmm)
+  eta_param_draws <- unname(eta_param_draws)
+
+  for (tm in p_terms) {
+    tm_norm <- gsub("`", "", tm, fixed = TRUE)
+    cn_norm <- gsub("`", "", colnames(Xmm), fixed = TRUE)
+
+    # --- Find all design columns that correspond to this term ---
+    # Matches if the column starts with "tm" followed by nothing or ":" (for interactions)
+    # or equals "tm" exactly (numeric or single factor).
+    idx <- grep(paste0("^", tm_norm, "$|^", tm_norm, ":"), cn_norm)
+
+    # If nothing found, try a relaxed partial match (e.g., "poly(x, 2)")
+    if (!length(idx)) {
+      idx <- grep(paste0("^", tm_norm), cn_norm)
     }
 
-    # Accumulate this term's mean head across passes
-    eta_np_pass <- eta_np_pass + y_mat
+    if (!length(idx)) next  # skip if still not found
+
+    # --- Compute contribution for this term ---
+    Xi <- Xmm[, idx, drop = FALSE]      # n × k
+    Betai <- Beta[, idx, drop = FALSE]  # B × k
+    term_draws <- Betai %*% t(Xi)       # B × n
+
+    out$term_draws[[tm]] <- unname(term_draws)
   }
 
-  # 3) Full linear predictor per pass (parametric mean + sum of smooths per pass)
-  #    Note: parametric part is deterministic across passes here; its *uncertainty*
-  #    is added via var_param, assuming independence.
-  eta_full_pass <- sweep(eta_np_pass, 2L, eta_param_fit, `+`)  # [passes, n]
-
-  # 4) Joint epistemic variance from passes (captures cross-term covariance across smooths)
-  var_ep_joint <- apply(eta_full_pass, 2L, stats::var)  # length n
-
-  # 5) Combine with parametric variance (independence assumption)
-  var_eta <- var_ep_joint + var_param
-  sqrt(pmax(var_eta, 0))
+  out$beta_draws <- unname(Beta)
+  out$eta_param_draws <- eta_param_draws
+  out
 }

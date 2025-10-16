@@ -2,7 +2,7 @@
 % Please edit documentation in R/predict.NeuralGAM.R
 \name{predict.neuralGAM}
 \alias{predict.neuralGAM}
-\title{Produces predictions from a fitted \code{neuralGAM} object}
+\title{Predict from a fitted \code{neuralGAM} (quantile-based epistemic uncertainty)}
 \usage{
 \method{predict}{neuralGAM}(
   object,
@@ -20,7 +20,7 @@
 \arguments{
 \item{object}{A fitted \code{neuralGAM} object.}
 
-\item{newdata}{Optional \code{data.frame}/list of covariates at which to predict.
+\item{newdata}{Optional \code{data.frame} or \code{list} of covariates at which to predict.
 If omitted, the training data cached in the object are used.}
 
 \item{type}{One of \code{c("link","response","terms")}. Default \code{"link"}.}
@@ -28,32 +28,36 @@ If omitted, the training data cached in the object are used.}
 \item{terms}{If \code{type = "terms"}, character vector of term names to include.
 If \code{NULL}, all terms are returned. Intercept is not included (as in \pkg{mgcv}).}
 
-\item{se.fit}{Logical; if \code{TRUE}, return SEs of the fitted mean (epistemic). Default \code{FALSE}.
-For \code{type="terms"}, returns a matrix of per-term SEs when available.}
+\item{se.fit}{Logical; if \code{TRUE}, return \emph{SD of draws} as standard errors.
+For \code{type="terms"}, returns a matrix of per-term SDs when available. Default \code{FALSE}.}
 
-\item{interval}{One of \code{c("none","confidence")} (default \code{"none"}). For \code{type="terms"},
-setting \code{interval="confidence"} returns per-term CI matrices.}
+\item{interval}{One of \code{c("none","confidence")} (default \code{"none"}).
+For \code{type="terms"}, \code{interval="confidence"} returns per-term CI matrices.}
 
 \item{level}{Coverage level for confidence intervals (e.g., \code{0.95}). Default \code{0.95}.}
 
-\item{forward_passes}{Integer; number of MC-dropout forward passes when computing
-epistemic uncertainty.}
+\item{forward_passes}{Integer; number of joint Monte Carlo passes (dropout + parametric draws)
+used to compute uncertainty. Larger values stabilize tail quantiles. Default \code{150}.}
 
 \item{verbose}{Integer (0/1). Default \code{1}.}
 
-\item{\ldots}{Other options (passed on to internal predictors).}
+\item{\ldots}{Other options (passed to internal predictors).}
 }
 \value{
 \itemize{
 \item \code{type="terms"}:
 \itemize{
-\item \code{interval="none"}: matrix of per-term contributions; if \code{se.fit=TRUE}, a list with \code{$fit}, \code{$se.fit}.
-\item \code{interval="confidence"}: a list with matrices \code{$fit}, \code{$se.fit}, \code{$lwr}, \code{$upr}.
+\item \code{interval="none"}: matrix of per-term contributions;
+if \code{se.fit=TRUE}, a list with \code{$fit}, \code{$se.fit}.
+\item \code{interval="confidence"}: a list with matrices \code{$fit}, \code{$se.fit}, \code{$lwr}, \code{$upr}
+(per-term empirical quantile bands).
 }
 \item \code{type="link"} or \code{type="response"}:
 \itemize{
-\item \code{interval="none"}: vector (or list with \code{$fit}, \code{$se.fit} if \code{se.fit=TRUE}).
-\item \code{interval="confidence"}: data.frame with \code{fit}, \code{lwr}, \code{upr}.
+\item \code{interval="none"}: vector (or list with \code{$fit}, \code{$se.fit} if \code{se.fit=TRUE}),
+where \code{se.fit} is the SD of draws on the requested scale.
+\item \code{interval="confidence"}: \code{data.frame} with \code{fit}, \code{se.fit}, \code{lwr}, \code{upr},
+where \code{lwr}/\code{upr} are empirical quantiles across draws.
 }
 }
 }
@@ -65,30 +69,46 @@ Generate predictions from a fitted \code{neuralGAM} model. Supported types:
 \item \code{type = "terms"}: per-term contributions to the linear predictor (no intercept).
 }
 
-\strong{Uncertainty estimation via MC Dropout (epistemic only)}
+\strong{Uncertainty estimation (epistemic only)}\cr
+Epistemic uncertainty is computed via \emph{joint draws}:
 \itemize{
-\item If \code{se.fit = TRUE}, standard errors (SE) of the \emph{fitted mean} are returned
-(mgcv-style via Monte Carlo Dropout).
-\item For \code{type = "response"}, SEs are mapped to the response scale by the delta method:
-\eqn{se_\mu = |d\mu/d\eta| \cdot se_\eta}.
-\item \code{interval = "confidence"} returns CI bands derived from SEs; prediction intervals are not supported.
-\item For \code{type = "terms"}, \code{interval="confidence"} returns per-term CI matrices (and \code{se.fit} when requested).
+\item \strong{Nonparametric (smooth) part}: Monte Carlo Dropout across all smooth networks
+in joint passes to capture cross-term covariance.
+\item \strong{Parametric (linear) part}: Gaussian coefficient draws
+\eqn{\beta^{(b)} \sim \mathcal{N}(\hat\beta,\widehat{\mathrm{Var}}(\hat\beta))} evaluated with the
+linear submodel's design matrix.
+}
+For \code{type != "terms"}, the link-scale draws \eqn{\{\eta^{(b)}\}} are formed by summing the parametric
+and smooth contributions (plus intercept). For \code{type = "response"}, the inverse link is applied to
+each draw \eqn{\mu^{(b)} = h^{-1}(\eta^{(b)})} and uncertainty is summarized \emph{on the response scale}
+directly from these draws. \strong{Confidence intervals are empirical quantiles across draws}
+(no Normal or delta-method approximations).
+
+\strong{Returned standard errors}\cr
+If \code{se.fit = TRUE}, standard errors are the \emph{sample standard deviation of the draws}
+(on the requested scale): \eqn{\widehat{SE} = \mathrm{sd}\{\eta^{(b)}\}} for \code{type="link"} and
+\eqn{\widehat{SE} = \mathrm{sd}\{\mu^{(b)}\}} for \code{type="response"}.
+
+\strong{Confidence intervals}\cr
+If \code{interval = "confidence"}, the lower/upper bounds are empirical
+quantiles at levels \eqn{\alpha/2} and \eqn{1-\alpha/2} across the relevant draw set:
+\itemize{
+\item \code{type="link"}: quantiles of \eqn{\{\eta^{(b)}\}}.
+\item \code{type="response"}: quantiles of \eqn{\{\mu^{(b)}\}} with \eqn{\mu^{(b)} = h^{-1}(\eta^{(b)})}.
+\item \code{type="terms"}: per-term quantiles; smooth terms use per-term dropout draws,
+parametric terms use contributions from the coefficient draws.
 }
 
-\strong{Details}
-
+\strong{Notes}\cr
 \itemize{
-\item Epistemic SEs (CIs) are obtained via Monte Carlo Dropout. When \code{type != "terms"}
-and SEs/CIs are requested in the presence of smooth terms, uncertainty is aggregated
-\emph{jointly} to capture cross-term covariance in a single MC pass set. Otherwise,
-per-term variances are used (parametric variances are obtained from \code{stats::predict(..., se.fit=TRUE)}).
-\item For \code{type="terms"}, epistemic SEs and CI matrices are returned when requested.
-\item PIs are not defined on the link scale and are not supported.
+\item Prediction intervals (aleatoric + epistemic) are not returned by this method.
+\item Set a random seed for reproducibility of the Monte Carlo draws.
+\item The number of passes \code{forward_passes} controls tail stability of the empirical quantiles.
 }
 }
 \examples{
 \dontrun{
-
+set.seed(1)
 library(neuralGAM)
 dat <- sim_neuralGAM_data()
 train <- dat$train
@@ -99,13 +119,20 @@ ngam0 <- neuralGAM(
   data = train, family = "gaussian",
   num_units = 128, uncertainty_method = "epistemic"
 )
-link_ci  <- predict(ngam0, type = "link", interval = "confidence",
-                    level = 0.95, forward_passes = 10)
-resp_ci  <- predict(ngam0, type = "response", interval = "confidence",
-                    level = 0.95, forward_passes = 10)
-trm_se   <- predict(ngam0, type = "terms",
-                    se.fit = TRUE, forward_passes = 10)
+
+# Link-scale empirical-quantile CIs (joint dropout + beta draws)
+link_ci <- predict(ngam0, type = "link", interval = "confidence",
+                   level = 0.95, forward_passes = 300)
+
+# Response-scale empirical-quantile CIs (transform draws then take quantiles)
+resp_ci <- predict(ngam0, type = "response", interval = "confidence",
+                   level = 0.95, forward_passes = 300)
+
+# Per-term bands: smooth terms via per-term dropout, parametric via beta draws
+trm_ci <- predict(ngam0, type = "terms", se.fit = TRUE, interval = "confidence",
+                  level = 0.95, forward_passes = 300)
 }
+
 }
 \author{
 Ines Ortega-Fernandez, Marta Sestelo

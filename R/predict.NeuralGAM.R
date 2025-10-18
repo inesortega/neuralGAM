@@ -188,17 +188,9 @@ predict.neuralGAM <- function(object,
     }
   }
 
-  # -------------------------------
-  # Joint link-scale draws (parametric + NP)
-  # -------------------------------
-  if (type %in% c("link","response") && need_unc) {
-    eta_draws <- .joint_draws_eta(ngam, x, forward_passes = forward_passes, verbose = verbose)
-    # sanitize
-    eta_draws[!is.finite(eta_draws)] <- NA_real_
-    se_link  <- apply(eta_draws, 2L, stats::sd, na.rm = TRUE)
-    lwr_link <- matrixStats::colQuantiles(eta_draws, probs = (1 - level)/2, na.rm = TRUE)
-    upr_link <- matrixStats::colQuantiles(eta_draws, probs = 1 - (1 - level)/2, na.rm = TRUE)
-  }
+  # get eta in the usual way as a fallback
+  eta0 <- ngam$eta0
+  eta  <- eta0 + rowSums(term_fit, na.rm = FALSE)
 
   # -------------------------------
   # Type = "terms" : per-term bands
@@ -227,8 +219,6 @@ predict.neuralGAM <- function(object,
           nout <- ncol(probe); mean_col <- if (nout >= 3L) 3L else 1L
           y_arr <- .mc_dropout_forward(mdl, Xtm, passes = B, output_dim = nout)
           draw_mat <- if (length(dim(y_arr)) == 2L) y_arr else y_arr[, , mean_col, drop = TRUE]
-          center_j <- (ngam$term_center %||% setNames(rep(0, length(all_terms)), all_terms))[tm]
-          draw_mat <- sweep(draw_mat, 2L, center_j, `-`)
         }
       } else {
         # Parametric term draws from precomputed .parametric_draws()
@@ -236,6 +226,9 @@ predict.neuralGAM <- function(object,
         if (is.null(draw_mat))
           draw_mat <- matrix(NA_real_, nrow = B, ncol = n)
       }
+
+      bias_vec <- fit_terms[, tm] - colMeans(draw_mat, na.rm = TRUE)
+      draw_mat <- sweep(draw_mat, 2L, bias_vec, `+`)
 
       term_sd[, tm]  <- apply(draw_mat, 2L, stats::sd, na.rm = TRUE)
       term_lwr[, tm] <- as.numeric(matrixStats::colQuantiles(draw_mat, probs = (1 - level)/2, na.rm = TRUE))
@@ -246,6 +239,18 @@ predict.neuralGAM <- function(object,
       return(list(fit = fit_terms, se.fit = term_sd))
 
     return(list(fit = fit_terms, se.fit = term_sd, lwr = term_lwr, upr = term_upr))
+  }
+
+  # -------------------------------
+  # Compute joint link-scale draws if needed (from parametric + NP)
+  # -------------------------------
+  if (type %in% c("link","response") && need_unc) {
+    eta_draws <- .joint_draws_eta(ngam, x, eta, forward_passes = forward_passes, verbose = verbose)
+    # sanitize
+    eta_draws[!is.finite(eta_draws)] <- NA_real_
+    se_link  <- apply(eta_draws, 2L, stats::sd, na.rm = TRUE)
+    lwr_link <- matrixStats::colQuantiles(eta_draws, probs = (1 - level)/2, na.rm = TRUE)
+    upr_link <- matrixStats::colQuantiles(eta_draws, probs = 1 - (1 - level)/2, na.rm = TRUE)
   }
 
   # -------------------------------
@@ -343,6 +348,7 @@ predict.neuralGAM <- function(object,
 #'   }
 #' @param x A \code{data.frame} or \code{matrix} of covariates with the columns
 #'   expected by \code{ngam}. The number of rows defines \eqn{n}.
+#' @param eta The deterministic eta to be used for bias correction
 #' @param forward_passes Integer \eqn{B \ge 2}; number of Monte Carlo passes (default \code{300L}).
 #' @param verbose Integer flag (0/1); controls optional messaging (unused at present).
 #'
@@ -354,80 +360,128 @@ predict.neuralGAM <- function(object,
 #' \strong{Parametric part:} draws are generated with \code{MASS::mvrnorm} from
 #' \code{coef(linmod)} and \code{vcov(linmod)}; predictions are computed using the
 #' linear submodel’s \emph{exact} model matrix (via \code{stats::model.frame} and
-#' \code{stats::model.matrix}). If no parametric terms exist, this part contributes zeros.
+#' \code{stats::model.matrix}), excluding the intercept. If no parametric terms exist, this part contributes zeros.
 #'
 #' \strong{Nonparametric part:} for each smooth term, the function calls
 #' \code{.mc_dropout_forward()} and sums the chosen “mean” head across terms per pass.
 #' If a smooth model cannot produce draws (e.g., errors), a deterministic prediction
 #' is used (no extra variance contribution).
 #'
-#' The returned draws include the intercept \code{eta0}.
+#' The returned draws include the intercept \code{eta0} and are bias corrected.
 #'
 #' @seealso \code{\link{.parametric_draws}}, \code{\link{.mc_dropout_forward}}
 #'
 #' @keywords internal
 #' @importFrom MASS mvrnorm
 #' @importFrom stats coef vcov model.frame model.matrix formula
-.joint_draws_eta <- function(ngam, x, forward_passes = 300L, verbose = 0L) {
+.joint_draws_eta <- function(ngam, x, eta_det, forward_passes = 300L, verbose = 0L) {
   stopifnot(is.data.frame(x) || is.matrix(x))
   p_terms  <- ngam$formula$p_terms %||% character(0L)
   np_terms <- ngam$formula$np_terms %||% character(0L)
   B <- max(2L, as.integer(forward_passes))
   n <- nrow(x)
 
-  ## --- Parametric draws (include intercept via model matrix) ---
+  ## --- Parametric draws (NO intercept here) ---
   eta_param_draws <- matrix(0.0, nrow = B, ncol = n)
-  eta0_use <- ngam$eta0 %||% 0  # may be set to 0 below if design has intercept
 
   if (length(p_terms)) {
     linmod <- ngam$model$linear
     if (!is.null(linmod)) {
       new_df <- as.data.frame(x)
-      tt <- stats::terms(linmod)
-      mf_new <- stats::model.frame(tt, data = new_df, na.action = stats::na.pass,
-                                   xlev = linmod$xlevels)
-      Xmm <- stats::model.matrix(tt, mf_new, contrasts.arg = linmod$contrasts)
-
-      has_int <- "(Intercept)" %in% colnames(Xmm)
-      if (has_int) eta0_use <- 0  # avoid double intercept
-
+      Xmm <- .mm_from_lm(linmod, new_df)   # may include (Intercept)
       beta_hat <- stats::coef(linmod)
       Vb <- try(stats::vcov(linmod), silent = TRUE)
       if (inherits(Vb, "try-error") || anyNA(Vb)) Vb <- diag(length(beta_hat))
-      Beta <- MASS::mvrnorm(n = B, mu = beta_hat, Sigma = Vb)
 
-      eta_param_draws <- unname(Beta %*% t(Xmm))  # B x n
+      # ---- Drop intercept everywhere ----
+      keep <- !is.na(beta_hat) & names(beta_hat) != "(Intercept)"
+      if (any(keep)) {
+        beta_hat <- beta_hat[keep]
+        Vb <- Vb[keep, keep, drop = FALSE]
+        Xmm <- Xmm[, names(beta_hat), drop = FALSE]
+        Beta <- MASS::mvrnorm(n = B, mu = beta_hat, Sigma = Vb)
+        if (is.vector(Beta)) Beta <- matrix(Beta, nrow = B)
+        eta_param_draws <- unname(Beta %*% t(Xmm))  # B × n (no intercept)
+      } else {
+        # no parametric columns after dropping intercept
+        eta_param_draws[,] <- 0
+      }
     }
-  } else {
-    # No parametric terms: keep zeros; intercept handled by eta0
-    eta_param_draws[,] <- 0
   }
 
   ## --- Nonparametric joint dropout: sum across smooths per pass ---
   eta_np_draws <- matrix(0.0, nrow = B, ncol = n)
   if (length(np_terms)) {
-    centers <- (ngam$term_center %||% setNames(rep(0, length(np_terms)), np_terms))
     for (tm in np_terms) {
       mdl <- ngam$model[[tm]]
-      Xtm <- x[[tm]]; if (is.null(dim(Xtm))) Xtm <- matrix(Xtm, ncol = 1L)
-      center_j <- centers[[tm]]
+      Xtm <- x[[tm]]
+      if (is.null(dim(Xtm))) Xtm <- matrix(Xtm, ncol = 1L)
 
       probe <- try(as.matrix(mdl$predict(Xtm, verbose = 0)), silent = TRUE)
+
       if (inherits(probe, "try-error") || is.null(dim(probe))) {
+        # deterministic fallback (no dropout)
         mu_det <- as.numeric(mdl$predict(Xtm, verbose = 0))
-        eta_np_draws <- sweep(eta_np_draws, 2L, mu_det - center_j, `+`)  # subtract center
+        eta_np_draws <- sweep(eta_np_draws, 2L, mu_det, `+`)
       } else {
-        nout <- ncol(probe); mean_col <- if (nout >= 3L) 3L else 1L
+        nout <- ncol(probe)
+        mean_col <- if (nout >= 3L) 3L else 1L
         y_arr <- .mc_dropout_forward(mdl, Xtm, passes = B, output_dim = nout)
-        y_mat <- if (length(dim(y_arr)) == 2L) y_arr else y_arr[, , mean_col, drop = TRUE]  # B x n
-        eta_np_draws <- eta_np_draws + sweep(y_mat, 2L, center_j, `-`)   # subtract center
+        f_mat <- if (length(dim(y_arr)) == 2L) y_arr else y_arr[, , mean_col, drop = TRUE]  # B × n
+        eta_np_draws <- eta_np_draws + f_mat
       }
     }
   }
-  ## --- Intercept ---
-  eta_draws <- eta_param_draws + eta_np_draws + (eta0_use %||% 0)
+  # eta_np_draws has accumulated f_mat from all np_terms + intercept + p_terms
+
+  ## --- Combine: add ONLY intercept from ngam$eta0 never from linear model ---
+  eta_draws <- eta_param_draws + eta_np_draws + (ngam$eta0 %||% 0)
+
+  ## --- Bias correction to match deterministic eta (which already uses eta0) ---
+  bias_vec <- as.numeric(eta_det) - colMeans(eta_draws, na.rm = TRUE)
+  eta_draws <- sweep(eta_draws, 2L, bias_vec, `+`)
+
   eta_draws
 }
+
+
+.mm_from_lm <- function(linmod, new_df) {
+  stopifnot(inherits(linmod, c("lm")))
+  tt  <- stats::terms(linmod)
+  ttX <- stats::delete.response(tt)
+
+  # recover training model.frame (most reliable source of factor info)
+  mf_fit <- try(stats::model.frame(linmod), silent = TRUE)
+  if (inherits(mf_fit, "try-error"))
+    stop("Could not retrieve training model.frame from linmod.")
+
+  # training levels and contrasts
+  xlev_fit <- stats::.getXlevels(tt, mf_fit)
+  contr_fit <- attr(mf_fit, "contrasts")
+  if (is.null(contr_fit)) contr_fit <- linmod$contrasts
+
+  # coerce characters to factors with training levels
+  new_df <- as.data.frame(new_df)
+  for (nm in names(xlev_fit)) {
+    if (!nm %in% names(new_df)) {
+      stop("newdata is missing required column: ", nm)
+    }
+    if (!is.factor(new_df[[nm]])) {
+      # convert character/integer to factor with training levels
+      new_df[[nm]] <- factor(new_df[[nm]], levels = xlev_fit[[nm]])
+    } else {
+      # relevel existing factor to training order (keeps unseen as NA)
+      new_df[[nm]] <- factor(as.character(new_df[[nm]]), levels = xlev_fit[[nm]])
+    }
+  }
+
+  # build model.frame/model.matrix with training levels & contrasts
+  mf_new <- stats::model.frame(ttX, data = new_df, na.action = stats::na.pass, xlev = xlev_fit)
+  Xmm <- stats::model.matrix(ttX, mf_new, contrasts.arg = contr_fit)
+
+  Xmm
+}
+
 
 #' Parametric draws and per-term parametric contributions
 #'
@@ -469,7 +523,6 @@ predict.neuralGAM <- function(object,
 #' @keywords internal
 #' @importFrom MASS mvrnorm
 #' @importFrom stats coef vcov model.frame model.matrix formula
-#' Parametric draws and per-term parametric contributions (robust)
 .parametric_draws <- function(ngam, x, forward_passes = 300L) {
   `%||%` <- function(a, b) if (!is.null(a)) a else b
 
@@ -488,23 +541,13 @@ predict.neuralGAM <- function(object,
   ttX <- stats::delete.response(tt)
 
   # --- Build model.frame and design matrix exactly like training ---
-  mf_new <- stats::model.frame(
-    ttX,
-    data = new_df,
-    na.action = stats::na.pass,
-    xlev = linmod$xlevels
-  )
+  Xmm <- .mm_from_lm(linmod, new_df)
 
-  Xmm <- stats::model.matrix(ttX, mf_new, contrasts.arg = linmod$contrasts)
-
-
-  # --- Handle aliased coefficients (NA in coef, rank-deficiency) ---
   beta_hat <- stats::coef(linmod)
-  keep_coef <- !is.na(beta_hat)
+  keep_coef <- !is.na(beta_hat) & names(beta_hat) != "(Intercept)"  # <-- drop intercept
   beta_hat <- beta_hat[keep_coef]
 
-  # Align columns of X with kept coefficients
-  # (names(Xmm) must match names(beta_hat))
+  # Align X with kept coefficients
   if (!all(names(beta_hat) %in% colnames(Xmm))) {
     stop("Column names of model matrix do not match coefficients after aliasing.")
   }
@@ -516,9 +559,16 @@ predict.neuralGAM <- function(object,
   }
   Vb <- Vb[keep_coef, keep_coef, drop = FALSE]
 
-  # Gaussian draws of beta
-  Beta <- MASS::mvrnorm(n = B, mu = beta_hat, Sigma = Vb)
-  if (is.vector(Beta)) Beta <- matrix(Beta, nrow = B)
+  # Draws (may end up empty if only intercept existed)
+  if (length(beta_hat)) {
+    Beta <- MASS::mvrnorm(n = B, mu = beta_hat, Sigma = Vb)
+    if (is.vector(Beta)) Beta <- matrix(Beta, nrow = B)
+
+    eta_param_draws <- unname(Beta %*% t(Xmm))
+  } else {
+    Beta <- matrix(numeric(0), nrow = B, ncol = 0)
+    eta_param_draws <- matrix(0.0, nrow = B, ncol = n)
+  }
 
   # --- Full parametric linear predictor draws: B x n ---
   eta_param_draws <- Beta %*% t(Xmm)
@@ -541,9 +591,9 @@ predict.neuralGAM <- function(object,
     if (!length(idx)) next  # skip if still not found
 
     # --- Compute contribution for this term ---
-    Xi <- Xmm[, idx, drop = FALSE]      # n × k
-    Betai <- Beta[, idx, drop = FALSE]  # B × k
-    term_draws <- Betai %*% t(Xi)       # B × n
+    Xi <- Xmm[, idx, drop = FALSE]
+    Betai <- Beta[, idx, drop = FALSE]
+    term_draws <- Betai %*% t(Xi)
 
     out$term_draws[[tm]] <- unname(term_draws)
   }

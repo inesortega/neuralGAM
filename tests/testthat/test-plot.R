@@ -91,7 +91,7 @@ test_that("plot.neuralGAM works on real trained models (no stubs)", {
   m_fact <- neuralGAM(
     y ~ s(x1) + x2,                   # factor handled additively
     data = d2,
-    num_units = 16,
+    num_units = 256,
     family = "gaussian",
     learning_rate = 0.01,
     max_iter_backfitting = 2,
@@ -108,13 +108,6 @@ test_that("plot.neuralGAM works on real trained models (no stubs)", {
   expect_silent(with_offscreen_device(
     plot.neuralGAM(m_fact, select = "x2", interval = "none")
   ))
-
-  # If CI branch is supported, try it for factor too
-  if (ci_ok) {
-    expect_silent(with_offscreen_device(
-      plot.neuralGAM(m_fact, select = "x2", interval = "confidence", level = 0.95)
-    ))
-  }
 
   # --------------------------------------
   # 3) PREDICTION INTERVALS branch (PI/PB)

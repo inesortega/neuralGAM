@@ -4,7 +4,7 @@
 \alias{.joint_draws_eta}
 \title{Joint MC-Dropout draws of the additive predictor on the link scale}
 \usage{
-.joint_draws_eta(ngam, x, forward_passes = 300L, verbose = 0L)
+.joint_draws_eta(ngam, x, eta_det, forward_passes = 300L, verbose = 0L)
 }
 \arguments{
 \item{ngam}{A fitted \code{neuralGAM} object containing:
@@ -22,6 +22,8 @@ expected by \code{ngam}. The number of rows defines \eqn{n}.}
 \item{forward_passes}{Integer \eqn{B \ge 2}; number of Monte Carlo passes (default \code{300L}).}
 
 \item{verbose}{Integer flag (0/1); controls optional messaging (unused at present).}
+
+\item{eta}{The deterministic eta to be used for bias correction}
 }
 \value{
 A numeric matrix of dimension \code{B x n} containing draws of
@@ -45,14 +47,14 @@ The function returns a \eqn{B \times n} matrix of link-scale draws, where
 \strong{Parametric part:} draws are generated with \code{MASS::mvrnorm} from
 \code{coef(linmod)} and \code{vcov(linmod)}; predictions are computed using the
 linear submodel’s \emph{exact} model matrix (via \code{stats::model.frame} and
-\code{stats::model.matrix}). If no parametric terms exist, this part contributes zeros.
+\code{stats::model.matrix}), excluding the intercept. If no parametric terms exist, this part contributes zeros.
 
 \strong{Nonparametric part:} for each smooth term, the function calls
 \code{.mc_dropout_forward()} and sums the chosen “mean” head across terms per pass.
 If a smooth model cannot produce draws (e.g., errors), a deterministic prediction
 is used (no extra variance contribution).
 
-The returned draws include the intercept \code{eta0}.
+The returned draws include the intercept \code{eta0} and are bias corrected.
 }
 \seealso{
 \code{\link{.parametric_draws}}, \code{\link{.mc_dropout_forward}}

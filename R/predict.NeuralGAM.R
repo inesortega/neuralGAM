@@ -390,6 +390,7 @@ predict.neuralGAM <- function(object,
       new_df <- as.data.frame(x)
       Xmm <- .mm_from_lm(linmod, new_df)   # may include (Intercept)
       beta_hat <- stats::coef(linmod)
+      nu <- stats::df.residual(linmod)
       Vb <- try(stats::vcov(linmod), silent = TRUE)
       if (inherits(Vb, "try-error") || anyNA(Vb)) Vb <- diag(length(beta_hat))
 
@@ -399,9 +400,11 @@ predict.neuralGAM <- function(object,
         beta_hat <- beta_hat[keep]
         Vb <- Vb[keep, keep, drop = FALSE]
         Xmm <- Xmm[, names(beta_hat), drop = FALSE]
-        Beta <- MASS::mvrnorm(n = B, mu = beta_hat, Sigma = Vb)
+        # Beta <- MASS::mvrnorm(n = B, mu = beta_hat, Sigma = Vb)
+        Beta_centered <- mvtnorm::rmvt(n = B, sigma = Vb, df = nu, type = "shifted")
+        Beta <- sweep(Beta_centered, 2L, beta_hat, `+`)
         if (is.vector(Beta)) Beta <- matrix(Beta, nrow = B)
-        eta_param_draws <- unname(Beta %*% t(Xmm))  # B × n (no intercept)
+        eta_param_draws <- unname(Beta %*% t(Xmm))
       } else {
         # no parametric columns after dropping intercept
         eta_param_draws[,] <- 0
@@ -546,6 +549,7 @@ predict.neuralGAM <- function(object,
   beta_hat <- stats::coef(linmod)
   keep_coef <- !is.na(beta_hat) & names(beta_hat) != "(Intercept)"  # <-- drop intercept
   beta_hat <- beta_hat[keep_coef]
+  nu <- stats::df.residual(linmod)  # residual df = n - p for OLS
 
   # Align X with kept coefficients
   if (!all(names(beta_hat) %in% colnames(Xmm))) {
@@ -561,9 +565,12 @@ predict.neuralGAM <- function(object,
 
   # Draws (may end up empty if only intercept existed)
   if (length(beta_hat)) {
-    Beta <- MASS::mvrnorm(n = B, mu = beta_hat, Sigma = Vb)
+    # Beta <- MASS::mvrnorm(n = B, mu = beta_hat, Sigma = Vb)
+    # if (is.vector(Beta)) Beta <- matrix(Beta, nrow = B)
+    Beta_centered <- mvtnorm::rmvt(n = B, sigma = Vb, df = nu, type = "shifted")
+    # 'shifted' returns mean-zero draws with scale = Vb * df/(df-2) if df>2 (mvtnorm convention).
+    Beta <- sweep(Beta_centered, 2L, beta_hat, `+`)
     if (is.vector(Beta)) Beta <- matrix(Beta, nrow = B)
-
     eta_param_draws <- unname(Beta %*% t(Xmm))
   } else {
     Beta <- matrix(numeric(0), nrow = B, ncol = 0)

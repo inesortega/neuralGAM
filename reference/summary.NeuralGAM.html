@@ -47,7 +47,7 @@ coefficients are also reported."><!-- mathjax --><script src="https://cdnjs.clou
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Summary of a <code>neuralGAM</code> model</h1>
-    <small class="dont-index">Source: <a href="https://github.com/inesortega/neuralGAM/blob/v2.0.0/R/summary.NeuralGAM.R" class="external-link"><code>R/summary.NeuralGAM.R</code></a></small>
+    <small class="dont-index">Source: <a href="https://github.com/inesortega/neuralGAM/blob/main/R/summary.NeuralGAM.R" class="external-link"><code>R/summary.NeuralGAM.R</code></a></small>
     <div class="hidden name"><code>summary.NeuralGAM.Rd</code></div>
     </div>
 
@@ -105,10 +105,71 @@ coefficients are also reported.</p>
 <span class="r-in"><span>  max_iter_ls <span class="op">=</span> <span class="fl">10</span>,</span></span>
 <span class="r-in"><span>  seed <span class="op">=</span> <span class="fl">1234</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Hint: To use tensorflow with `py_require()`, call `py_require("tensorflow")` at the start of the R session</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in tensorflow::set_random_seed(seed):</span> TensorFlow not installed, please run `tensorflow::install_tensorflow()`</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Initializing neuralGAM..."</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 1 - Current Err =  0.00314307849443241 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 2 - Current Err =  0.0035904802501205 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 3 - Current Err =  0.0022177874489898 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 4 - Current Err =  0.00198120946126081 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 5 - Current Err =  0.00268658957361894 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 6 - Current Err =  0.00280545783365124 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 7 - Current Err =  0.0019751075608256 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 8 - Current Err =  0.000915071832718818 BF Threshold =  0.001 Converged =  TRUE"</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">ngam</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'ngam' not found</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> neuralGAM summary</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Family             : gaussian</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Formula            : y ~ s(x1) + x2 + s(x3)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Observations       : 1400</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Intercept (eta0)   : 4.47201</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Deviance explained : 90.78%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Train MSE          : 1.22241</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Pred. / Conf. Int. : disabled</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ------------------------------------------------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Per-term configuration (parsed from s(...))</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  -- x1 - units: 128 | activation: relu | loss: mse | learning rate: 0.001 | k_init: glorot_normal | b_init: zeros | k_reg: NA | b_reg: NA | a_reg: NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  -- x3 - units: 128 | activation: relu | loss: mse | learning rate: 0.001 | k_init: glorot_normal | b_init: zeros | k_reg: NA | b_reg: NA | a_reg: NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ------------------------------------------------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Neural network layer configuration per smooth term</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  -- x1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  layer_index    class units activation   kernel_init bias_init kernel_reg</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            1 dense_31     1     linear GlorotUniform     Zeros       &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            2 dense_32   128       relu  GlorotNormal     Zeros       &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            3 dense_33     1     linear GlorotUniform     Zeros       &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  bias_reg</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  -- x3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  layer_index    class units activation   kernel_init bias_init kernel_reg</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            1 dense_34     1     linear GlorotUniform     Zeros       &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            2 dense_35   128       relu  GlorotNormal     Zeros       &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            3 dense_36     1     linear GlorotUniform     Zeros       &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  bias_reg</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ------------------------------------------------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Linear component coefficients</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)          x2 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    4.472011    1.956564 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ------------------------------------------------------------------------</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Training history </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>              Timestamp Model BF.It. Train.Loss</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  2025-10-20 09:26:34    x1      1     5.0296</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  2025-10-20 09:26:36    x1      2     4.2344</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5  2025-10-20 09:26:36    x1      3     3.5472</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7  2025-10-20 09:26:36    x1      4     2.9337</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9  2025-10-20 09:26:37    x1      5     2.3201</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11 2025-10-20 09:26:37    x1      6     1.7902</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13 2025-10-20 09:26:38    x1      7     1.4436</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15 2025-10-20 09:26:38    x1      8     1.2758</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  2025-10-20 09:26:35    x3      1     4.6098</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  2025-10-20 09:26:36    x3      2     3.4681</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6  2025-10-20 09:26:36    x3      3     2.4593</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8  2025-10-20 09:26:37    x3      4     1.6760</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10 2025-10-20 09:26:37    x3      5     1.2357</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 2025-10-20 09:26:37    x3      6     1.3635</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14 2025-10-20 09:26:38    x3      7     2.0646</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16 2025-10-20 09:26:38    x3      8     2.9907</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

@@ -46,7 +46,7 @@ history component of a trained neuralGAM model."><!-- mathjax --><script src="ht
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Plot training loss history for a neuralGAM model</h1>
-    <small class="dont-index">Source: <a href="https://github.com/inesortega/neuralGAM/blob/v2.0.0/R/plot_history.NeuralGAM.R" class="external-link"><code>R/plot_history.NeuralGAM.R</code></a></small>
+    <small class="dont-index">Source: <a href="https://github.com/inesortega/neuralGAM/blob/main/R/plot_history.NeuralGAM.R" class="external-link"><code>R/plot_history.NeuralGAM.R</code></a></small>
     <div class="hidden name"><code>plot_history.Rd</code></div>
     </div>
 
@@ -109,15 +109,13 @@ the history. If <code>NULL</code> (default), all terms are included.</p></dd>
 <span class="r-in"><span>    validation_split <span class="op">=</span> <span class="fl">0.2</span>,</span></span>
 <span class="r-in"><span>    verbose <span class="op">=</span> <span class="fl">0</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Hint: To use tensorflow with `py_require()`, call `py_require("tensorflow")` at the start of the R session</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in tensorflow::set_random_seed(seed):</span> TensorFlow not installed, please run `tensorflow::install_tensorflow()`</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span>  <span class="fu">plot_history</span><span class="op">(</span><span class="va">model</span><span class="op">)</span>                      <span class="co"># Plot all terms</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'model' not found</span>
+<span class="r-plt img"><img src="plot_history-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span>  <span class="fu">plot_history</span><span class="op">(</span><span class="va">model</span>, select <span class="op">=</span> <span class="st">"x1"</span><span class="op">)</span>       <span class="co"># Plot just x1</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'model' not found</span>
+<span class="r-plt img"><img src="plot_history-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span>  <span class="fu">plot_history</span><span class="op">(</span><span class="va">model</span>, metric <span class="op">=</span> <span class="st">"val_loss"</span><span class="op">)</span> <span class="co"># Plot only validation loss</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'model' not found</span>
+<span class="r-plt img"><img src="plot_history-3.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

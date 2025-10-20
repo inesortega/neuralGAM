@@ -44,7 +44,7 @@
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Short <code>neuralGAM</code> summary</h1>
-    <small class="dont-index">Source: <a href="https://github.com/inesortega/neuralGAM/blob/v2.0.0/R/print.NeuralGAM.R" class="external-link"><code>R/print.NeuralGAM.R</code></a></small>
+    <small class="dont-index">Source: <a href="https://github.com/inesortega/neuralGAM/blob/main/R/print.NeuralGAM.R" class="external-link"><code>R/print.NeuralGAM.R</code></a></small>
     <div class="hidden name"><code>print.NeuralGAM.Rd</code></div>
     </div>
 
@@ -115,10 +115,24 @@
 <span class="r-in"><span>  max_iter_ls <span class="op">=</span> <span class="fl">10</span>,</span></span>
 <span class="r-in"><span>  seed <span class="op">=</span> <span class="fl">1234</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Hint: To use tensorflow with `py_require()`, call `py_require("tensorflow")` at the start of the R session</span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in tensorflow::set_random_seed(seed):</span> TensorFlow not installed, please run `tensorflow::install_tensorflow()`</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Initializing neuralGAM..."</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 1 - Current Err =  0.00314307849443241 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 2 - Current Err =  0.0035904802501205 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 3 - Current Err =  0.0022177874489898 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 4 - Current Err =  0.00198120946126081 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 5 - Current Err =  0.00268658957361894 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 6 - Current Err =  0.00280545783365124 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 7 - Current Err =  0.0019751075608256 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 8 - Current Err =  0.000915071832718818 BF Threshold =  0.001 Converged =  TRUE"</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">ngam</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'ngam' not found</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Class: neuralGAM </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Family             : gaussian</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Formula            : y ~ s(x1) + x2 + s(x3)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Observations       : 1400</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Intercept (eta0)   : 4.47201</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Deviance explained : 90.78%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Train MSE          : 1.22241</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Pred. / Conf. Int. : disabled</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

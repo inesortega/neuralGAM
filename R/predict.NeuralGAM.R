@@ -374,12 +374,13 @@ predict.neuralGAM <- function(object,
 #' @keywords internal
 #' @importFrom MASS mvrnorm
 #' @importFrom stats coef vcov model.frame model.matrix formula
-.joint_draws_eta <- function(ngam, x, eta_det, forward_passes = 300L, verbose = 0L) {
+.joint_draws_eta <- function(ngam, x, eta_det, forward_passes = 300L, verbose = 0L, coef_draw = c("t", "normal")) {
   stopifnot(is.data.frame(x) || is.matrix(x))
   p_terms  <- ngam$formula$p_terms %||% character(0L)
   np_terms <- ngam$formula$np_terms %||% character(0L)
   B <- max(2L, as.integer(forward_passes))
   n <- nrow(x)
+  coef_draw = match.arg(coef_draw)
 
   ## --- Parametric draws (NO intercept here) ---
   eta_param_draws <- matrix(0.0, nrow = B, ncol = n)
@@ -400,9 +401,13 @@ predict.neuralGAM <- function(object,
         beta_hat <- beta_hat[keep]
         Vb <- Vb[keep, keep, drop = FALSE]
         Xmm <- Xmm[, names(beta_hat), drop = FALSE]
-        # Beta <- MASS::mvrnorm(n = B, mu = beta_hat, Sigma = Vb)
-        Beta_centered <- mvtnorm::rmvt(n = B, sigma = Vb, df = nu, type = "shifted")
-        Beta <- sweep(Beta_centered, 2L, beta_hat, `+`)
+        if(coef_draw == "t"){
+          Beta_centered <- mvtnorm::rmvt(n = B, sigma = Vb, df = nu, type = "shifted")
+          Beta <- sweep(Beta_centered, 2L, beta_hat, `+`)
+        }
+        else if(coef_draw == "normal"){
+          Beta <- MASS::mvrnorm(n = B, mu = beta_hat, Sigma = Vb)
+        }
         if (is.vector(Beta)) Beta <- matrix(Beta, nrow = B)
         eta_param_draws <- unname(Beta %*% t(Xmm))
       } else {
@@ -526,10 +531,11 @@ predict.neuralGAM <- function(object,
 #' @keywords internal
 #' @importFrom MASS mvrnorm
 #' @importFrom stats coef vcov model.frame model.matrix formula
-.parametric_draws <- function(ngam, x, forward_passes = 300L) {
+.parametric_draws <- function(ngam, x, forward_passes = 300L, coef_draw = c("t", "normal")) {
   `%||%` <- function(a, b) if (!is.null(a)) a else b
 
   p_terms <- ngam$formula$p_terms %||% character(0L)
+  coef_draw = match.arg(coef_draw)
   out <- list(beta_draws = NULL, term_draws = list(), eta_param_draws = NULL)
   if (!length(p_terms)) return(out)
 
@@ -565,11 +571,13 @@ predict.neuralGAM <- function(object,
 
   # Draws (may end up empty if only intercept existed)
   if (length(beta_hat)) {
-    # Beta <- MASS::mvrnorm(n = B, mu = beta_hat, Sigma = Vb)
-    # if (is.vector(Beta)) Beta <- matrix(Beta, nrow = B)
-    Beta_centered <- mvtnorm::rmvt(n = B, sigma = Vb, df = nu, type = "shifted")
-    # 'shifted' returns mean-zero draws with scale = Vb * df/(df-2) if df>2 (mvtnorm convention).
-    Beta <- sweep(Beta_centered, 2L, beta_hat, `+`)
+    if(coef_draw == "t"){
+      Beta_centered <- mvtnorm::rmvt(n = B, sigma = Vb, df = nu, type = "shifted")
+      Beta <- sweep(Beta_centered, 2L, beta_hat, `+`)
+    }
+    else if(coef_draw == "normal"){
+      Beta <- MASS::mvrnorm(n = B, mu = beta_hat, Sigma = Vb)
+    }
     if (is.vector(Beta)) Beta <- matrix(Beta, nrow = B)
     eta_param_draws <- unname(Beta %*% t(Xmm))
   } else {

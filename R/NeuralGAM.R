@@ -572,6 +572,7 @@ neuralGAM <-
 
 .onLoad <- function(libname, pkgname) {
   .disable_tf_logs_env_only()
+  requireNamespace("neuralGAM", quietly = TRUE)
 }
 
 .onAttach <- function(libname, pkgname) {

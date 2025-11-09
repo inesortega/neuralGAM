@@ -117,9 +117,9 @@ test_that("plot.neuralGAM works on real trained models (no stubs)", {
   }
 
   # --------------------------------------
-  # 3) PREDICTION INTERVALS branch (PI/PB)
+  # 3) CONFIDENCE INTERVALS branch (PI/PB)
   # --------------------------------------
-  # The PI code path in plot.neuralGAM requires:
+  # The cI code path in plot.neuralGAM requires:
   #   - select = NULL (plots all terms) AND
   #   - ngam$build_pi == TRUE plus lwr/upr present
   # To avoid the interactive <Return> pause, we fit a ONE-term model and call with select=NULL.
@@ -153,7 +153,7 @@ test_that("plot.neuralGAM works on real trained models (no stubs)", {
       ))
     }
   } else {
-    skip("Model did not expose prediction intervals (build_pi/lwr/upr); skipping PI tests.")
+    skip("Model did not expose confidence intervals (build_pi/lwr/upr); skipping CI tests.")
   }
 
   # -------------------------

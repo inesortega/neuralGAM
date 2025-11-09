@@ -243,7 +243,7 @@ test_that("neuralGAM runs OK with Confidence Intervals and gaussian response", {
   expect_true(is.numeric(ngam$mse) && length(ngam$mse) == 1)
 })
 
-test_that("neuralGAM runs OK with Prediction Intervals and binomial response", {
+test_that("neuralGAM runs OK with Confidence Intervals and binomial response", {
   skip_if_no_keras()
 
   n <- 10
@@ -266,7 +266,7 @@ test_that("neuralGAM runs OK with Prediction Intervals and binomial response", {
   expect_true(is.numeric(ngam$mse) && length(ngam$mse) == 1)
 })
 
-test_that("neuralGAM runs OK with Prediction Intervals and poisson response", {
+test_that("neuralGAM runs OK with Confidence Intervals and poisson response", {
   skip_if_no_keras()
 
   n <- 10

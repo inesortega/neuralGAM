@@ -1,3 +1,7 @@
+#' @importFrom ggplot2 autoplot
+#' @export
+ggplot2::autoplot
+
 #' @title Autoplot method for \code{neuralGAM} objects (epistemic-only)
 #'
 #' @description

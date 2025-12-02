@@ -15,10 +15,10 @@ This version fixes a minor bug which caused S3 methods to don't be properly expo
 
 ── devtools::check_win_devel() ──── neuralGAM 2.0.1 ──── 
 
-> Installation time in seconds: 26
-> Check time in seconds: 264
+> Installation time in seconds: 52
+> Check time in seconds: 493
 > Status: OK
-> R Under development (unstable) (2025-10-07 r88904 ucrt)
+> R Under development (unstable) (2025-12-01 r89083 ucrt)
 
 ── devtools::check_mac_release() ──── neuralGAM 2.0.1 ──── 
 

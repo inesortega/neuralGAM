@@ -87,6 +87,58 @@ test_that("predict() basic types and shapes (epistemic-only)", {
   # expect_equal(pr_resp$se.fit, pr_link$se.fit, tolerance = 1e-6)
 })
 
+
+test_that("predict() basic types and shapes (epistemic-only) - LOGISTIC neuralGAM", {
+
+  skip_if_no_keras()
+
+  ngam0 <- neuralGAM::neuralGAM(
+    y ~ s(x1) + x2 + s(x3),
+    data = train,
+    family = "binomial",
+    num_units = 64,
+    uncertainty_method = "epistemic",
+    forward_passes = 20,   # small for speed
+    verbose = 0
+  )
+
+  # link
+  eta <- predict(ngam0, type = "link")
+  expect_type(eta, "double")
+  expect_length(eta, nrow(train))
+
+  # response
+  mu <- predict(ngam0, type = "response")
+  expect_type(mu, "double")
+  expect_length(mu, nrow(train))
+
+  # terms (matrix)
+  trm <- predict(ngam0, type = "terms")
+  expect_true(is.matrix(trm))
+  expect_setequal(colnames(trm), c("x1","x2","x3"))
+
+  # sum of terms + intercept equals link
+  eta0 <- if (is.null(ngam0$eta0)) 0 else ngam0$eta0
+  eta_recon <- eta0 + rowSums(trm)
+  expect_equal(eta, eta_recon, tolerance = 1e-6)
+
+  # se.fit on link/response
+  pr_link <- predict(ngam0, type = "link", se.fit = TRUE)
+  expect_true(is.list(pr_link))
+  expect_type(pr_link$fit, "double"); expect_type(pr_link$se.fit, "double")
+  expect_length(pr_link$fit, nrow(train)); expect_length(pr_link$se.fit, nrow(train))
+  expect_true(all(is.finite(pr_link$se.fit)))
+
+  pr_resp <- predict(ngam0, type = "response", se.fit = TRUE)
+  expect_true(is.list(pr_resp))
+  expect_type(pr_resp$fit, "double"); expect_type(pr_resp$se.fit, "double")
+  expect_length(pr_resp$fit, nrow(train)); expect_length(pr_resp$se.fit, nrow(train))
+  expect_true(all(is.finite(pr_resp$se.fit)))
+
+  # delta mapping (gaussian/identity): |dμ/dη| = 1 -> SEs equal --> not working at this tolerance due to MC uncertainty! we will need ~1000 passess
+  # expect_equal(pr_resp$se.fit, pr_link$se.fit, tolerance = 1e-6)
+})
+
 test_that("interval='confidence' returns CI frames on link/response", {
 
   skip_if_no_keras()

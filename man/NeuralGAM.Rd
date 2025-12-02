@@ -63,7 +63,7 @@ One of:
 \item \code{"epistemic"}: MC Dropout for mean uncertainty (CIs)
 }}
 
-\item{alpha}{Significance level for prediction intervals, e.g. \code{0.05} for 95\% coverage.}
+\item{alpha}{Significance level for confidence intervals, e.g. \code{0.05} for 95\% coverage.}
 
 \item{forward_passes}{Integer. Number of MC-dropout forward passes used when
 \code{uncertainty_method \%in\% c("epistemic","both")}.}

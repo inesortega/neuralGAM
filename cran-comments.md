@@ -1,3 +1,34 @@
+# neuralGAM 2.0.1
+
+This version fixes a minor bug which caused S3 methods to don't be properly exported: 
+
+* Stop re-exporting  ggplot2::autoplot and predict (remove reexport and man/reexports.Rd).
+* Now NAMESPACE works as expected (drop export(autoplot); keep S3 registrations).
+## R CMD check results
+
+── Local R CMD check results ──── neuralGAM 2.0.1 ────
+
+❯ checking for future file timestamps ... NOTE
+  unable to verify current time
+
+0 errors ✔ | 0 warnings ✔ | 1 notes ✖
+
+── devtools::check_win_devel() ──── neuralGAM 2.0.1 ──── 
+
+> Installation time in seconds: 26
+> Check time in seconds: 264
+> Status: OK
+> R Under development (unstable) (2025-10-07 r88904 ucrt)
+
+── devtools::check_mac_release() ──── neuralGAM 2.0.1 ──── 
+
+> OK
+
+* Local: `R CMD check` passed on Windows 11 (x86_64, mingw32, R 4.4.1 2024-06-14 ucrt).
+* NOTE related to unability of R to verify current time, which is a known issue reported [here](https://forum.posit.co/t/r-devel-r-cmd-check-failing-because-of-time-unable-to-verify-current-time/25589):
+* GitHub Actions: [R-CMD-check](https://github.com/inesortega/neuralGAM/actions/workflows/R-CMD-check.yaml) passes on macOS, Windows, and Ubuntu (R-release, R-devel, R-oldrel).
+* Coverage: >75% test coverage confirmed with [codecov](https://app.codecov.io/gh/inesortega/neuralGAM).
+
 # neuralGAM 2.0.0
 
 This version introduces major new functionality and internal improvements:

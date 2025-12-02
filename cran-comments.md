@@ -1,9 +1,9 @@
 # neuralGAM 2.0.1
 
-This version fixes a minor bug which caused S3 methods to don't be properly exported: 
+This version fixes a minor bug which caused S3 methods to don't be properly exported. 
 
-* Stop re-exporting  ggplot2::autoplot and predict (remove reexport and man/reexports.Rd).
-* Now NAMESPACE works as expected (drop export(autoplot); keep S3 registrations).
+`predict.neuralGAM` and `autoplot.neuralGAM` are now properly exported, while keeping the S3 registrations. 
+
 ## R CMD check results
 
 ── Local R CMD check results ──── neuralGAM 2.0.1 ────

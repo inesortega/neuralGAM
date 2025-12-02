@@ -78,6 +78,8 @@
 #'                     se.fit = TRUE, forward_passes = 10)
 #' }
 #' @importFrom stats predict qnorm setNames
+#' @method predict neuralGAM
+#' @export predict.neuralGAM
 #' @export
 #' @author Ines Ortega-Fernandez, Marta Sestelo
 predict.neuralGAM <- function(object,

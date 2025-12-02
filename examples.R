@@ -44,7 +44,7 @@ summary(dat)
 
 ## 1.2 Fit neuralGAM with epistemic confidence intervals ------------------------
 
-if (!require("neuralGAM")) install.packages("neuralGAM", quiet = TRUE)
+if (!require("neuralGAM")) remotes::install_version("neuralGAM", version = "2.0.1", quiet = TRUE)
 if (!require("ggplot2")) install.packages("ggplot2", quiet = TRUE)
 if (!require("gridExtra")) install.packages("gridExtra", quiet = TRUE)
 
@@ -83,7 +83,7 @@ gridExtra::grid.arrange(grobs = plot_terms, ncol = 3)
 # 1.5 Deepregression  -----------------------------------------------
 
 ## 1.5.1. Setup deepregression and dependencies -------------------------------
-if (!require("deepregression")) remotes::install_version("deepregression", version = "2.3.1")
+if (!require("deepregression")) remotes::install_version("deepregression", version = "2.3.1", quiet = TRUE)
 # wE use the same reticulate environment as for neuralGAM to avoid double-install
 py <- normalizePath(reticulate::py_config()$python, winslash = "/")
 system2(py, c("-m", "pip", "install", "--upgrade",

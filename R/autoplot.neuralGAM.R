@@ -71,6 +71,7 @@ ggplot2::autoplot
 #' @importFrom stats predict qnorm
 #' @author Ines Ortega-Fernandez, Marta Sestelo
 #' @method autoplot neuralGAM
+#' @export autoplot.neuralGAM
 #' @export
 autoplot.neuralGAM <- function(object,
                                newdata = NULL,

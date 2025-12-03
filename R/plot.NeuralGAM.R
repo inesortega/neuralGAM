@@ -3,7 +3,7 @@
 #' @description
 #' Visualization of a fitted \code{neuralGAM}. Plots learned partial effects, either as
 #' scatter/line plots for continuous covariates or s for factor covariates.
-#' Confidence and/or prediction intervals can be added if available.
+#' Confidence intervals can be added if available.
 #'
 #' @param x A fitted \code{neuralGAM} object as produced by \code{neuralGAM()}.
 #' @param select Character vector of terms to plot. If \code{NULL} (default),

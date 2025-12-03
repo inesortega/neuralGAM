@@ -24,7 +24,7 @@
 #'   }
 #' @param loss Loss function to use. Can be any Keras built-in (e.g., `"mse"`, `"mae"`,
 #'     `"huber"`, `"logcosh"`) or a custom function, passed directly to `keras::compile()`.
-#' @param alpha Significance level for prediction intervals, e.g. \code{0.05} for 95% coverage.
+#' @param alpha Significance level for confidence intervals, e.g. \code{0.05} for 95% coverage.
 #' @param dropout_rate Dropout probability in smooth-term NNs (0,1).
 #'   \itemize{
 #'     \item During training: acts as a regularizer.
@@ -355,10 +355,7 @@ neuralGAM <-
         f[formula$p_terms] <- predict(linear_model, type = "terms", verbose = verbose)
         eta <- eta0 + rowSums(f)
 
-        # Do NOT create per-term PIs for parametric effects
-        # (prediction intervals are response-level; not meaningful per term)
-
-        # Instead, store epistemic variance for CI of the mean contribution
+        # Store epistemic variance for CI of the mean contribution
         # using predict.lm(type="terms", se.fit=TRUE)
         for (tm in formula$p_terms) {
           pr_tm <- stats::predict(linear_model,
@@ -487,7 +484,7 @@ neuralGAM <-
                                     alpha = alpha,
                                     forward_passes = forward_passes)
       if(build_pi == TRUE){
-        # Update prediction intervals
+        # Update CI
         lwr[[term]] <- preds$lwr - term_center[[term]]
         upr[[term]] <- preds$upr - term_center[[term]]
       }
@@ -572,6 +569,7 @@ neuralGAM <-
 
 .onLoad <- function(libname, pkgname) {
   .disable_tf_logs_env_only()
+  requireNamespace("neuralGAM", quietly = TRUE)
 }
 
 .onAttach <- function(libname, pkgname) {

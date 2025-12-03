@@ -1,7 +1,7 @@
 Package: neuralGAM
 Type: Package
 Title: Interpretable Neural Network Based on Generalized Additive Models
-Version: 2.0
+Version: 2.0.1
 Authors@R: c(person("Ines", "Ortega-Fernandez", role = c("aut", "cre", "cph"),
                      email = "iortega@gradiant.org", 
                      comment = c(ORCID = "0000-0002-8041-6860")),
@@ -25,7 +25,7 @@ Imports:
   patchwork,
   rlang
 SystemRequirements: python (>= 3.10), keras (== 2.15), tensorflow (== 2.15)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Roxygen: list(markdown = TRUE)
 Suggests: 
     covr,

@@ -1,4 +1,9 @@
-# neuralGAM 2.0
+# neuralGAM 2.0.1
+
+* Minor bug fix related to the exportation of S3 methods (autoplot, predict). 
+* Minor corrections in documentation
+
+# neuralGAM 2.0.0
 
 * **Major update** with expanded flexibility, improved diagnosis tools, and uncertainty quantification.
 * **Additional distribution families**: now supports `poisson` in addition to `gaussian` and `binomial`.

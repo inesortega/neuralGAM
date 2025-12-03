@@ -45,7 +45,7 @@ In addition to point predictions, the model can optionally estimate uncertainty 
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Fit a neuralGAM model</h1>
-    <small class="dont-index">Source: <a href="https://github.com/inesortega/neuralGAM/blob/main/R/NeuralGAM.R" class="external-link"><code>R/NeuralGAM.R</code></a></small>
+    <small class="dont-index">Source: <a href="https://github.com/inesortega/neuralGAM/blob/v2.0.1/R/NeuralGAM.R" class="external-link"><code>R/NeuralGAM.R</code></a></small>
     <div class="hidden name"><code>NeuralGAM.Rd</code></div>
     </div>
 
@@ -270,15 +270,16 @@ of the backfitting algorithm. Defaults to <code>10</code>.</p></dd>
 <span class="r-in"><span>  alpha <span class="op">=</span> <span class="fl">0.05</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Initializing neuralGAM..."</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 1 - Current Err =  135.081947243743 BF Threshold =  0.001 Converged =  FALSE"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 2 - Current Err =  0.0770653069662017 BF Threshold =  0.001 Converged =  FALSE"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 3 - Current Err =  0.00253847012192288 BF Threshold =  0.001 Converged =  FALSE"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 4 - Current Err =  0.00291195558524542 BF Threshold =  0.001 Converged =  FALSE"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 5 - Current Err =  0.00494876238025489 BF Threshold =  0.001 Converged =  FALSE"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 6 - Current Err =  0.00427861823924015 BF Threshold =  0.001 Converged =  FALSE"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 7 - Current Err =  0.00246589262739314 BF Threshold =  0.001 Converged =  FALSE"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 8 - Current Err =  0.00120736035971942 BF Threshold =  0.001 Converged =  FALSE"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 9 - Current Err =  0.00052235319973483 BF Threshold =  0.001 Converged =  TRUE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 1 - Current Err =  13.8805248246851 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 2 - Current Err =  0.037037398577531 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 3 - Current Err =  0.0545957826695001 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 4 - Current Err =  0.0129818514562638 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 5 - Current Err =  0.00476547682079603 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 6 - Current Err =  0.00696293896481255 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 7 - Current Err =  0.00481330785418773 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 8 - Current Err =  0.00112587671341654 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 9 - Current Err =  0.00356620263337224 BF Threshold =  0.001 Converged =  FALSE"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "BACKFITTING Iteration 10 - Current Err =  0.00101421226619585 BF Threshold =  0.001 Converged =  FALSE"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "Computing CI/PI using uncertainty_method =  epistemic  at alpha =  0.05"</span>
 <span class="r-in"><span><span class="va">ngam</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Class: neuralGAM </span>
@@ -286,8 +287,8 @@ of the backfitting algorithm. Defaults to <code>10</code>.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Formula            : y ~ s(x1, num_units = c(128, 64), activation = "tanh") + s(x2,     num_units = 256)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Observations       : 1400</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Intercept (eta0)   : 4.54772</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Deviance explained : 85.66%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Train MSE          : 1.90146</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Deviance explained : 86.20%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Train MSE          : 1.82927</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Pred. / Conf. Int. : ENABLED (alpha = 0.05, method = epistemic)</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
